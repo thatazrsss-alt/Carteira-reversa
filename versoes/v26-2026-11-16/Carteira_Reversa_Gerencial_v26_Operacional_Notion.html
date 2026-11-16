@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>Carteira Reversa v26 | Gerencial de Atendimento</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+:root{--navy:#172e49;--blue:#234b67;--teal:#087f7e;--mint:#e2f6ee;--gold:#b78020;--danger:#bc3d46;--txt:#23394d;--muted:#647b8b;--edge:#dce6ec;--bg:#f3f7fa}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 Inter,'Segoe UI',Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer}header{background:linear-gradient(120deg,#162c47,#116d7b);color:#fff;padding:28px max(24px,calc((100% - 1280px)/2));display:flex;justify-content:space-between;align-items:center;gap:20px}h1{font-size:27px;line-height:1.2;letter-spacing:-.4px;margin:0}header p{color:#cde6eb;margin:6px 0 0}.wrap{max-width:1280px;padding:22px 20px 40px;margin:auto}.topnav{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:19px}.tab{background:white;border:1px solid var(--edge);padding:11px 17px;border-radius:10px;font-weight:750;color:var(--navy)}.tab.active{background:var(--navy);border-color:var(--navy);color:white}.view{display:none}.view.active{display:block}.panel{background:white;border:1px solid var(--edge);border-radius:16px;padding:22px;margin-bottom:19px;box-shadow:0 5px 18px #14304907}h2{font-size:19px;margin:0 0 5px}h3{font-size:15px;margin:0 0 8px}.lead{margin:0 0 17px;color:var(--muted)}.btn{border:1px solid #bbd0d8;background:#fff;color:var(--navy);font-weight:750;border-radius:9px;padding:10px 14px}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--navy);color:#fff;border-color:var(--navy)}.btn:disabled{opacity:.47;cursor:not-allowed}.barrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.right{margin-left:auto}.notice{background:#fdf7e8;border-left:4px solid #c3973e;border-radius:9px;padding:12px 14px;margin:15px 0;color:#695222}.notice.bad{background:#fff1f1;border-left-color:var(--danger);color:#a4313a}.notice.good{background:#edf8f1;border-left-color:#2e9772;color:#216348}.upload{background:#f6fafb;border:2px dashed #adcbd6;border-radius:13px;padding:23px}.upload input{max-width:100%}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;background:#e5f3f3;color:#176968;border-radius:30px;font-size:11px;font-weight:800;padding:4px 9px;white-space:nowrap}.pill.orange{background:#fff0cf;color:#966119}.pill.red{background:#ffe8e9;color:#b23a44}.pill.gray{background:#edf2f5;color:#526a7e}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.kpi{background:#f7fafc;padding:17px;border:1px solid #e2ebee;border-radius:12px}.kpi span{color:var(--muted);display:block;font-size:12px;font-weight:750}.kpi strong{font-size:26px;color:var(--navy);display:block;line-height:1.35;margin:5px 0}.flex{display:flex;gap:15px;flex-wrap:wrap}.flex>*{flex:1;min-width:175px}label.cap{display:block;font-weight:750;color:#587183;font-size:12px;margin-bottom:5px}select,input[type=text],input[type=date],input[type=number]{border:1px solid #bed1dc;padding:9px 10px;border-radius:9px;color:var(--txt);max-width:100%;background:#fff}select{min-width:90px}.w100{width:100%}.scroller{overflow:auto;max-height:520px;border:1px solid #dbe5eb;border-radius:10px}table{border-collapse:collapse;width:100%;min-width:850px;font-size:12px}th{position:sticky;top:0;background:#edf3f7;color:#325069;z-index:1;text-align:left;padding:11px 10px;white-space:nowrap}td{border-top:1px solid #edf0f4;padding:9px 10px;vertical-align:middle}tr:hover td{background:#f9fcfc}td select{font-size:12px;padding:7px 8px}.check{width:18px;height:18px;accent-color:var(--teal);vertical-align:middle}.network-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.netcheck{display:flex;align-items:center;gap:9px;padding:13px;border:1px solid #d6e5eb;border-radius:10px;font-weight:700}.netcheck:has(input:checked){background:#eaf8f5;border-color:#80c7b5}.network-section{margin-bottom:13px}.auditrow{border-bottom:1px solid #e8eef2;padding:10px 0;display:flex;justify-content:space-between;align-items:center;gap:12px}.diagram{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;align-items:stretch;gap:8px}.node{border:1px solid #d6e5ea;background:#f7fafb;border-radius:11px;padding:15px}.node b{display:block;color:#1d465b;margin-bottom:7px}.arr{align-self:center;text-align:center;color:#7e9ba9;font-size:25px}.cardarea{display:grid;grid-template-columns:1fr 1fr;gap:12px}.note{padding:13px;border-radius:10px;background:#f3f7fa;color:#4c6575}.tip{color:#687d8b;font-size:12px;margin-top:12px} .divider{height:1px;background:#e5eef2;margin:16px 0}.muted{color:var(--muted)}.mini{font-size:11px}.error{color:var(--danger)}.footer{font-size:12px;color:#8397a4;margin-top:20px}@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.network-grid,.cardarea{grid-template-columns:1fr 1fr}.diagram{grid-template-columns:1fr}.arr{transform:rotate(90deg)}header{padding:20px}}@media(max-width:580px){.grid,.network-grid,.cardarea{grid-template-columns:1fr}header{align-items:start;flex-direction:column}h1{font-size:23px}.panel{padding:15px}.wrap{padding:14px 12px}.tab{padding:9px 11px}}
+.scroller table td,.scroller table th{padding:9px 11px;white-space:nowrap}.scroller details summary{cursor:pointer;color:#087f7e;font-weight:600}.scroller details div{white-space:normal}.scroller{scrollbar-color:#9bb7c4 #f0f4f8}
+/* Estilo visual Canva · v17, cards compactos e analytics */
+:root{--navy:#12243D;--blue:#2E5474;--teal:#187E91;--mint:#E8F5F3;--gold:#D49B3D;--danger:#CF5960;--txt:#20344A;--muted:#72849B;--edge:#E3EAF1;--bg:#F4F7FB}
+body{background:linear-gradient(145deg,#F4F7FB,#EDF4F7 65%,#F5F9FC);letter-spacing:-.08px}
+header{background:#12243D;padding:28px max(24px,calc((100% - 1430px)/2));box-shadow:0 13px 28px #12243D24;position:relative;overflow:hidden}
+header:before{content:'';position:absolute;right:-140px;top:-230px;width:520px;height:520px;background:radial-gradient(circle,#2188A555,transparent 68%);pointer-events:none}header h1{letter-spacing:1.1px;font-size:27px}header p{color:#C9D9E3}
+.wrap{max-width:1430px;padding:24px 30px 46px}.topnav{padding:7px;gap:6px;border-radius:16px;background:#E8EEF4;position:sticky;top:0;z-index:10;box-shadow:0 3px 13px #10253C0B}.tab{border:0;border-radius:12px;background:transparent;color:#456078;padding:13px 18px;font-size:13px;letter-spacing:.2px}.tab.active{background:#fff;color:#136C81;box-shadow:0 2px 11px #132A4019}
+.panel{border-radius:19px;box-shadow:0 9px 28px #163B5809;border:1px solid #E3EAF1;padding:24px}h2{letter-spacing:-.5px;font-weight:800}h3{letter-spacing:-.25px}.lead{color:#6A8195}.btn{box-shadow:0 1px 3px #12243D0F}.btn.primary{background:#167D90;border-color:#167D90}.btn.dark{background:#12243D;border-color:#12243D}.upload{border-radius:15px;background:linear-gradient(125deg,#F4FBFC,#F5F9FF);border-color:#9BC8D1}.network-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}.netcheck{border-radius:12px;background:#FAFCFE;transition:background .15s,border-color .15s}.netcheck:has(input:checked){background:#E9F7F4;border-color:#83C9B6}.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.kpi{background:#fff;border:1px solid #E2E9F0;box-shadow:0 8px 22px #112F4407;padding:21px 18px 19px;border-radius:16px;position:relative;overflow:hidden}.kpi:before{content:'';height:3px;position:absolute;top:0;left:0;right:0;background:#167D90}.kpi:nth-child(3n):before{background:#D9A250}.kpi:nth-child(4n):before{background:#4B6F9A}.kpi span{font-size:11.5px;font-weight:750;letter-spacing:.2px;color:#72849B}.kpi strong{font-size:25px;letter-spacing:-.8px;margin:8px 0 2px}.pill{border-radius:7px;letter-spacing:.1px}.scroller{max-height:480px;border-radius:12px;border-color:#E3EAF1}.scroller table{font-size:12px}.scroller th{background:#172E49;color:#F4FBFF;padding:12px 11px;position:sticky;top:0;z-index:2}.scroller td{padding:9px 11px;border-color:#EAF0F4}.scroller tr:nth-child(even) td{background:#F7FAFC}.scroller tr:hover td{background:#EAF5F7}.insights-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:19px 0 22px}.vizpanel{border:1px solid #E3EAF1;border-radius:17px;background:#fff;padding:21px 23px;box-shadow:0 7px 19px #112F4406;min-height:218px}.viztitle{display:flex;flex-wrap:wrap;align-items:baseline;gap:9px;justify-content:space-between;margin-bottom:16px}.viztitle h3{font-size:15px;color:#20354C}.viztitle small{font-size:10px;color:#7B8FA2}.vizbody{min-height:115px}.metricbar{margin:0 0 14px}.metricrow{display:flex;justify-content:space-between;gap:14px;font-size:11.5px;margin-bottom:6px}.metricrow span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:74%;font-weight:600;color:#52697B}.metricrow b{font-variant-numeric:tabular-nums;color:#24384A}.progress-track{background:#EBF0F4;border-radius:100px;height:9px;overflow:hidden}.progress-fill{background:var(--bar-color,#18899C);height:100%;border-radius:100px;transition:width .45s ease}.stackedbar{height:23px;border-radius:99px;display:flex;overflow:hidden;background:#F0F3F6;margin:22px 0}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#5C7183}.legend span{display:inline-flex;align-items:center;gap:6px}.legend b{color:#23394D;font-variant-numeric:tabular-nums}.legend i{width:9px;height:9px;border-radius:3px;display:inline-block;flex:0 0 9px}.legend.vertical{flex-direction:column;gap:11px}.donutline{display:flex;align-items:center;gap:28px}.donut{height:145px;width:145px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 145px}.donut-center{height:104px;width:104px;border-radius:50%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 0 1px #ffffff55}.donut-center strong{font-size:26px;color:#12243D}.donut-center small{font-size:11px;color:#7B90A0}.channel-pills{display:flex;gap:12px;margin-bottom:18px}.channel-pills>div{flex:1;background:#F2F7FA;border:1px solid #E2EAF0;border-radius:10px;padding:13px}.channel-pills strong{display:block;color:#153B56;font-size:23px}.channel-pills small{color:#73889A;font-size:10px}.note,.notice{border-radius:12px}.tip{color:#6E8696}
+@media(max-width:1050px){.insights-layout{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.wrap{padding:16px 12px}.insights-layout{grid-template-columns:1fr}.donutline{gap:10px}.donut{width:110px;height:110px;flex-basis:110px}.donut-center{width:75px;height:75px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{padding:14px}.kpi strong{font-size:21px}header{padding:19px}.tab{font-size:12px;padding:9px}}
+.filterstrip{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:13px}.filterbox{background:#f6fafc;padding:12px;border:1px solid #dfebef;border-radius:11px}.filterbox .small{font-size:10px;margin-top:6px}.segment-area{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-bottom:17px}.segment-card{background:#fff;border:1px solid #dbe6ea;border-radius:13px;padding:16px;box-shadow:0 4px 15px #22334408}.segment-card .num{font-weight:800;font-size:24px;color:#172e49}.segment-card .mini{font-size:12px;color:#607684}.segment-card .segrow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #edf1f4;gap:12px}.segment-card h3{color:#13304d;margin:0 0 8px}.segment-card .accentbar{height:4px;background:#137f7b;margin:-16px -16px 13px;border-radius:12px 12px 0 0}.segment-card.secondary .accentbar{background:#d99b3c}.section-sub{margin:10px 0 18px}.keyline{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.keyline span{background:#eef6f8;border-radius:8px;padding:6px 8px;font-size:12px;color:#1b5864}@media(max-width:1080px){.filterstrip{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.filterstrip,.segment-area{grid-template-columns:1fr}}
+</style><style>
+/* CARTEIRA REVERSA — DESIGN SYSTEM V24 */
+:root{--navy:#10233b;--blue:#1b4564;--teal:#087e80;--mint:#e9f6f3;--gold:#db9d46;--danger:#bb4a51;--txt:#1c3048;--muted:#6f8197;--edge:#e3eaf0;--bg:#f6f8fb;--sidew:242px}
+html{scroll-behavior:smooth}body{font:13px/1.48 'Inter','Segoe UI',system-ui,Arial,sans-serif;background:#f6f8fb;color:#1d3148;letter-spacing:0;min-height:100vh}
+body:before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 85% 4%,#e7f4f7a8,transparent 34%),linear-gradient(#f7f9fc,#f4f7fa);z-index:-1;pointer-events:none}
+:focus-visible{outline:3px solid #67c9c3!important;outline-offset:2px}
+/* side navigation */
+.topnav{position:fixed!important;left:0;top:0;bottom:0;width:var(--sidew);height:100vh;display:flex!important;flex-direction:column;align-items:stretch;gap:7px!important;background:linear-gradient(176deg,#0c1e34 0%,#142a42 64%,#15354c 100%)!important;padding:24px 14px 22px!important;border:0;border-radius:0!important;box-shadow:8px 0 36px #0b1f3a13;z-index:25;overflow-y:auto;margin:0!important}
+.nav-brand{display:flex;align-items:center;gap:10px;color:#fff;padding:4px 10px 34px;min-height:76px}.brand-symbol{display:flex;width:43px;height:43px;align-items:center;justify-content:center;border-radius:13px;background:linear-gradient(135deg,#13a6a1,#167f9a);box-shadow:0 6px 22px #00a9a62c;color:#fff}.brand-wordmark{display:flex;flex-direction:column;line-height:1.1;gap:5px}.brand-wordmark strong{font-size:24px;letter-spacing:-1.1px;color:#f5fcff;font-weight:800}.brand-wordmark strong span{color:#63dac9}.brand-wordmark small{font-size:9px;letter-spacing:1.45px;color:#95b9c7;font-weight:800}
+.nav-section-label{font-weight:800;color:#829dad;font-size:10px;letter-spacing:1.9px;padding:13px 13px 10px}.topnav .tab{position:relative;display:flex;align-items:center;gap:12px;width:100%;font-size:12.8px!important;color:#b8cedc!important;text-align:left;background:transparent!important;border:1px solid transparent!important;box-shadow:none!important;padding:13px 12px!important;border-radius:10px;font-weight:650;transition:background .17s,color .17s,border .17s,transform .17s;white-space:nowrap}.topnav .tab:hover{background:#ffffff12!important;color:#fff!important;transform:translateX(2px)}.topnav .tab.active{background:linear-gradient(100deg,#168f90 0%,#16798b 95%)!important;color:#fff!important;border-color:#31a7a036!important;box-shadow:0 9px 22px #051e291f!important}.topnav .tab.active:before{content:'';position:absolute;width:3px;height:21px;background:#b7fff0;left:0;top:50%;transform:translateY(-50%);border-radius:0 4px 4px 0}.nav-icon{display:flex;align-items:center;justify-content:center;flex:0 0 19px}.nav-icon svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.tab-index{margin-left:auto;color:inherit;opacity:.40;font-size:10px;font-variant-numeric:tabular-nums}.nav-footer{margin-top:auto;display:flex;align-items:center;gap:8px;color:#91abbd;font-size:10px;padding:20px 12px 2px;border-top:1px solid #ffffff14}.nav-footer-dot,.status-led{width:7px;height:7px;border-radius:99px;display:inline-block;background:#56cbb6;box-shadow:0 0 0 4px #56cbb61b}
+/* top command bar */
+.workspace-header{min-height:138px;display:flex;align-items:center;justify-content:space-between;gap:22px;margin-left:var(--sidew)!important;padding:30px 38px!important;background:linear-gradient(113deg,#102d46 0%,#16445b 72%,#1b6265 120%)!important;box-shadow:none!important;position:relative;overflow:hidden}.workspace-header:before{content:'';position:absolute;right:-60px;bottom:-200px;width:420px;height:420px;border:1px solid #ffffff1a;border-radius:50%;box-shadow:0 0 0 45px #ffffff06,0 0 0 95px #ffffff05;pointer-events:none}.workspace-header:after{content:'';position:absolute;right:290px;top:-80px;width:190px;height:190px;background:radial-gradient(circle,#29bfa628,transparent 67%);pointer-events:none}.hero-heading,.hero-meta{z-index:1}.hero-eyebrow{color:#a5cbd4;font-weight:800;letter-spacing:2px;font-size:9px;display:flex;align-items:center;gap:10px;margin-bottom:10px}.workspace-header h1{font-weight:790;letter-spacing:-1.35px!important;font-size:29px;margin:0;color:#f7fafd;line-height:1.1}.workspace-header h1 span:first-child{color:#7ce0cb}.version-chip{display:inline-flex!important;margin-left:12px;border:1px solid #d7fff63a;background:#ffffff12;color:#dff7f7!important;padding:5px 8px;border-radius:7px;font-size:10px;font-weight:850;letter-spacing:.5px;vertical-align:middle}.workspace-header p{font-size:12px;margin:9px 0 0;color:#aecad7}.hero-meta{text-align:right;border-left:1px solid #e6f9ff36;padding-left:23px;min-width:186px}.meta-label{display:block;font-size:9px;font-weight:800;letter-spacing:1.3px;color:#a5c5d0}.hero-meta strong{display:block;font-size:17px;color:#fff;margin:4px 0 3px}.hero-meta-caption{color:#adcfda;font-size:10px}
+/* app canvas */
+.wrap{max-width:none!important;width:auto;margin:0 0 0 var(--sidew)!important;padding:26px 32px 64px!important}.panel{background:#fff;border-radius:17px!important;border:1px solid #e3ebf1!important;box-shadow:0 6px 24px #1d405209!important;padding:25px 27px!important;margin-bottom:19px;overflow:visible}.panel>.barrow:first-child{margin-bottom:11px}.view>.panel>h2,.panel h2{font-size:20px!important;font-weight:810;letter-spacing:-.7px;color:#183249;margin:0 0 21px;line-height:1.25}.view>.panel>h2:after{content:'';display:block;width:35px;height:3px;background:#138e8b;border-radius:7px;margin-top:10px}.panel h3{color:#1b344d;font-size:14px}.lead,.tip,.diagram{display:none!important}
+.btn{background:#fff!important;color:#27526a!important;border:1px solid #cbdce6!important;border-radius:10px!important;font-size:12px;font-weight:750!important;padding:10px 13px!important;box-shadow:0 2px 5px #0c243b06!important;transition:transform .15s,border .15s,background .15s,box-shadow .15s;line-height:1.35;white-space:normal}.btn:hover{border-color:#79bcbf!important;box-shadow:0 7px 14px #173d4f12!important;transform:translateY(-1px)}.btn:active{transform:translateY(0)}.btn.primary{background:linear-gradient(110deg,#087d81,#169e99)!important;border-color:#087d81!important;color:#fff!important;box-shadow:0 6px 16px #0d858027!important}.btn.dark{background:#18314b!important;border-color:#18314b!important;color:#fff!important}.btn:disabled{opacity:.5;transform:none;cursor:not-allowed}.barrow{gap:9px}
+label.cap{font-weight:800;color:#547083;font-size:10px;letter-spacing:.2px;margin-bottom:7px}.small{font-size:11px;color:#8191a2}select,input[type=text],input[type=date],input[type=number],textarea{border:1px solid #d6e2eb!important;border-radius:9px!important;background:#fff!important;color:#20364c!important;min-height:39px;padding:9px 10px!important;font-size:12px;box-shadow:0 1px 3px #0c26390b;outline:0;transition:border .15s,box-shadow .15s}select:focus,input:focus,textarea:focus{border-color:#21a09a!important;box-shadow:0 0 0 3px #18a29b20!important}.upload{border:1.5px dashed #9acacb!important;background:linear-gradient(135deg,#f3fbfa,#f4f9fd)!important;border-radius:15px!important;padding:24px!important;margin-bottom:13px}.upload>b{font-size:15px;letter-spacing:-.2px;color:#254b61;display:block;margin-bottom:5px}.upload input[type=file]{max-width:100%;margin-top:12px;color:#57778d;font-size:12px}.upload input::file-selector-button{background:#fff;border:1px solid #c2d8df;border-radius:9px;color:#195d6c;padding:10px 13px;font-weight:800;margin-right:15px;cursor:pointer}
+.notice{border:1px solid #eadcb5!important;border-left:3px solid #d09a43!important;border-radius:11px!important;background:#fffaf0!important;color:#705f40!important;padding:10px 13px!important;margin:13px 0!important;font-size:11.5px;line-height:1.55}.notice.good{border-color:#bce1d0!important;border-left-color:#31a276!important;background:#f3fbf7!important;color:#357758!important}.notice.bad{border-color:#efc9ca!important;border-left-color:#c95e65!important;background:#fff6f6!important;color:#9f474e!important}.pill{border-radius:7px!important;padding:5px 9px!important;font-size:10px!important;font-weight:850!important}.pill.orange{background:#fff3dc}.pill.gray{background:#edf2f7}.network-grid{grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:9px}.netcheck{padding:12px 13px;border:1px solid #dce7ed;background:#f9fbfd;border-radius:10px;font-size:12px}.netcheck:has(input:checked){background:#e9f8f5;border-color:#7bc7b7;box-shadow:inset 3px 0 #1d9b90}
+/* filter and analytics area */
+.filterstrip{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:12px;border:1px solid #e3ebf1;background:#f5f8fb;border-radius:13px;margin-bottom:12px}.filterbox{padding:10px 11px;background:#fff;border:1px solid #e4edf2!important;border-radius:10px;min-width:0}.filterbox label.cap{color:#45677d;line-height:1.35}.filterbox select,.filterbox input{width:100%;min-width:0}.visual-section-title{display:flex;justify-content:space-between;align-items:end;gap:16px;margin:21px 0 12px}.visual-section-title h3{margin:0;color:#1e364b;font-size:16px;font-weight:810;letter-spacing:-.4px}.overline{display:block;color:#168b88;font-size:9px;letter-spacing:1.5px;font-weight:850;margin-bottom:4px}.visual-section-mark{color:#a2b2c0;font-size:9px;font-weight:800;letter-spacing:1.8px}.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi{background:#fff!important;border:1px solid #e1eaf0!important;border-radius:13px!important;box-shadow:0 4px 15px #14344b07!important;padding:16px 18px 17px!important;min-height:104px}.kpi:before{height:3px;background:#15978b!important}.kpi:nth-child(3n):before{background:#d9a04f!important}.kpi:nth-child(4n):before{background:#587ca1!important}.kpi span{font-size:10px;color:#71869a;letter-spacing:.25px;font-weight:800}.kpi strong{font-size:26px;line-height:1.18;color:#19324c;letter-spacing:-1px;margin-top:11px}.insights-layout{gap:13px;margin:0 0 24px;grid-template-columns:repeat(2,minmax(0,1fr))}.vizpanel{padding:19px 20px!important;border:1px solid #e4ebf1!important;border-radius:14px;min-height:205px;box-shadow:0 4px 15px #163d4b05}.viztitle{display:block;margin-bottom:12px}.viztitle h3{font-size:13px!important;font-weight:820!important;letter-spacing:-.1px;color:#1d3952}.vizbody{min-height:115px}.stackedbar{height:20px}.progress-track{height:8px}.metricrow{font-size:11px}.metricrow span{max-width:79%}.segment-area{gap:12px}.segment-card{box-shadow:0 4px 16px #193e4807!important;border-radius:13px!important;padding:18px!important}.segment-card .accentbar{margin:-18px -18px 15px}.segment-card h3{font-size:13px!important}.segment-card .num{font-size:25px}.segment-card .mini{color:#70889b}
+/* tables */
+.scroller{border:1px solid #e1e9ef!important;border-radius:12px!important;max-height:550px;box-shadow:0 2px 6px #132d4106;scrollbar-color:#a7beca #f5f7fb}.scroller table{font-size:11.2px;min-width:850px}.scroller th{background:#213d57!important;color:#f2f9fb!important;font-size:10px;font-weight:750;letter-spacing:.2px;padding:12px 12px!important;position:sticky;top:0;z-index:2}.scroller td{padding:10px 12px!important;border-color:#edf1f5!important;line-height:1.45;white-space:nowrap}.scroller tr:nth-child(2n) td{background:#f8fbfd}.scroller tr:hover td{background:#e8f4f4!important}.scroller details summary{color:#087e80;font-weight:750}
+/* material & e-mail */
+#saida>.panel>.flex{padding:16px 17px;background:#f5f9fb;border:1px solid #e2edf1;border-radius:13px;gap:14px}.section-sub{color:#667e8e}.divider{background:#e2eaf0}.panel .panel{box-shadow:none!important;background:#f8fbfd!important;border-color:#e0edf1!important;padding:19px 21px!important;border-radius:13px!important}.panel .panel:has(#prepareEmail){background:linear-gradient(125deg,#e9f6f3,#f7fbfd)!important;border:1px solid #d0e8e3!important}.panel .panel:has(#prepareEmail) h3{font-size:16px!important;color:#185a65}.panel .panel:has(#emailBody){background:#fafcfe!important}#recipientPreview{margin-top:15px}#emailBody{min-height:220px!important;font-size:12px!important;line-height:1.55!important}
+/* file picker and state */
+.upload input[type=file]{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;clip-path:inset(50%);pointer-events:none}.file-picker{margin:10px 12px 0 0;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:9px;padding:11px 16px;font-weight:800;font-size:12px;background:#fff;color:#176d75;border:1px solid #b4d4d7;box-shadow:0 4px 12px #1b46540c}.file-picker:hover{border-color:#0d898b;color:#086c73}.file-select-status{font-size:11px;color:#7991a0}
+body.is-empty #importAudit,body.is-empty #sheetInfo{display:none!important}
+#analise .vizbody p.mini,.segment-card>.mini:last-child{display:none}
+/* compact screen sizes */
+@media(max-width:1440px){:root{--sidew:218px}.topnav{padding:23px 11px!important}.tab-index{display:none}.wrap{padding:24px 25px 48px!important}.workspace-header{padding:27px 30px!important}.filterstrip{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1120px){:root{--sidew:74px}.topnav{align-items:center;padding:20px 8px!important}.nav-brand{padding:4px 0 25px}.brand-wordmark,.nav-section-label,.tab-index,.nav-footer,.topnav .tab span:not(.nav-icon){display:none!important}.topnav .tab{justify-content:center;padding:14px 11px!important}.topnav .tab .nav-icon svg{width:22px;height:22px}.nav-icon{flex-basis:auto}.workspace-header{min-height:121px}.insights-layout{grid-template-columns:repeat(2,minmax(0,1fr))}.filterstrip{grid-template-columns:repeat(3,minmax(0,1fr))}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){:root{--sidew:0px}.topnav{position:sticky!important;inset:auto!important;top:0!important;bottom:auto!important;width:100%!important;height:auto;flex-direction:row!important;justify-content:space-between;gap:4px!important;overflow-x:auto;padding:7px!important;background:#12263b!important;border-radius:0!important}.nav-brand,.nav-section-label,.nav-footer,.tab-index{display:none!important}.topnav .tab{width:auto!important;flex:1 0 auto;justify-content:center;gap:8px;padding:10px!important;font-size:10px!important}.topnav .tab span:not(.nav-icon){display:inline!important}.topnav .tab .nav-icon{display:none}.wrap{margin-left:0!important;padding:16px 12px 36px!important}.workspace-header{margin-left:0!important;min-height:114px;padding:21px 18px!important}.workspace-header h1{font-size:24px}.hero-meta{display:none}.panel{padding:17px 15px!important}.filterstrip{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px;gap:7px}.filterbox{padding:10px 8px}.insights-layout{grid-template-columns:minmax(0,1fr)}.vizpanel{min-width:0}.donutline{flex-wrap:wrap}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.segment-area{grid-template-columns:1fr}.cardarea{grid-template-columns:1fr}.visual-section-title{margin-top:15px}.network-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:470px){.topnav .tab{font-size:9.5px!important;padding:10px 8px!important}.filterstrip{grid-template-columns:1fr}.workspace-header h1{font-size:22px}.workspace-header p{font-size:10px}.grid{grid-template-columns:1fr 1fr}.kpi{padding:13px 12px!important}.kpi strong{font-size:21px}.network-grid{grid-template-columns:1fr}}
+</style><style id="visual-v26">
+:root{--navy:#12243A;--blue:#1A3755;--teal:#117B83;--mint:#ECF7F5;--gold:#C49B54;--danger:#BD5D62;--txt:#25374B;--muted:#718197;--edge:#E0E8F0;--bg:#F4F7FB}
+body{background:linear-gradient(145deg,#EFF4F9 0%,#F7F9FC 52%,#ECF4F7 100%);color:#24364C;font-family:'Aptos','Inter','Segoe UI',Arial,sans-serif;letter-spacing:-.006em}
+header{background:linear-gradient(108deg,#0B1F37 1%,#163B53 62%,#176C72 100%);box-shadow:0 12px 28px #10284222;border-bottom:2px solid #2E9299}
+header h1{font-size:clamp(24px,3vw,34px);letter-spacing:-.035em;font-weight:800}
+header p{color:#BFD7DF;font-size:13px}
+.wrap{max-width:1440px;margin:auto;padding:24px 26px 70px}
+.topnav{display:flex;flex-wrap:wrap;gap:8px;background:#EAF0F5;border:1px solid #D8E3EB;border-radius:16px;padding:7px;margin-bottom:22px}
+.tab{border:0;box-shadow:none;background:transparent;color:#61778D;font-size:13px;font-weight:700;border-radius:11px;padding:11px 17px;transition:background .2s,transform .2s}
+.tab:hover{background:#FFFFFFA8;transform:translateY(-1px)}.tab.active{background:#122D48;color:#fff;box-shadow:0 7px 17px #13293C28}
+.panel{background:#fff;border:1px solid #E2E9F0;border-radius:18px;padding:23px;box-shadow:0 8px 27px #13273F07;margin-bottom:18px}
+.panel h2{font-size:18px;letter-spacing:-.018em;color:#172B43;font-weight:800}
+h3{color:#1A324A;font-weight:750}
+.btn{border:1px solid #D7E4EC;border-radius:10px;padding:9px 14px;background:#fff;color:#25445C;box-shadow:0 1px 2px #172C4208;font-size:12px;font-weight:750;min-height:39px}
+.btn:hover{background:#F1F7FA;border-color:#A9C7D1}
+.btn.primary{background:#147782;border-color:#147782;color:#fff}.btn.primary:hover{background:#0E636C}
+.btn.dark{background:#183654;border-color:#183654;color:#fff}
+.grid{gap:13px}.kpi{background:linear-gradient(154deg,#FFF,#F7FAFC);border:1px solid #E2EAF0;border-radius:16px;padding:20px;box-shadow:0 4px 13px #1B2B3E09}
+.kpi span{font-size:10px;color:#697E93;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.kpi strong{font-size:clamp(19px,2.2vw,31px);font-weight:800;letter-spacing:-.04em;color:#152D49}
+.vizpanel{border:1px solid #E1E9F0;border-radius:18px;box-shadow:0 10px 25px #1232480A;padding:22px;overflow:hidden}
+.viztitle h3{font-size:14px}.overline{color:#147681;letter-spacing:.14em;font-weight:800}
+.visual-section-mark{background:#EFF5F8;border-radius:6px;padding:4px 8px;color:#7892A7}
+.scroller{border:1px solid #DFE7EE;border-radius:13px;max-height:565px}
+table{font-size:12px}thead th, th{background:#E9F0F6;color:#274560;padding:13px 11px;font-weight:800}tbody td,td{padding:12px 10px;border-top-color:#ECF0F4}tr:nth-child(even) td{background:#F9FBFC}tr:hover td{background:#EAF6F7}
+.filterstrip{background:#fff;border:1px solid #E1E8EF;border-radius:17px;box-shadow:0 5px 19px #19334E0A;padding:17px;gap:10px}
+input[type=text],input[type=date],input[type=number],input[type=search],select{background:#FAFCFD;border:1px solid #D8E3EB;color:#24374A;border-radius:9px;min-height:39px}
+input:focus,select:focus,textarea:focus{outline:2px solid #57ADB5;outline-offset:1px;border-color:#177C8C}
+.network-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:13px}.network-head h2{margin:0}
+.network-tools{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:15px}.network-tools input{min-width:235px;flex:1;padding:10px 13px}
+.network-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;max-height:300px;overflow:auto;padding:3px}
+.netcheck{min-height:54px;background:#FAFCFE;border:1px solid #DFE7EE;border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;transition:border-color .2s,background .2s}
+.netcheck:hover{background:#F0F7F9;border-color:#93BBC8}.netcheck:has(input:checked){background:#EAF7F5;border-color:#57A49E;color:#125E65}
+.netcheck span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.netcheck .netcount{margin-left:auto;padding:3px 7px;border-radius:15px;background:#E8EFF4;font-size:11px;color:#607486}
+.search-empty{border:1px dashed #CBD9E4;padding:25px;color:#6F8193;text-align:center;border-radius:13px;grid-column:1/-1}
+.pill{border-radius:8px;font-size:11px;font-weight:800;letter-spacing:.015em;background:#E3F3F3;color:#187079}
+.pill.orange{background:#FFF4E3;color:#A76D2F}.pill.red{background:#FDEBEC;color:#B24A5A}.pill.gray{background:#EDF2F6;color:#6A7F92}
+.notice{border-radius:10px;border-left:3px solid #C59C56;background:#FFF9EE}.notice.good{background:#EFF9F4}.notice.bad{background:#FDF0EF}
+.lead,.mini,.footer-note{display:none!important}
+@media(max-width:850px){.wrap{padding:12px 10px 40px}.topnav{padding:5px}.tab{flex:1 1 43%;padding:10px}.panel{padding:16px}.network-grid{grid-template-columns:1fr}.network-tools input{width:100%;min-width:0;flex:auto}.network-tools .btn{flex:1 1 auto}.insights-layout{grid-template-columns:1fr}.kpi{padding:14px}}
+</style>
+</head><body>
+<header class="workspace-header">
+<div class="hero-heading">
+<span class="hero-eyebrow"><span class="status-led"></span> CENTRAL DE ATENDIMENTO</span>
+<h1>Carteira <span>Reversa</span><span class="version-chip">v24</span></h1>
+<p>Visão gerencial de pedidos</p>
+</div>
+<div class="hero-meta"><span class="meta-label">DATA DE REFERÊNCIA</span><strong id="dateLabel"></strong><span class="hero-meta-caption">Atendimento por rede e canal</span></div>
+</header>
+<main class="wrap"><nav class="topnav"><div class="nav-brand">
+<div class="brand-symbol"><svg aria-hidden="true" height="34" viewbox="0 0 42 42" width="34"><path d="M10 12h16l5 5-5 5H10l-5-5 5-5Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.4"></path><path d="M32 30H16l-5-5 5-5h16l5 5-5 5Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.4"></path></svg></div>
+<div class="brand-wordmark"><strong>reversa<span>.</span></strong><small>CARTEIRA GERENCIAL</small></div>
+</div>
+<div class="nav-section-label">NAVEGAÇÃO</div>
+<button class="tab active" data-tab="bases"><span class="nav-icon"><svg viewbox="0 0 24 24"><path d="M4 6.5a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path></svg></span><span>Bases e redes</span><span class="tab-index">01</span></button>
+<button class="tab" data-tab="origens"><span class="nav-icon"><svg viewbox="0 0 24 24"><rect height="6" rx="1.4" width="7" x="3.5" y="5"></rect><rect height="6" rx="1.4" width="7" x="13.5" y="13"></rect><path d="M10.5 8h5a2 2 0 0 1 2 2v3M13.5 16H9a2 2 0 0 1-2-2v-3"></path></svg></span><span>Canais VD/CD</span><span class="tab-index">02</span></button>
+<button class="tab" data-tab="analise"><span class="nav-icon"><svg viewbox="0 0 24 24"><path d="M4 20V10m5 10V4m5 16v-7m5 7v-10"></path><path d="M2.5 20.5h19"></path></svg></span><span>Análise gerencial</span><span class="tab-index">03</span></button>
+<button class="tab" data-tab="saida"><span class="nav-icon"><svg viewbox="0 0 24 24"><rect height="16" rx="2" width="17" x="3.5" y="4"></rect><path d="m4 7 8 6 8-6M7.5 16h5"></path></svg></span><span>Materiais por rede</span><span class="tab-index">04</span></button>
+<div class="nav-footer"><span class="nav-footer-dot"></span><span>Gerencial de atendimento</span></div></nav>
+<section class="view active" id="bases"><div class="panel"><h2>Importação de bases</h2><div class="upload"><b>Carregar arquivos operacionais</b><p class="small">Excel, CSV ou ZIP · seleção múltipla</p><label class="file-picker" for="files">Selecionar arquivos</label><input accept=".xlsx,.xls,.xlsm,.csv,.zip" id="files" multiple="" type="file"/><span class="file-select-status" id="fileSelectInfo">Nenhum arquivo selecionado</span></div><div class="barrow" style="margin:13px 0"><button class="btn primary" id="loadGithub">Atualizar estoque do GitHub</button><button class="btn" id="demo">Visualizar exemplo</button><button class="btn" id="reset">Limpar e recomeçar</button><span class="pill orange" id="dataMode">Nenhuma base carregada</span></div><div class="notice" id="loadStatus">Nenhuma base carregada.</div><div id="importAudit"></div><div id="sheetInfo"></div><div id="recoverFields"></div></div>
+<div class="panel network-section"><div class="network-head"><div><span class="overline">SELEÇÃO</span><h2>Redes de atendimento</h2></div><span class="pill gray" id="networkCount">0 redes</span></div><div class="network-tools"><input id="networkSearch" type="search" aria-label="Buscar redes" placeholder="Buscar rede pelo nome..." autocomplete="off"/><button class="btn primary" id="pickVisible">Marcar resultados</button><button class="btn" id="clearVisible">Limpar resultados</button><button class="btn" id="pickAll">Todas</button><button class="btn" id="pickNone">Nenhuma</button></div><div class="network-grid" id="networks"><div class="small">Carregue as bases ou abra o exemplo.</div></div><div class="barrow" style="margin-top:15px"><button class="btn primary" id="toChannels">Configurar canais</button></div></div>
+</section>
+<section class="view" id="origens"><div class="panel"><div class="barrow"><div><h2>Canais de atendimento</h2></div><span class="pill" id="configCount">0 clientes</span></div><div class="flex"><div><label class="cap" for="configNetwork">Rede</label><select class="w100" id="configNetwork"></select></div><div><label class="cap" for="clientSearch">Pesquisar loja / cliente</label><input class="w100" id="clientSearch" placeholder="Código ou nome da loja" type="text"/></div><div><label class="cap">Unidades marcadas</label><div class="barrow"><button class="btn" id="selectVisible">Marcar visíveis</button><button class="btn" id="unselectVisible">Desmarcar visíveis</button></div></div></div><div class="barrow" style="margin:17px 0"><button class="btn primary" id="batchCD">Aplicar CD às marcadas</button><button class="btn dark" id="batchVD">Aplicar VD às marcadas</button></div><div class="scroller"><table><thead><tr><th><input class="check" id="allVisible" type="checkbox"/></th><th>Rede</th><th>Cliente / Loja</th><th>Canal</th><th>CDD para grade</th><th>De/para / DPAR</th><th>Validação</th></tr></thead><tbody id="clientRows"></tbody></table></div><div class="barrow" style="margin-top:15px"><button class="btn" id="saveRules">Salvar classificação neste navegador</button><button class="btn" id="exportRules">Exportar regras (.json)</button><label class="btn" style="font-size:14px;color:var(--navy);font-weight:bold">Importar regras (.json) <input accept=".json" id="importRules" style="display:none" type="file"/></label></div></div>
+</section>
+<section class="view" id="analise"><div class="panel"><div class="barrow"><div><h2>Atendimento da carteira</h2></div><span class="pill orange" id="analysisMode">Sem processamento</span></div><div class="filterstrip"><div class="filterbox"><label class="cap" for="analysisNetwork">Rede</label><select class="w100" id="analysisNetwork"></select></div><div class="filterbox"><label class="cap" for="referenceDate">Validade mínima do pedido (inclusive)</label><input class="w100" id="referenceDate" type="date"/></div><div class="filterbox"><label class="cap" for="captureStart">Captação mínima (menor data de criação)</label><input class="w100" id="captureStart" type="date"/></div><div class="filterbox"><label class="cap" for="captureEnd">Captação até</label><input class="w100" id="captureEnd" type="date"/></div><div class="filterbox"><label class="cap" for="priorityMode">Prioridade VD na Malha</label><select class="w100" id="priorityMode"><option value="max">Maior estoque D1</option><option value="near24">Origem mais próxima de 24 PLT (carro)</option></select></div><select hidden="" id="validityMode"><option selected="" value="from">Validade mínima</option></select></div><div class="barrow" style="margin:-4px 0 16px;align-items:center"><button class="btn" id="clearCapture">Limpar captação</button></div><div id="shibataBreakdown"></div><div class="visual-section-title"><div><span class="overline">RESUMO</span><h3>Indicadores de atendimento</h3></div><span class="visual-section-mark">CARTEIRA</span></div><div class="grid" id="kpis"></div><div class="visual-section-title charts-head"><div><span class="overline">ANÁLISE</span><h3>Panorama operacional</h3></div></div><div class="insights-layout" id="insights"><section class="vizpanel" role="group"><div class="viztitle"><h3>Composição da carteira</h3></div><div class="vizbody" id="balanceVisual"></div></section><section class="vizpanel" role="group"><div class="viztitle"><h3>Cobertura e criticidade</h3></div><div class="vizbody" id="coverageVisual"></div></section><section class="vizpanel" role="group"><div class="viztitle"><h3>Redes com maior pendente</h3></div><div class="vizbody" id="networkVisual"></div></section><section class="vizpanel" role="group"><div class="viztitle"><h3>Produtos que concentram pendência</h3></div><div class="vizbody" id="skuVisual"></div></section><section class="vizpanel" role="group"><div class="viztitle"><h3>Lojas e clientes em atenção</h3></div><div class="vizbody" id="clientVisual"></div></section><section class="vizpanel" role="group"><div class="viztitle"><h3>Produção nas origens da Malha</h3></div><div class="vizbody" id="productionVisual"></div></section><section class="vizpanel" role="group"><div class="viztitle"><h3>Validade dos pedidos</h3></div><div class="vizbody" id="validityVisual"></div></section><section class="vizpanel" role="group"><div class="viztitle"><h3>VD x CD e origens</h3></div><div class="vizbody" id="channelVisual"></div></section></div><div class="notice" id="audit">Selecione as bases para visualizar a carteira.</div><div class="visual-section-title"><div><span class="overline">DETALHAMENTO</span><h3>Pedidos e itens</h3></div></div><div class="scroller"><table><thead><tr><th>Rede / Loja</th><th>Pedido ERP / SKU</th><th>Canal</th><th>Inicial CX</th><th>Faturado CX</th><th>Pendente CX</th><th>Fill rate</th><th>Validade</th><th>Origem / CDD</th><th>Estoque D1 (PLT)</th><th>Qualificação</th><th>Data de produção</th><th>Cobertura</th><th>Observações</th></tr></thead><tbody id="orderRows"></tbody></table></div><div class="panel" style="margin-top:18px"><h3>Atendimento por pedido</h3><div class="scroller"><table><thead><tr><th>Rede</th><th>Pedido ERP</th><th>EG Cliente / Loja</th><th>Canal</th><th>Itens</th><th>Inicial CX</th><th>Faturado CX</th><th>Pendente CX</th><th>Fill rate</th><th>Itens com estoque</th><th>CDD / Origem VD</th><th>Data produção</th><th>Validade</th></tr></thead><tbody id="managerRows"></tbody></table></div></div></div></section>
+<section class="view" id="saida"><div class="panel"><h2>Materiais de atendimento</h2><div class="flex"><div><label class="cap">Rede de destino</label><select class="w100" id="exportNetwork"></select></div><div><label class="cap">Formato</label><div class="barrow"><button class="btn primary" id="excel">Excel do cliente</button><button class="btn" id="png">Baixar imagem PNG</button><button class="btn" id="excelInternal">Excel interno</button></div></div></div><div class="notice" id="exportNotice">Selecione a rede e gere os materiais de atendimento.</div><div style="margin:12px 0 15px;display:flex;gap:10px;align-items:center"><input class="check" id="includeRawOrder" type="checkbox"/><label class="small" for="includeRawOrder">Somente Excel interno: incluir registros originais da Order (desmarcado por padrão)</label></div><div class="panel" style="margin-top:13px;background:#eef7fa;border-color:#b7d9e3"><h3>E-mail para o cliente</h3><div class="barrow"><button class="btn primary" id="prepareEmail">Preparar e-mail com Excel</button><button class="btn dark" id="openMailto">Abrir e-mail</button><span class="small" id="emailActionStatus"></span></div></div><div id="recipientPreview" style="margin-top:17px"></div><div class="panel" style="margin-top:15px;background:#f7fafc"><h3>Mensagem pronta para envio</h3><label class="cap">Assunto sugerido</label><div class="barrow"><input id="emailSubject" readonly="" style="flex:1;min-width:300px" type="text"/><button class="btn" id="copyEmailSubject">Copiar assunto</button></div><label class="cap" style="margin-top:12px">Mensagem para o corpo do e-mail</label><textarea id="emailBody" readonly="" style="width:100%;min-height:275px;padding:13px;border:1px solid #cedfe8;border-radius:10px;font:13px/1.6 'Segoe UI',Arial,sans-serif;color:#213b50"></textarea><div class="barrow" style="margin-top:10px"><button class="btn primary" id="copyEmailBody">Copiar mensagem</button><button class="btn" id="downloadEmailHTML">Baixar e-mail formatado (.html)</button><button class="btn" id="downloadEmailTXT">Baixar e-mail (.txt)</button><span class="small" id="copyStatus"></span></div></div><div class="divider"></div><div class="barrow"><button class="btn dark" id="exportAll">Exportar redes selecionadas</button></div></div></section>
+
+</main>
+<script>
+'use strict';const $=id=>document.getElementById(id);
+const CENTERS=[['BR19','185','VD','F. Rio Janeiro'],['BR16','260','VD','F. Jacarei'],['BRCH','324','VD','CDR Extrema'],['BRDF','424','VD','CDR LOUVEIRA'],['BR13','781','VD','F. CCL Pirai'],['BR27','803','VD','F. Nova Minas'],['BR15','892','VD','F. Jundiai'],['BR09','893','VD','F. Agudos'],['BR23','952','VD','F. Jaguariuna'],['BRCR','216','CD','CDD Diadema DC'],['BRCX','301','CD','CDD Maua DC'],['BRDF','475','CD','CDI Louveira DC'],['BRD0','543','CD','CDD Presidente Prudente DC'],['BRD7','578','CD','CDD Praia Grande DC'],['BRCN','763','CD','CDD Araraquara DC'],['BRCT','764','CD','CDD Guarulhos DC'],['BRCM','811','CD','CDD Aracatuba DC'],['BR09','902','CD','CDD Agudos Int DC'],['BRD1','956','CD','CDD Ribeirao Preto DC'],['BRCU','977','CD','CDD Jau'],['BRCQ','230','CD','CDD Campinas'],['BRD3','297','CD','CDD Suzano'],['BRD2','966','CD','CDD S J Campos'],['BRD5','968','CD','CDL Taubate']].map(([br,center,type,name])=>({br,center,type,name,list:`${center}-${type}`}));
+const S={info:[],analyticsCache:new Map(), unitsCache:null, indices:null, demo:false,sheets:[],data:{orders:[],cad:[],malha:[],vd:[],grade:[],dpar:[],production:[],originMap:[]},sourceCount:0,channels:{},selected:new Set(),checked:new Set(),rawFiles:[],problems:[],manualRoles:{},manualFields:{},chosen:{},fileCache:new Map(),importSummary:[],importWarnings:[]};
+const norm=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function codeEG(x){let s=String(x??'').trim();if(/^\d+[.,]0+$/.test(s))return s.split(/[.,]/)[0];return s;}
+const text=x=>String(x??'').trim(), clean=x=>text(x).replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').slice(0,70), esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function amount(v){if(v==null||String(v).trim()==='')return null;if(typeof v==='number')return Number.isFinite(v)?v:null;let s=String(v).replace(/[^\d,.-]/g,'');if(!s)return null;if(s.includes(',')&&s.includes('.'))s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');else if(s.includes(','))s=s.replace(',','.');let n=Number(s);return Number.isFinite(n)?n:null}
+const fmt=x=>x==null?'N/D':Number(x).toLocaleString('pt-BR',{maximumFractionDigits:1});
+function iso(x){
+ if(x instanceof Date&&!isNaN(x))return x.toISOString().slice(0,10);
+ if(typeof x==='number'&&x>35000&&x<90000)return new Date(Date.UTC(1899,11,30)+Math.round(x)*864e5).toISOString().slice(0,10);
+ let s=text(x);if(!s)return '';
+ const ymd=s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+ const dmy=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2}|\d{4})(?:\s|$)/);
+ if(ymd){let y=+ymd[1],m=+ymd[2],d=+ymd[3];return m>=1&&m<=12&&d>=1&&d<=31?`${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';}
+ if(dmy){let d=+dmy[1],m=+dmy[2],y=+dmy[3];if(y<100)y+=y>=80?1900:2000;return m>=1&&m<=12&&d>=1&&d<=31?`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';}
+ if(/^\d{5}$/.test(s))return iso(+s);
+ return '';
+}
+const formatDate=x=>x?x.slice(8,10)+'/'+x.slice(5,7)+'/'+x.slice(0,4):'Não informada';const today=()=>new Date().toLocaleDateString('en-CA');
+$('referenceDate').value=today();$('dateLabel').textContent=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+function show(tab){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===tab));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab)); if(tab==='analise')setTimeout(renderOrders,0); if(tab==='saida')setTimeout(renderPreview,0)}document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+const id=o=>`${norm(o.network)}|${norm(o.clientId||o.client)}`;
+function defaultChannel(o){return norm(o.network).includes('shibata')?(norm(o.client).includes('cd shibata')?'VD':'CD'):'VD'}
+function fixtures(){S.demo=true;S.sheets=[];S.fileCache.clear();S.sourceCount=0;S.problems=[];S.data={orders:[
+{network:'Shibata',client:'Shibata Loja 01',clientId:'SH001',commercial:'COM-SH',order:'450001',eg:'1234567',initial:400,initialPlt:4,updated:380,carWith:10,carWithout:10,billed:70,served:70,pending:290,validity:'2026-11-19',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Shibata',client:'Shibata Loja 02',clientId:'SH002',commercial:'COM-SH',order:'450001',eg:'1234567',initial:150,initialPlt:1.5,updated:140,carWith:0,carWithout:0,billed:50,served:50,pending:90,validity:'2026-11-25',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Shibata',client:'Shibata Loja 03',clientId:'SH003',commercial:'COM-SH',order:'450003',eg:'2345678',initial:160,initialPlt:2,updated:160,carWith:10,carWithout:10,billed:30,served:30,pending:110,validity:'2026-11-28',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Shibata',client:'Shibata Loja 04',clientId:'SH004',commercial:'COM-SH',order:'450004',eg:'1234567',initial:60,initialPlt:0.6,updated:60,carWith:0,carWithout:0,billed:0,served:0,pending:60,validity:'2026-11-13',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Shibata',client:'CD Shibata',clientId:'SHCD',commercial:'COM-SH',order:'450005',eg:'1234567',initial:200,initialPlt:2,updated:200,carWith:0,carWithout:0,billed:20,served:20,pending:180,validity:'2026-11-24',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Rede Horizonte',client:'CD Horizonte',clientId:'HCD',commercial:'COM-HOR',order:'450006',eg:'2345678',initial:100,initialPlt:1.25,updated:100,carWith:0,carWithout:0,billed:20,served:20,pending:80,validity:'2026-11-30',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'}],
+cad:[{eg:'1234567',sap:'SAP80001',cxPlt:100},{eg:'2345678',sap:'SAP80002',cxPlt:80}],
+malha:[{commercial:'COM-SH',sap:'SAP80001',origin:'BR15'},{commercial:'COM-SH',sap:'SAP80001',origin:'BR23'},{commercial:'COM-SH',sap:'SAP80001',origin:'BR19'},{commercial:'COM-SH',sap:'SAP80002',origin:'BR16'},{commercial:'COM-HOR',sap:'SAP80002',origin:'BR16'}],
+vd:[{sap:'SAP80001',origin:'892-VD',pallets:26},{sap:'SAP80001',origin:'952-VD',pallets:75},{sap:'SAP80001',origin:'185-VD',pallets:12},{sap:'SAP80002',origin:'260-VD',pallets:18},{sap:'SAP80001',origin:'893-VD',pallets:120}],
+grade:[{eg:'1234567',center:'216-CD',boxes:110},{eg:'1234567',center:'301-CD',boxes:160},{eg:'2345678',center:'230-CD',boxes:50},{eg:'1234567',center:'764-CD',boxes:30}],
+dpar:[{clientId:'SH001',client:'Shibata Loja 01',center:'216-CD'},{clientId:'SH002',client:'Shibata Loja 02',center:'301-CD'},{clientId:'SH003',client:'Shibata Loja 03',center:'230-CD'},{clientId:'SH004',client:'Shibata Loja 04',center:'764-CD'}],
+production:[{sap:'SAP80001',origin:'892-VD',pallets:20,date:'2026-11-17'},{sap:'SAP80001',origin:'952-VD',pallets:10,date:'2026-11-21'},{sap:'SAP80002',origin:'260-VD',pallets:2,date:'2026-11-25'}]};for(const row of S.data.vd){row.eg=S.data.cad.find(x=>x.sap===row.sap)?.eg||'';delete row.sap;}
+for(const row of S.data.production){row.eg=S.data.cad.find(x=>x.sap===row.sap)?.eg||'';row.stockStatus=row.pallets>0?'Estoque Crítico':'Sem Estoque';row.pallets=null;delete row.sap;}
+for(const row of S.data.grade){row.eg=gradeFromEG(row.eg);}
+for(const o of S.data.orders){o.captured=({'SH001':'2026-11-10','SH002':'2026-11-12','SH003':'2026-11-15','SH004':'2026-11-09','SHCD':'2026-11-13','HCD':'2026-11-14'})[o.clientId]||'';o.created=o.captured;o.diff=o.initial-o.billed-o.pending;o.fillRate=o.initial?Math.max(0,Math.min(100,100*o.billed/o.initial)):null;o.duplicateCount=1;o.issuesInitial=[]}S.unitsCache=null;S.analyticsCache.clear();buildIndexes();initData(true)}
+  const ALIAS={
+ network:['rede','nome da rede do cliente','razao da rede','rede de lojas','rede','nome rede','nome da rede','rede cliente','rede do cliente','bandeira','nome rede acomp','nome rede acompanhamento','nome da rede acompanhamento','rede nome','rede varejo','rede comercial','rede de atendimento','descricao rede','desc rede','rede cliente nome','nome grupo cliente','grupo rede'],
+ client:['nome loja','nome cliente','cliente','loja','nome fantasia','razao social','cliente nome','descricao cliente','nome da loja','cliente loja','nome pdv','nome da unidade'],
+ clientId:['codigo cliente eg','codigo do cliente eg','eg cliente','cliente eg','codigo eg cliente','cod eg cliente','codigo cliente e g','clienteg','client eg','codigo loja','cod loja','cod cliente','cliente eg','eg cliente','codigo cliente','pdv codigo','pdv_codigo','cod cliente eg','eg loja','codigo eg cliente','cod eg cliente','codigo pdv','cod pdv','codigo da loja','cod cliente eg','cod cliente sap','código da loja','cod pdv eg','codigo pdv eg','loja eg','cod filial','codigo filial','cod loja eg','cod cd loja','codigo cliente eg'],
+ commercial:['comercial','destino comercial','cod comercial','codigo comercial','comercial destino','comercial cliente','comercial do cliente','comercial destino malha','codigo comercial destino'],
+ order:['n pedido erp','nr pedido erp','numero do pedido erp','pedido erp','n pedido ambev','numero pedido ambev','pedido ambev','pedido de venda erp','order','order number','order id','order no','pedido','numero pedido','numero do pedido','n pedido','nº pedido','pedido ambev','numero pedido ambev','n pedido ambev','pedido erp','n pedido erp','numero pedido erp','nº pedido erp','nro pedido','ordem de venda','numero ordem'],
+ eg:['sku eg','eg sku','sku pca','codigo produto pca','cod produto pca','sku codigo eg','codigo do item eg','codigo produto eg','cod s4 2','codigoproduto','codigo produto eg','sku eg','codigo eg','cod eg','eg produto','codigo produto','produto eg','sku','cod produto eg','codigo sku eg','codigo do produto eg','item eg','material eg','eg','codigo produto eg','cod produto','sku codigo eg','cod item eg','codigo de produto eg'],
+ sap:['cod sap','cod sap 2','cod prod','sku sap','codigo sap','cod sap','sap produto','codigo material','material sap','cod produto sap','codigo sku sap','material','produto sap','cod material','sap','material codigo sap','sku codigo sap','cod sap produto','cod material sap','sku s4','sku codigo','sku produto sap','codigo do sku sap'],
+ initial:['quantidade inicial','qtd inicial','qtd solicitada','quantidade solicitada','entrada de pedido','quantidade pedida','qtd entrada','quantidade entrada','volume original','qtd original','qtd. original','quantidade original','qtd pedido'],
+ initialHL:['volume hl','hl original','volume original hl','volume hl original'],
+ initialPlt:['volume palete','volume pallet','volume palet','volume plt','plt original','volume paletes'],
+ updated:['quantidade atualizada cx','qtd atualizada cx','qtd atualizada em caixas','quantidade atualizada em caixas','quantidade atualizada','qtd atualizada','qtd. atualizada','quantidade atual','qtd atual','qtd. atual','qtd atualizada cx'],
+ carWith:['carro com remessa cx','carros com remessa cx','carro com remessa','carros com remessa','carro c remessa','com remessa','qtd carro com remessa'],
+ carWithout:['carro sem remessa cx','carros sem remessa cx','carro sem remessa','carros sem remessa','carro s remessa','sem remessa','qtd carro sem remessa'],
+ billed:['qtd faturada cx','qtd faturado cx','quantidade faturada cx','faturamento em caixas','faturado','faturada','qtd faturado','qtd. faturado','quantidade faturada','volume faturado'],
+ served:['quantidade atendida','qtd atendida','qtd faturada','quantidade faturada','quantidade entregue','qtd entregue','qtd expedida','quantidade expedida'],
+ pending:['pendente','qtd pendente','quantidade pendente','saldo pendente','saldo em aberto','saldo pedido','qtd a atender','qtd em aberto','saldo','pendente atual','volume pendente','pendente pedido'],
+    captured:['data captacao ecc','data de captacao ecc','captacao ecc','data captação ecc'],
+    originalValidity:['data de vencimento original','data vencimento original','vencimento original','validade original'],
+   created:['data criacao','data de criacao','data criacao pedido','data criacao ordem','criado em','data pedido','data de entrada','data da criacao','created at','creation date','data criacao erp'],
+validity:['validade','validade pedido','data validade','data vencimento','data de vencimento','dt validade','data validade pedido','data limite','data limite pedido','vencimento pedido'],
+ cxPlt:['quantidade prod pallet','quantidade_prod_pallet','caixas por pallet','caixas por palete','cx por pallet','cx pallet','caixas pallet','fator cx plt','cx plt','conversao caixas pallet','caixa pallet','cx/plt','caixas plt','cx por palete','qtd cx pallet','fator conversao pallet','caixas palletizacao','caixa por palete','cx por plt','caixas por plt','caixas por palet','cx plt conversao','quantidade caixa por pallet'],
+ origin:['orig s4','orig ecc','orig pca','origem alocada','origem','codigo origem','br origem','codigo br origem','fabrica de origem','cod origem','origem sap','codigo centro origem','fabrica','origem expedicao','cd origem','origem atendimento','codigo centro de origem','origem de abastecimento','fabrica origem','origem br','centro origem'],
+ originName:['nome origem','nome da origem','descricao origem','descricao da origem','nome fabrica','nome do centro'],
+ center:['cdd footptint','cdd footprint','footprint cdd','lista','codigo centro','centro','cdd','cd','centro cd','centro estoque','codigo cdd','cdd origem','cnd','centro distrib','codigo centro cd','centro de distribuicao','origem cd','cd atendimento','centro abastecimento','codigo origem cdd','cd responsavel','cdd responsavel','centro responsavel','centro destino','codigo cd','codigo do cdd','cdd loja','origem alocada cdd','cd atendimento loja','cod cd','cod centro','centro de destino','local de estoque','origem cdd','codigo cnd','cod cnd','cnd da loja','cnd destino'],
+ pallets:['d1','estoque pallet','estoque palete','saldo plt','qtd pallet','quantidade pallet','estoque plt','pallets','quantidade paletes','qtd plt','estoque pallets','saldo pallet','pallet','plts'],
+ boxes:['saldo disponivel','saldodisponivel','estoque caixa','quantidade caixa','qtd cx','estoque cx','saldo cx','caixas','grade estoque','qtd caixas','saldo caixas','estoque cdd','saldo cdd','grade','quantidade cx','disponivel cx','caixas disponiveis','saldo disponivel caixas','estoque disponivel cx','saldo em caixa'],
+ productionQty:['producao','produção','qtd producao','quantidade producao'],
+  productionStock:['estoque','estoque producao'],
+  productName:['nome prod','nome_prod','nome produto','nome do produto','descricao produto','descricaoproduto','descricao do produto','descr abreviada','descr. abreviada','descricao abreviada','descricao sku','desc produto','produto descricao','material descricao','denominacao produto','nome sku','descr sku'],
+  attribute:['atributo'],
+  date:['data producao','data prevista','data de producao','data','data previsao','data disponibilidade','data prevista producao'],
+ type:['tipo origem','tipo','canal']};
+ const FIELD_KEYS=Symbol('field_keys');const SOURCE_COLS=Symbol('source_columns');
+ const ALL_ALIASES=Object.fromEntries(Object.entries(ALIAS).map(([k,arr])=>[k,arr.map(norm)]));
+ const ALIAS_WORDS=new Set(Object.values(ALL_ALIASES).flat());
+ // Formatos exportados podem trazer prefixos, sufixos, unidades e pontuação variáveis.
+ // O nome do ARQUIVO não participa desse de/para de campos.
+ const ORDER_FIELD_PATTERNS={
+   network:[/^(?:nome |descricao |desc )?rede(?: |$)/,/^rede varejista(?: |$)/,/^bandeira(?: |$)/],
+   order:[/^(?:n|no|nr|numero|num|nro) (?:do |de )?pedido(?: erp| ambev| venda)?(?: |$)/,/^pedido(?: de venda| erp| ambev)?(?: numero| num| n)?(?: |$)/,/^(?:erp )?order(?: number| id)?$/],
+   clientId:[/^(?:codigo|cod|id) (?:do |da )?(?:cliente|loja|pdv)(?: eg| e g)?(?: |$)/,/^(?:eg )?cliente eg(?: |$)/,/^(?:eg cliente|cliente eg|clienteg)(?: |$)/,/^codigo eg (?:cliente|loja)(?: |$)/],
+   client:[/^(?:nome|descricao|razao social|fantasia) (?:do |da )?(?:cliente|loja|pdv)(?: |$)/],
+   eg:[/^(?:(?:codigo|cod) (?:do |da )?)?(?:sku|produto|item) (?:eg|pca)(?: |$)/,/^(?:eg|pca) (?:sku|produto|item)(?: |$)/,/^(?:sku eg|eg sku|codigo eg produto)(?: |$)/],
+   updated:[/^(?:qtd|qtde|quantidade|vol(?:ume)?) (?:do )?(?:pedido )?atualizad[ao](?: |$)/,/^(?:quantidade|qtd) atual(?: |$)/],
+   carWith:[/^(?:qtd |qtde |quantidade |vol(?:ume)? )?(?:de )?carro(?:s)? (?:com|c) remessa(?: |$)/],
+   carWithout:[/^(?:qtd |qtde |quantidade |vol(?:ume)? )?(?:de )?carro(?:s)? (?:sem|s) remessa(?: |$)/],
+   billed:[/^(?:qtd |qtde |quantidade |vol(?:ume)? )?(?:de )?faturad[ao](?: |$)/,/^faturamento(?: |$)/],
+   initial:[/^(?:(?:qtd|qtde|quantidade) )?(?:original|pedido original)(?: |$)/,/^(?:qtd|qtde|quantidade) original(?: |$)/],
+   initialPlt:[/^(?:volume|quantidade|qtd) (?:palete|pallet|palet|plt)(?: |$)/],
+   validity:[/^(?:data |dt )?(?:de )?(?:vencimento|validade)(?: (?!original)[a-z ]+)?$/],
+   created:[/^(?:data |dt )?(?:de )?(?:criacao|entrada do pedido|criacao pedido)(?: |$)/],
+   captured:[/^(?:data |dt )?(?:de )?captacao(?: ecc)?(?: |$)/],
+   originalValidity:[/^(?:data |dt )?(?:de )?(?:vencimento|validade) original(?: |$)/]
+ };
+ function matchingField(headers,key){
+   const aliases=ALL_ALIASES[key]||[];
+   const names=headers.map(norm);
+   for(const a of aliases){let i=names.indexOf(a);if(i>=0)return headers[i]}
+   const long=aliases.filter(x=>x.length>=8).sort((a,b)=>b.length-a.length);
+   for(const a of long){let i=names.findIndex(h=>h.startsWith(a+' ')||h.endsWith(' '+a));if(i>=0)return headers[i]}
+   for(const rgx of (ORDER_FIELD_PATTERNS[key]||[])){
+      let i=names.findIndex(h=>rgx.test(h));if(i>=0)return headers[i];
+   }
+   return '';
+ }
+ function movementAmount(row,key){
+   const lookup=key==='billed'?['billed','served']:[key];
+   for(const part of lookup){
+     const col=row[FIELD_KEYS]?.[part] || matchingField(Object.keys(row),part);
+     if(!col)continue;
+     const raw=row[col];
+     if(raw===null||raw===undefined||String(raw).trim()==='')return 0;
+     return amount(raw);
+   }
+   return null; // Coluna realmente inexistente, nunca confundir com valor zero.
+ }
+ function field(row,key){
+   if(Object.prototype.hasOwnProperty.call(row,'__'+key))return row['__'+key];
+   if(row[FIELD_KEYS]){
+      let col=row[FIELD_KEYS][key];return col?row[col]:null;
+   }
+   let col=matchingField(Object.keys(row),key);return col?row[col]:null;
+ }
+ function hasField(s,key){return Boolean(s.type ? fieldMapFor(s)[key] : matchingField(s.fields,key))}
+ function fieldMapFor(s){
+   const r=Object.fromEntries(Object.keys(ALIAS).map(k=>[k,matchingField(s.fields,k)]));
+   // A Malha e o estoque VD podem chamar a coluna SAP simplesmente de SKU.
+    if(s.type==='malha'&&!r.sap){const generic=s.fields.find(h=>['sku','material','codigo produto','cod prod','codigo material'].includes(norm(h)));if(generic)r.sap=generic;}
+    if(s.type==='cad'){
+      // Regra informada: código EG na coluna C da CAD (Cod S4_2), SAP em Cod_SAP.
+      const egC=s.fields.find(h=>norm(h)==='cod s4 2');
+      const sapB=s.fields.find(h=>norm(h)==='cod sap');
+      if(egC)r.eg=egC;
+      if(sapB)r.sap=sapB;
+    }
+    if(s.type==='vd'){
+      const sk=s.fields.find(h=>norm(h)==='sku pca')||s.fields.find(h=>norm(h)==='sku s4');
+      const org=s.fields.find(h=>norm(h)==='orig s4');
+      const day=s.fields.find(h=>norm(h)==='d1');
+      if(sk)r.eg=sk;r.sap='';if(org)r.origin=org;if(day)r.pallets=day;
+    }
+    if(s.type==='production'){
+      // Formato atual: ORIGEM | COD_PROD | NOME_PROD | PRODUÇÃO (data).
+      // Data de produção não é saldo e não deve ser somada ao estoque.
+      const prod=s.fields.find(h=>norm(h)==='cod prod');
+      const org=s.fields.find(h=>norm(h)==='origem');
+      const stock=s.fields.find(h=>norm(h)==='estoque');
+      const previsao=s.fields.find(h=>norm(h)==='producao');
+      if(prod)r.eg=prod;if(org)r.origin=org;r.productionStock=stock||'';
+      if(previsao)r.date=previsao;
+      const nome=s.fields.find(h=>norm(h)==='nome prod');if(nome)r.productName=nome;
+      r.sap='';r.productionQty='';
+    }
+    if(s.type==='dpar'){
+      // DeParaCDD real: CDD Footptint | ClientEG | Nome Loja (a ordem é livre).
+      const centro=s.fields.find(h=>norm(h)==='cdd footptint'||norm(h)==='cdd footprint');
+      const eg=s.fields.find(h=>norm(h)==='clienteg'||norm(h)==='client eg');
+      const nome=s.fields.find(h=>norm(h)==='nome loja');
+      if(centro)r.center=centro;
+      if(eg)r.clientId=eg;
+      if(nome)r.client=nome;
+      if(!r.center)r.center=r.origin||'';
+    }
+    if(s.type==='grade'){
+      // CódigoProduto na grade = EG sem o último dígito; o CDD é a própria aba.
+      const prod=s.fields.find(h=>norm(h)==='codigoproduto');
+      const saldo=s.fields.find(h=>norm(h)==='saldodisponivel');
+      if(prod)r.eg=prod;else r.eg=r.eg||matchingField(s.fields,'eg');
+      if(saldo)r.boxes=saldo;
+      r.sap='';
+    }
+   let manual=S.manualFields[s.name+'|'+s.tab]||{};
+   for(const [k,v] of Object.entries(manual))if(v&&s.fields.includes(v))r[k]=v;
+   return r;
+ }
+ function prepRows(s){
+   if(!s.rows){
+      if(!s.ws){s.rows=[];return}
+      s.rows=XLSX.utils.sheet_to_json(s.ws,{header:s.fields,range:s.headerRow,defval:'',raw:false,blankrows:false});
+      s.ws=null;
+   }
+   const map=fieldMapFor(s);
+   for(const r of s.rows){r[FIELD_KEYS]=map;r[SOURCE_COLS]=s.fields;}
+ }
+ const ROLE_DEFS={
+  orders:{label:'Pedidos / Pendente',must:['order','eg'],oneOf:['clientId','client'],optional:['network','pending','initial','initialPlt','updated','carWith','carWithout','billed','clientId','commercial','validity'],minExtra:2},
+  originMap:{label:'De/para das origens (BR / centro / tipo)',must:['origin','center','type'],forbid:['order','commercial','pending','pallets','boxes','clientId','client','sap'],optional:['originName']},
+  dpar:{label:'DPAR de lojas',must:[],oneOf:['clientId','client'],forbid:['order','pending','boxes','pallets','sap','commercial'],optional:['clientId','client','center','origin','type']},
+  cad:{label:'CAD de produtos',must:['eg','sap'],forbid:['order','commercial','boxes','pallets'],optional:['cxPlt']},
+  malha:{label:'Malha autorizada',must:['commercial','origin'],oneOf:['sap','eg'],forbid:['order','pending','boxes','pallets'],optional:['sap','eg','center']},
+  vd:{label:'Estoque de fábrica (VD)',must:['origin','pallets'],oneOf:['sap','eg'],forbid:['order','commercial','pending'],optional:['sap','eg','center']},
+  grade:{label:'Grade de estoque (CD)',must:['boxes'],oneOf:['eg','sap'],forbid:['order','commercial','pending'],optional:['eg','sap','productionQty']},
+  production:{label:'Produção prevista',must:['origin','productionQty'],oneOf:['sap','eg'],forbid:['order','commercial','pending'],optional:['productionStock','date']}
+ };
+ function headerProfile(s){let keys=Object.keys(ALIAS),hits=Object.fromEntries(keys.map(k=>[k,Boolean(matchingField(s.fields,k))]));let normalized=s.fields.map(norm);let specificProduction=normalized.some(h=>/producao|fabricacao|prevista|programada|previsao|planejada/.test(h));return {hits,specificProduction};}
+ function classifyByColumns(s){
+  let p=headerProfile(s),hits=p.hits,ranking=[];
+  const movementEvidence=['updated','carWith','carWithout','billed','initial','initialPlt','pending'].filter(k=>hits[k]);
+  // Ordem + cliente + SKU + movimentacao: assinatura operacional, mesmo sem a coluna Rede.
+  if(hits.order&&hits.eg&&(hits.clientId||hits.client)&&movementEvidence.length>=2){
+     return {role:'orders',confidence:'Order identificada pela estrutura',matched:['order','eg',...movementEvidence,...(hits.clientId?['clientId']:['client'])],reason:'Pedido ERP + EG Cliente + SKU EG + '+movementEvidence.join(', ')+(hits.network?'':' · rede nao veio nos cabecalhos')};
+  }
+  for(const [role,spec] of Object.entries(ROLE_DEFS)){
+   let required=(spec.must||[]), missing=required.filter(k=>!hits[k]);
+   if(missing.length)continue;
+   if(spec.oneOf&&!spec.oneOf.some(k=>hits[k]))continue;
+   if((spec.forbid||[]).some(k=>hits[k]))continue;
+   let extra=(spec.optional||[]).filter(k=>hits[k]);
+   if((spec.minExtra||0)>extra.length)continue;
+   // Production requires a production-related header, not merely a generic "Data".
+   if(role==='production'&&!p.specificProduction)continue;
+   if(role==='dpar'&&!(hits.center||hits.origin))continue;
+    if(role==='production'&&!(hits.sap||hits.eg))continue;
+   let score=required.length*5+extra.length*2+(spec.oneOf?2:0);
+   if(role==='production')score+=3;
+   ranking.push({role,score,fields:[...new Set([...required,...extra,...(spec.oneOf||[]).filter(k=>hits[k])])]});
+  }
+  ranking.sort((a,b)=>b.score-a.score||a.role.localeCompare(b.role));
+  if(!ranking.length)return {role:'',confidence:'Não reconhecida',matched:Object.keys(hits).filter(k=>hits[k]),reason:'Cabeçalhos insuficientes para distinguir a função da aba. Se esta for uma fonte necessária, use a classificação manual e mapeie os campos.'};
+  if(ranking.length>1&&ranking[0].score===ranking[1].score){return {role:'',confidence:'Ambígua',matched:ranking[0].fields,reason:'Estrutura compatível com '+ranking.filter(x=>x.score===ranking[0].score).map(x=>ROLE_DEFS[x.role].label).join(' / ')+'. Confirme o papel na lista suspensa.'};}
+  let first=ranking[0];
+  return {role:first.role,confidence:ranking.length>1?'Estrutura predominante':'Estrutura identificada',matched:first.fields,reason:'Campos-chave: '+first.fields.join(', ')};
+ }
+ function detectType(s){return classifyByColumns(s).role}
+
+ function parseWorkbook(file,wb){
+   for(const tab of wb.SheetNames){
+      const ws=wb.Sheets[tab];if(!ws||!ws['!ref'])continue;
+      const dim=XLSX.utils.decode_range(ws['!ref']);
+      const last=Math.min(dim.e.r,Math.max(89,dim.s.r+89));
+      const scan=XLSX.utils.sheet_to_json(ws,{header:1,range:XLSX.utils.encode_range({s:{r:dim.s.r,c:dim.s.c},e:{r:last,c:dim.e.c}}),defval:'',raw:false,blankrows:true});
+      let best=-1,score=-Infinity;
+      for(let i=0;i<scan.length&&i<90;i++){
+        const cols=(scan[i]||[]).map(text),filled=cols.filter(Boolean);
+        if(filled.length<2)continue;
+        let hits=0;
+        for(const col of filled)if(ALIAS_WORDS.has(norm(col))||Object.keys(ORDER_FIELD_PATTERNS).some(k=>matchingField([col],k)))hits++;
+        const unique=new Set(filled.map(norm)).size;
+        let numbers=filled.filter(x=>/^[-+]?\d+[.,\d]*$/.test(x)).length;
+        let quality=hits*14+Math.min(filled.length,30)*.2-numbers*3+(unique===filled.length?1:0);
+        if(hits===0)quality-=25;
+        if(quality>score){score=quality;best=i;}
+      }
+      if(best<0)continue;
+      let names=(scan[best]||[]).map((x,j)=>text(x)||`Campo ${j+1}`);
+      const seen={};names=names.map(n=>{let z=n;if(seen[n]!==undefined)z=n+'_'+(++seen[n]);else seen[n]=1;return z});
+      S.sheets.push({name:file.name,source:file.source||file.name,tab,ws,rows:null,fields:names,headerRow:dim.s.r+best+1,approxRows:Math.max(0,dim.e.r-dim.s.r-best)});
+   }
+ }
+ function readOrders(rows){
+ // Official grains are EG Cliente + SKU EG + Pedido ERP. Original columns U/V/W
+ // describe ONE selected original entry; movements are SUMMED across ALL order lines.
+ const grouped=new Map();let withNetwork=0,withOrder=0,usable=0,withoutNetwork=0,withoutSku=0,withoutClient=0;
+ const unitOf=r=>{const names=Object.keys(r).filter(x=>!x.startsWith('__'));const match=names.find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida)$/i.test(norm(k)));const u=norm(match?r[match]:'');return /palet|pallet|plt/.test(u)?'PLT':/caix|cx/.test(u)?'CX':'CX (padrão Order)'};
+ for(const [i,r] of rows.entries()){
+  const network=text(field(r,'network')),order=text(field(r,'order')),
+        clientId=text(field(r,'clientId'))||text(field(r,'client')),eg=codeEG(field(r,'eg'));
+  if(network)withNetwork++;if(order)withOrder++;
+  if(!order)continue;
+  if(!clientId){withoutClient++;continue}
+  if(!eg){withoutSku++;continue}
+  if(!network)withoutNetwork++;
+  usable++;
+  const keys=r[SOURCE_COLS]||Object.keys(r).filter(x=>!x.startsWith('__'));
+  const originalCX=(keys.length>=23?amount(r[keys[22]]):null)??amount(field(r,'initial'));
+  const originalPlt=(keys.length>=22?amount(r[keys[21]]):null)??amount(field(r,'initialPlt'));
+  const originalHL=(keys.length>=21?amount(r[keys[20]]):null)??amount(field(r,'initialHL'));
+  const rec={network:network||'REDE NÃO IDENTIFICADA',client:text(field(r,'client'))||clientId,clientId,commercial:text(field(r,'commercial')),order,eg,originalU:keys.length>=21?r[keys[20]]:null,originalV:keys.length>=22?r[keys[21]]:null,originalW:keys.length>=23?r[keys[22]]:null,
+     skuName:text(field(r,'productName')),sap:text(field(r,'sap')),initial:originalCX,initialPlt:originalPlt,initialHL:originalHL,
+     updated:movementAmount(r,'updated'),carWith:movementAmount(r,'carWith'),carWithout:movementAmount(r,'carWithout'),
+     billed:movementAmount(r,'billed'),validity:iso(field(r,'validity')),created:iso(field(r,'created')),captured:iso(field(r,'captured')),originalValidity:iso(field(r,'originalValidity')),
+     unit:unitOf(r),raw:r,idx:i};
+  const k=[clientId,eg,order].map(norm).join('|');
+  if(!grouped.has(k))grouped.set(k,[]);
+  grouped.get(k).push(rec);
+ }
+ const out=[];
+ for(const rs of grouped.values()){
+  // Captação oficial = MENOR data de criação de TODAS as linhas da chave.
+  // A linha original é escolhida pela data de criação crescente, com validade como desempate.
+  // Movimentações NÃO são descartadas na consolidação do pendente.
+  const earliestCreation=rs.map(v=>v.created).filter(Boolean).sort()[0]||'';
+  const fallbackCapture=rs.map(v=>v.captured).filter(Boolean).sort()[0]||''; // somente diagnostico; NÃO substitui criação
+  const sorted=[...rs].sort((a,b)=>
+      (a.created||'9999-99-99').localeCompare(b.created||'9999-99-99')||
+      (a.originalValidity||a.validity||'9999-99-99').localeCompare(b.originalValidity||b.validity||'9999-99-99')||a.idx-b.idx);
+  const original=sorted[0],issues=[];
+  if(!earliestCreation)issues.push('Data de criação ausente: captação não identificada; Data Captação ECC, se existir, permanece somente informativa');
+  if(rs.length>1){
+   const variants=new Set(rs.map(v=>JSON.stringify([v.initial,v.initialPlt,v.initialHL])));
+   if(variants.size>1)issues.push('Original U/V/W divergente entre linhas: selecionada entrada pela data de criação/vencimento');
+   if(!rs.some(x=>x.captured||x.created))issues.push('Original repetido sem Data Captação ECC/Data Criação: primeira ocorrência usada apenas como desempate');
+   if(new Set(rs.map(x=>norm(x.network))).size>1)issues.push('Mesma chave associada a redes diferentes');
+  }
+  const movements=rs.map(x=>{
+   const complete=['updated','carWith','carWithout','billed'].every(f=>x[f]!==null);
+   return {...x,complete,rawPending:complete?x.updated-x.carWith-x.carWithout-x.billed:null};
+  });
+  const incomplete=movements.filter(x=>!x.complete);
+  const movementUnit=new Set(movements.map(x=>x.unit));
+  if(movementUnit.size>1)issues.push('Unidades diferentes nas movimentações da mesma chave');
+  if(incomplete.length)issues.push(incomplete.length+' movimentação(ões) com componentes ausentes');
+  const sumField=f=>movements.every(x=>x[f]!=null)?movements.reduce((s,x)=>s+x[f],0):null;
+  const rowPending=incomplete.length?null:movements.reduce((s,x)=>s+x.rawPending,0);
+  if(rs.some(x=>x.initial==null&&x.initialPlt!=null))issues.push('Original CX não identificado: conversão por CAD somente se houver fator');
+  out.push({...original,captured:earliestCreation,created:earliestCreation,skuName:sorted.map(x=>x.skuName).find(Boolean)||'',updated:sumField('updated'),carWith:sumField('carWith'),carWithout:sumField('carWithout'),
+   billed:sumField('billed'),served:sumField('billed'),pending:rowPending,pendingRaw:rowPending,
+   movementRows:movements.length,duplicateCount:rs.length,issuesInitial:issues,unit:movementUnit.size===1?[...movementUnit][0]:'MISTO',
+   pendingBasis:'Σ por linha (Atualizada − Carro com remessa − Carro sem remessa − Faturado)',
+   raw:original.raw,rawMovements:rs.map(x=>x.raw)});
+ }
+ S.orderReadStats={total:rows.length,withNetwork,withOrder,usable,withoutNetwork,withoutSku,withoutClient,unique:out.length,extraMovements:usable-out.length};
+ return out;
+}
+function convertOrderBalances(){
+ // Normalise individual movement rows to boxes. The Order's default movement unit is CX;
+ // explicit PLT unit requires the CAD quantity-per-pallet. No guessed conversion.
+ for(const o of S.data.orders){
+  const candidates=getIndexed('cadEG',norm(o.eg)).filter(c=>c.cxPlt>0);
+  const ratios=[...new Set(candidates.map(x=>x.cxPlt))];const ratio=ratios.length===1?ratios[0]:null;
+  const source=o.rawMovements||[o.raw];
+  let totals={updated:0,carWith:0,carWithout:0,billed:0,pending:0},complete=true,converted=0;
+  for(const r of source){
+   const unitKey=Object.keys(r).find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida)$/i.test(norm(k)));
+   const v=norm(unitKey?r[unitKey]:'');const factor=/palet|pallet|plt/.test(v)?ratio:1;
+   const names={updated:'updated',carWith:'carWith',carWithout:'carWithout',billed:'billed'};
+   const raw=Object.fromEntries(Object.keys(names).map(k=>[k,movementAmount(r,k)]));
+   if(Object.values(raw).some(x=>x===null)||!factor){complete=false;continue;}
+   converted+=(factor!==1?1:0);
+   for(const k of Object.keys(names))totals[k]+=raw[k]*factor;
+   totals.pending+=(raw.updated-raw.carWith-raw.carWithout-raw.billed)*factor;
+  }
+  if(!complete){o.pending=null;o.updated=null;o.carWith=null;o.carWithout=null;o.billed=null;
+   o.issuesInitial.push('Conversão dos movimentos para CX não concluída (campos/unidade/CAD ausentes)');}
+  else {for(const k of ['updated','carWith','carWithout','billed','pending'])o[k]=totals[k];}
+  if(converted)o.issuesInitial.push(converted+' linha(s) de movimento convertidas de PLT para CX pela CAD');
+  if(o.initial==null&&o.initialPlt!=null){if(ratio){o.initial=o.initialPlt*ratio;o.issuesInitial.push('Original em CX derivado de PLT × CAD, pois W não foi identificado');}
+   else o.issuesInitial.push('Original W ausente e fator CAD indisponível');}
+  o.fillRate=o.initial>0&&o.billed!=null?Math.max(0,Math.min(100,100*o.billed/o.initial)):null;
+  if(o.initial!=null&&o.billed!=null&&o.billed>o.initial)o.issuesInitial.push('Excesso faturado em relação ao original: '+fmt(o.billed-o.initial)+' CX');
+  o.diff=o.initial!=null&&o.billed!=null&&o.pending!=null?o.initial-o.billed-o.pending:null;
+ }
+}
+  function renderFieldRecovery(){let out=$('recoverFields');if(S.demo){out.innerHTML='';return}let relevant=S.sheets.filter(s=>s.type&&(['orders','dpar','cad','originMap','vd','grade','production'].includes(s.type)||s.detection?.manual));if(!relevant.length){out.innerHTML='';return}const labels={network:'Rede',order:'Pedido',client:'Nome da loja/cliente',clientId:'Código EG da loja',commercial:'Comercial',eg:'SKU EG',pending:'Pendente',initial:'Qtd. Original',initialPlt:'Volume Palete',updated:'Quantidade Atualizada',carWith:'Carro com remessa',carWithout:'Carro sem remessa',billed:'Faturado',validity:'Validade',created:'Data de criação',captured:'Data Captação ECC',originalValidity:'Vencimento original',center:'Centro/CDD',originName:'Nome origem',sap:'Código SAP',cxPlt:'Caixas por pallet',origin:'Origem',pallets:'Estoque PLT',boxes:'Estoque CX',date:'Data de produção',productionQty:'Produção (PLT)',productionStock:'ESTOQUE (informativo)',productName:'Nome do SKU',attribute:'Atributo'};const needs={orders:['network','order','client','clientId','commercial','eg','initial','initialPlt','updated','carWith','carWithout','billed','validity','created','captured','originalValidity'],dpar:['client','clientId','center'],cad:['eg','sap','cxPlt'],malha:['commercial','sap','origin'],vd:['eg','origin','pallets'],grade:['eg','boxes'],production:['eg','origin','date'],originMap:['origin','center','type','originName']};out.innerHTML='<div class="panel" style="margin-top:12px;background:#f7fafb"><h3>Recuperação de colunas (opcional)</h3><p class="small">Os campos reais de Produção, DeParaCDD e Grade CDD já estão cadastrados como padrão. Eles não devem aparecer como “não detectados” quando os cabeçalhos correspondem à estrutura informada.</p><p class="small">Utilize apenas se o reconhecimento automático não identificar os dados. As correspondências ficam internas após a importação, sem alterar o Excel original.</p>'+relevant.map(s=>{let k=s.name+'|'+s.tab,m=S.manualFields[k]||{};return `<div style="margin:10px 0 20px"><b>${esc(s.tab)}</b><div class="small">${esc(s.name)} — ${esc(s.type)}</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">${(needs[s.type]||[]).filter(f=>!hasField(s,f)||m[f]).map(f=>`<div><label class="cap">${labels[f]}</label><select class="w100" data-field="${esc(k)}" data-key="${f}"><option value="">Automático${hasField(s,f)?' ✓':' (não detectado)'}</option>${s.fields.map(h=>`<option value="${esc(h)}" ${m[f]===h?'selected':''}>${esc(h)}</option>`).join('')}</select></div>`).join('')}</div></div>`}).join('')+'<button class="btn primary" id="applyMappings">Reprocessar com essas correspondências</button></div>';document.querySelectorAll('[data-field]').forEach(el=>el.onchange=()=>{const k=el.dataset.field,f=el.dataset.key;S.manualFields[k]??={};if(el.value)S.manualFields[k][f]=el.value;else delete S.manualFields[k][f]});$('applyMappings').onclick=()=>{fromSheets();initData(false)}}
+
+ function fromSheets(){
+   S.problems=[];S.info=[];S.unitsCache=null;S.analyticsCache.clear();let chosen={};
+   for(const s of S.sheets){
+     let key=s.name+'|'+s.tab, auto=classifyByColumns(s),manual=S.manualRoles[key],type=manual||auto.role;
+     s.type=type||'';s.detection={...auto,manual:!!manual};
+     if(type){(chosen[type]??=[]).push(s);prepRows(s)}
+   }
+   S.chosen=chosen;
+   const maprows=t=>(chosen[t]||[]).flatMap(s=>s.rows||[]);
+   S.data.sourceOrders=maprows('orders');S.data.orders=readOrders(S.data.sourceOrders);
+   S.data.cad=maprows('cad').map(r=>({eg:codeEG(field(r,'eg')),sap:text(field(r,'sap')),cxPlt:amount(field(r,'cxPlt')),name:text(field(r,'productName'))})).filter(x=>x.eg||x.sap);
+   S.data.malha=maprows('malha').map(r=>({commercial:text(field(r,'commercial')),sap:text(field(r,'sap')),origin:text(field(r,'origin'))})).filter(x=>x.sap&&x.commercial&&x.origin);
+   S.data.dpar=maprows('dpar').map(r=>({clientId:text(field(r,'clientId')),client:text(field(r,'client')),center:text(field(r,'center')||field(r,'origin'))})).filter(x=>x.clientId||x.client);
+   // VD: distinguish independent source copies from independent stock.
+   // Identical SKU/origin/attribute snapshots from two Excel files must NEVER add up.
+   const vdCombined=(chosen.vd||[]).flatMap(sheet=>(sheet.rows||[]).map(r=>({
+     eg:codeEG(field(r,'eg')),origin:text(field(r,'origin')||field(r,'center')),
+     pallets:amount(field(r,'pallets')),attribute:text(field(r,'attribute')),name:text(field(r,'productName')),
+     source:sheet.name+' / '+sheet.tab
+   })).filter(v=>v.eg&&v.origin));
+   const vdByKey=new Map();
+   for(const v of vdCombined){
+     const key=keyOf(v.eg,stockCenter(v.origin,'VD')||v.origin,v.attribute);
+     if(!vdByKey.has(key))vdByKey.set(key,[]);
+     vdByKey.get(key).push(v);
+   }
+   S.data.vd=[];
+   let repeatedVD=0,conflictingVD=0;
+   for(const rows of vdByKey.values()){
+     const sourceGroups=new Map();
+     for(const row of rows){if(!sourceGroups.has(row.source))sourceGroups.set(row.source,[]);sourceGroups.get(row.source).push(row)}
+     if(sourceGroups.size===1){S.data.vd.push(...rows);continue}
+     const sourcePriority=source=>{
+       const n=norm(source);let score=/base estoque/.test(n)?1000:0;
+       const d=n.match(/base estoque (\d{1,2}) (\d{1,2})(?:\s|$)/);
+       if(d)score+=Number(d[2])*32+Number(d[1]);
+       if(/estoque fabricas/.test(n))score+=140;
+       if(/export data/.test(n))score-=50;
+       return score;
+     };
+     const choices=[...sourceGroups.entries()].sort((a,b)=>sourcePriority(b[0])-sourcePriority(a[0])||b[1].length-a[1].length);
+     const signature=items=>JSON.stringify(items.map(v=>v.pallets).sort((a,b)=>(a??-Infinity)-(b??-Infinity)));
+     const same=choices.every(([,rs])=>signature(rs)===signature(choices[0][1]));
+     if(same){S.data.vd.push(...choices[0][1]);repeatedVD+=rows.length-choices[0][1].length;}
+     else if(sourcePriority(choices[0][0])>sourcePriority(choices[1][0])){
+       S.data.vd.push(...choices[0][1].map(v=>({...v,sourceConflict:true})));
+       repeatedVD+=rows.length-choices[0][1].length;conflictingVD++;
+     }else{
+       S.data.vd.push({...choices[0][1][0],pallets:null,conflict:true});conflictingVD++;
+     }
+   }
+   if(repeatedVD)S.info.push(`${repeatedVD} linhas VD repetidas entre arquivos/abas ignoradas para não duplicar estoque.`);
+   if(conflictingVD)S.problems.push(`${conflictingVD} SKU/origem VD divergentes entre versões: base oficial mais recente priorizada quando identificável; empates continuam N/D. Confira o arquivo de referência.`);
+   S.data.grade=(chosen.grade||[]).flatMap(sheet=>{
+      const inferred=inferGradeCenter(sheet.tab);
+      if(inferred&&/s[aã]o[ _-]*jos[eé]|s[. ]*j[. ]*campos/i.test(sheet.tab)){
+        S.info.push('Grade "'+sheet.tab+'" identificada como São José dos Campos → 966-CD (BRD2), com base no de/para oficial.');
+      }
+      if(!matchingField(sheet.fields,'center')&&!inferred){
+        S.problems.push('Grade de '+sheet.tab+' sem coluna Centro e sem centro único identificável no título; não será atribuída a outro CDD');
+      }
+      return (sheet.rows||[]).map(r=>({eg:codeEG(field(r,'eg')),center:inferred||text(field(r,'center')||field(r,'origin')),boxes:amount(field(r,'boxes')),productionBoxes:amount(field(r,'productionQty')),source:sheet.tab})).filter(x=>x.eg&&x.center);
+    });
+   S.data.originMap=maprows('originMap').map(r=>({origin:text(field(r,'origin')),center:text(field(r,'center')),type:text(field(r,'type')),name:text(field(r,'originName'))})).filter(x=>x.origin&&x.center&&x.type);
+   for(const row of S.data.originMap){const type=row.type.toUpperCase(),raw=row.center;const centerNum=(raw.match(/\d+/)||[])[0]||'', list=raw.match(/^\d+-[A-Z]+$/i)?raw.toUpperCase():centerNum+'-'+type;if(!['VD','CD'].includes(type)||!centerNum)continue;if(!CENTERS.some(c=>c.list===list))CENTERS.push({br:row.origin.toUpperCase(),center:centerNum,type,name:row.name||row.origin,list});}
+   S.data.production=maprows('production').map(r=>({eg:codeEG(field(r,'eg')),origin:text(field(r,'origin')||field(r,'center')),name:text(field(r,'productName')),pallets:null,stockStatus:text(field(r,'productionStock')),date:iso(field(r,'date'))})).filter(x=>x.eg);
+    if(S.data.production.length)S.info.push('Data de produção identificada pela coluna PRODUÇÃO.');
+   buildIndexes();
+   convertOrderBalances();
+   if(!chosen.orders?.length)S.problems.unshift('PEDIDOS/PENDENTE nao identificada: confira se existem Pedido ERP, EG Cliente, SKU EG e movimentos. O nome Order nao e obrigatorio.');
+   if(S.orderReadStats?.withoutNetwork)S.problems.push(S.orderReadStats.withoutNetwork+' linha(s) de Order sem campo Rede: preservadas para auditoria em REDE NÃO IDENTIFICADA; exportação externa bloqueada para esse grupo até conferir a associação.');
+   else if(!S.data.orders.length)S.problems.unshift(`A base de pedidos foi reconhecida, mas Rede / Pedido / SKU / Cliente não foram suficientes (${S.orderReadStats?.withNetwork||0} com Rede, ${S.orderReadStats?.withOrder||0} com Pedido).`);
+   if(!chosen.dpar?.length)S.problems.push('De/para LOJA → CDD não reconhecido (diferente do de/para BR → centro). Verifique se a aba de lojas está presente. É possível associar manualmente o papel e as colunas.');
+   else if(!S.data.dpar.length)S.problems.push('De/para de lojas reconhecido, mas sem pares loja–CDD aproveitáveis; confira colunas código de loja/centro.');
+   for(const t of ['cad','malha','vd','grade','production'])if(!(chosen[t]||[]).length)S.problems.push(`Fonte não reconhecida: ${({cad:'CAD',malha:'Malha',vd:'Estoque fábrica VD',grade:'Grade CD',production:'Produção'})[t]}. Associe manualmente apenas se ela estiver presente.`);
+ }
+ function indexMany(arr,fn){const m=new Map();for(const x of arr){let k=fn(x);if(!k)continue;if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
+ function buildIndexes(){
+   const key=(...parts)=>parts.map(norm).join('|');
+   S.indices={
+    cadEG:indexMany(S.data.cad,x=>norm(x.eg)), cadSAP:indexMany(S.data.cad,x=>norm(x.sap)),
+    malha:indexMany(S.data.malha,x=>key(x.commercial,x.sap)),
+    vd:indexMany(S.data.vd,x=>key(x.eg,stockCenter(x.origin,'VD'))),
+    gradeEG:indexMany(S.data.grade,x=>key(stockCenter(x.center,'CD'),gradeKey(x.eg))),
+    prod:indexMany(S.data.production,x=>key(x.eg,stockCenter(x.origin,'VD'))),
+    prodEG:indexMany(S.data.production,x=>norm(x.eg)),vdEG:indexMany(S.data.vd,x=>norm(x.eg)),
+    prodCD:indexMany(S.data.production,x=>key(x.eg,stockCenter(x.origin,'CD'))),
+    dparId:indexMany(S.data.dpar,x=>norm(x.clientId)),
+    dparName:indexMany(S.data.dpar,x=>norm(x.client)),
+    netCounts:new Map()
+   };
+   for(const o of S.data.orders)S.indices.netCounts.set(o.network,(S.indices.netCounts.get(o.network)||0)+1);
+ }
+ function getIndexed(name,key){return S.indices?.[name]?.get(key)||[]}
+ function keyOf(...parts){return parts.map(norm).join('|')}
+
+ const SPREADSHEET_EXT=/\.(xlsx|xlsm|xls|csv)$/i;
+// O leitor de Excel/ZIP roda em um Worker quando suportado, sem bloquear a interface.
+function makeImportWorker(){
+ const source='('+function(){
+   'use strict';
+   try{importScripts('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js','https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')}
+   catch(e){postMessage({error:'Bibliotecas do Worker indisponíveis: '+e.message});return}
+   function norm(x){return String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+   function tx(x){return String(x??'').trim()}
+   function spreadsheet(fileName,sourceName,data,aliasWords){
+      const wb=XLSX.read(data,{type:'array'}),sheets=[];
+      for(const tab of wb.SheetNames){
+        const ws=wb.Sheets[tab];if(!ws||!ws['!ref'])continue;
+        const range=XLSX.utils.decode_range(ws['!ref']);
+        const scan=XLSX.utils.sheet_to_json(ws,{header:1,range:XLSX.utils.encode_range({s:range.s,e:{r:Math.min(range.e.r,Math.max(89,range.s.r+89)),c:range.e.c}}),defval:'',raw:false,blankrows:true});
+        let best=-1,score=-Infinity;
+        for(let i=0;i<scan.length&&i<90;i++){
+          let cells=(scan[i]||[]).map(tx),filled=cells.filter(Boolean);if(filled.length<2)continue;
+          let hits=filled.filter(c=>{let h=norm(c);return aliasWords.has(h)||/^(?:numero |n |nr |pedido |codigo cliente|cliente eg|eg cliente|sku eg|eg sku|quantidade atualizad|qtd atualizad|carro com remessa|carro sem remessa|faturad|data captacao ecc|volume palete|qtd original)/.test(h)}).length,numbers=filled.filter(c=>/^[-+]?\d+[.,\d]*$/.test(c)).length;
+          let points=hits*14+Math.min(filled.length,30)*.2-numbers*3+(new Set(filled.map(norm)).size===filled.length?1:0)-(hits?0:25);
+          if(points>score){best=i;score=points}
+        }
+        if(best<0)continue;
+        let seen={},names=(scan[best]||[]).map((v,j)=>tx(v)||'Campo '+(j+1)).map(n=>seen[n]!==undefined?n+'_'+(++seen[n]):(seen[n]=1,n));
+        postMessage({progress:'Lendo a aba '+tab+'…'});
+        let rows=XLSX.utils.sheet_to_json(ws,{header:names,range:range.s.r+best+1,defval:'',raw:false,blankrows:false});
+        sheets.push({name:fileName,source:sourceName,tab,rows,fields:names,headerRow:range.s.r+best+1,approxRows:rows.length});
+      }
+      return {sheets,entries:wb.SheetNames.length};
+   }
+   async function readArchive(data,root,prefix,depth,aliasWords,counter){
+     if(depth>3)throw Error('ZIP com muitos níveis');
+     const zip=await JSZip.loadAsync(data), entries=Object.values(zip.files).filter(x=>!x.dir&&!/(^|\/)(__MACOSX|\.DS_Store|~\$)/i.test(x.name));
+     if(entries.length>350)throw Error('ZIP excede 350 arquivos');
+     let result={sheets:[],added:0,used:0,ignored:0,errorCount:0,warnings:[]};
+     for(const entry of entries){
+       const nm=(prefix?prefix+' / ':'')+entry.name;
+       if(!/\.(xlsx|xlsm|xls|csv|zip)$/i.test(entry.name)){result.ignored++;continue}
+       try{
+         const uncompressedSize=Number(entry._data?.uncompressedSize)||0;
+         counter.total+=uncompressedSize;
+         if(uncompressedSize>100*1024*1024||counter.total>300*1024*1024)throw Error('Tamanho descompactado acima do limite');
+         let content=await entry.async('uint8array');
+         if(/\.zip$/i.test(entry.name)){
+           let nested=await readArchive(content,root,nm,depth+1,aliasWords,counter);
+           for(const key of ['added','used','ignored','errorCount'])result[key]+=nested[key];
+           result.sheets.push(...nested.sheets);result.warnings.push(...nested.warnings);
+         }else{
+           postMessage({progress:'Extraindo '+nm+'…'});
+           let parsed=spreadsheet(root+' / '+nm,root,content,aliasWords);
+           result.sheets.push(...parsed.sheets);result.added+=parsed.sheets.length;
+           if(parsed.sheets.length)result.used++;else result.warnings.push('Planilha sem aba tabular: '+nm);
+         }
+       }catch(e){result.errorCount++;result.warnings.push(nm+': '+e.message)}
+     }
+     return result;
+   }
+   onmessage=async event=>{
+     const {fileName,bytes,aliases}=event.data,aliasWords=new Set(aliases||[]);
+     try{
+       let result;
+       if(/\.zip$/i.test(fileName))result=await readArchive(bytes,fileName,'',0,aliasWords,{total:0});
+       else{let p=spreadsheet(fileName,fileName,bytes,aliasWords);result={sheets:p.sheets,added:p.sheets.length,used:p.sheets.length?1:0,ignored:0,errorCount:0,warnings:[]}}
+       postMessage({complete:true,...result});
+     }catch(e){postMessage({error:e.message||String(e)})}
+   };
+ }.toString()+')()';
+ const blob=new Blob([source],{type:'application/javascript'});
+ const url=URL.createObjectURL(blob);
+ try{return {worker:new Worker(url),url}}catch(e){URL.revokeObjectURL(url);throw e}
+}
+async function importWithWorker(f){
+ const {worker,url}=makeImportWorker();
+ try{
+   const bytes=await f.arrayBuffer();
+   return await new Promise((resolve,reject)=>{
+      const timeout=setTimeout(()=>{reject(Error('A leitura paralela excedeu o tempo limite.'))},180000);
+      worker.onmessage=e=>{
+       const o=e.data;
+       if(o.progress){$('loadStatus').textContent=o.progress;return}
+       clearTimeout(timeout);
+       if(o.error)reject(Error(o.error));else if(o.complete)resolve(o);
+      };
+      worker.onerror=e=>{clearTimeout(timeout);reject(Error(e.message||'Falha de importação paralela'))};
+      worker.postMessage({fileName:f.name,bytes,aliases:[...ALIAS_WORDS]},[bytes]);
+   });
+ }finally{worker.terminate();URL.revokeObjectURL(url)}
+}
+
+async function readSpreadsheetBytes(displayName, sourceName, bytes){
+ const wb=XLSX.read(bytes,{type:'array'});
+ const before=S.sheets.length;
+ parseWorkbook({name:displayName,source:sourceName},wb);
+ return {sheets:S.sheets.length-before, entries:wb.SheetNames.length};
+}
+async function readArchive(f, bytes, depth=0, namePrefix=''){
+ if(typeof JSZip==='undefined')throw new Error('Leitor ZIP indisponível. Conecte-se à internet e abra o painel novamente.');
+ const zip=await JSZip.loadAsync(bytes);
+ const entries=Object.values(zip.files).filter(e=>!e.dir && !/(^|\/)(__MACOSX|\.DS_Store|~\$)/i.test(e.name));
+ if(entries.length>350)throw new Error('ZIP excede 350 arquivos. Separe somente as planilhas necessárias.');
+ let added=0, used=0, ignored=0, errorCount=0, bytesTotal=0;
+ for(const entry of entries){
+  const entryName=(namePrefix?namePrefix+' / ':'')+entry.name;
+  if(!SPREADSHEET_EXT.test(entry.name) && !(depth===0&&/\.zip$/i.test(entry.name))){ignored++;continue}
+  try{
+   const uncompressedSize=Number(entry._data?.uncompressedSize)||0;
+   if(uncompressedSize>100*1024*1024)throw new Error('planilha superior a 100 MB');
+   bytesTotal+=uncompressedSize;
+   if(bytesTotal>300*1024*1024)throw new Error('ZIP excede 300 MB descompactados');
+   const content=await entry.async('uint8array');
+   if(/\.zip$/i.test(entry.name)){
+    const child=await readArchive(f,content,depth+1,entryName);
+    added+=child.added; used+=child.used;ignored+=child.ignored;errorCount+=child.errorCount;
+   } else {
+    const result=await readSpreadsheetBytes(f.name+' / '+entryName,f.name,content);
+    if(result.sheets){added+=result.sheets;used++}
+    else S.importWarnings.push('Planilha sem tabela reconhecível: '+entryName);
+   }
+  }catch(err){errorCount++;S.importWarnings.push('Erro na leitura de '+entryName+': '+(err?.message||err))}
+ }
+ return {added,used,ignored,errorCount};
+}
+async function loadFiles(files){
+ if(!files.length)return;
+ if(typeof XLSX==='undefined'){$('loadStatus').textContent='Leitor Excel indisponível. Abra o arquivo com conexão à internet para carregar o leitor.';return}
+ if(S.demo){S.sheets=[];S.fileCache.clear();S.channels={};S.selected.clear();S.importSummary=[]}
+ S.demo=false;S.importWarnings=[];
+ $('loadStatus').className='notice';$('loadStatus').textContent='Lendo '+files.length+' arquivo(s). ZIPs serão descompactados automaticamente no navegador...';
+ for(const f of files){
+  $('loadStatus').textContent='Importando '+f.name+' · leitura em andamento…'; await new Promise(r=>setTimeout(r,30));
+  try{
+   let data=null;
+   S.sheets=S.sheets.filter(s=>s.source!==f.name && s.name!==f.name && !s.name.startsWith(f.name+' / '));
+   let result, usedWorker=false;
+   if(typeof Worker!=='undefined'){
+     try{
+       const job=await importWithWorker(f);
+       S.sheets.push(...job.sheets);
+       S.importWarnings.push(...job.warnings);
+       result={added:job.added,used:job.used,ignored:job.ignored,errorCount:job.errorCount};
+       usedWorker=true;
+     }catch(err){
+       S.importWarnings.push('Leitura paralela indisponível para '+f.name+'; usando leitor de compatibilidade. '+(err?.message||err));
+     }
+   }
+   if(!usedWorker){
+     data=await f.arrayBuffer();
+     if(/\.zip$/i.test(f.name))result=await readArchive(f,data);
+     else if(SPREADSHEET_EXT.test(f.name)){
+       const r=await readSpreadsheetBytes(f.name,f.name,data);
+       result={added:r.sheets,used:r.sheets?1:0,ignored:0,errorCount:0};
+     }else throw Error('Formato não suportado; utilize ZIP, XLSX, XLS, XLSM ou CSV.');
+   }
+   S.fileCache.set(f.name,{type:/\.zip$/i.test(f.name)?'ZIP':'Planilha',...result});
+   S.importSummary=S.importSummary.filter(x=>x.name!==f.name);
+   S.importSummary.push({name:f.name,...result});
+   if(!result.added)S.importWarnings.push('Nenhuma aba tabular importada de '+f.name+'. Confira se o ZIP contém um Excel válido.');
+  }catch(e){S.importWarnings.push('Falha ao abrir '+f.name+': '+(e?.message||e))}
+ }
+ S.sourceCount=S.fileCache.size;
+ S.data={orders:[],cad:[],malha:[],vd:[],grade:[],dpar:[],production:[],originMap:[]};
+ fromSheets();initData(false);
+ $('files').value='';
+}
+
+$('files').addEventListener('change',e=>loadFiles([...e.target.files]));$('demo').onclick=fixtures;
+
+// v23: localiza a BASE_ESTOQUE atual publicada no GitHub, sem nome fixo.
+// Este botão importa o ESTOQUE do repositório. A Order não está na raiz do GitHub
+// e precisa ser fornecida como CSV/XLSX/ZIP separadamente para análise por pedido.
+const REPO_PUBLIC='https://api.github.com/repos/thatazrsss-alt/Carteira-reversa/contents';
+const REPO_STOCK_FALLBACK={name:'BASE_ESTOQUE 16.11.xlsx',url:'https://raw.githubusercontent.com/thatazrsss-alt/Carteira-reversa/main/BASE_ESTOQUE%2016.11.xlsx'};
+function stockDateRank(fileName){
+  const x=String(fileName||'').match(/(?:^|[^0-9])(\d{1,2})[.\-_](\d{1,2})(?:[.\-_](\d{4}))?(?=[^0-9]|$)/);
+  if(!x)return 0;
+  const d=Number(x[1]),m=Number(x[2]),y=Number(x[3]||new Date().getFullYear());
+  return d>=1&&d<=31&&m>=1&&m<=12?y*10000+m*100+d:0;
+}
+async function discoverRepoStock(){
+  const resp=await fetch(REPO_PUBLIC+'?ref=main',{cache:'no-store',mode:'cors',headers:{Accept:'application/vnd.github+json'}});
+  if(!resp.ok)throw Error('A listagem do GitHub respondeu HTTP '+resp.status);
+  const entries=await resp.json();
+  if(!Array.isArray(entries))throw Error('Listagem do repositório inesperada');
+  const stock=entries.filter(f=>f.type==='file'&&/^base[\s_.-]*estoque.*\.(?:xlsx|xlsm|xls)$/i.test(f.name||''))
+     .sort((a,b)=>stockDateRank(b.name)-stockDateRank(a.name)||String(b.name).localeCompare(String(a.name),'pt-BR'));
+  if(!stock.length)throw Error('Nenhuma planilha BASE_ESTOQUE encontrada na raiz do GitHub');
+  const chosen=stock[0];
+  return {name:chosen.name,url:chosen.download_url||'https://raw.githubusercontent.com/thatazrsss-alt/Carteira-reversa/main/'+encodeURIComponent(chosen.name),sha:chosen.sha||'',size:chosen.size||0,other:stock.slice(1).map(x=>x.name)};
+}
+async function loadGithubSources(){
+ const button=$('loadGithub'), status=$('loadStatus');
+ button.disabled=true;button.textContent='Consultando GitHub…';
+ status.className='notice';
+ let selected,notice='';
+ try{
+   if(!navigator.onLine)throw Error('Navegador sem conexão com a internet');
+   try{selected=await discoverRepoStock();}
+   catch(e){selected=REPO_STOCK_FALLBACK;notice='Não foi possível consultar a lista do GitHub ('+(e?.message||e)+'). Tentando o nome confirmado BASE_ESTOQUE 16.11.xlsx.';}
+   button.textContent='Baixando estoque atualizado…';
+   status.textContent='GitHub: recebendo '+selected.name+'…';
+   const response=await fetch(selected.url,{cache:'no-store',mode:'cors'});
+   if(!response.ok)throw Error('Download de '+selected.name+': HTTP '+response.status);
+   const body=await response.blob();
+   // XLSX começa com PK; recusa HTML/erro GitHub salvo indevidamente como XLSX.
+   if(body.size<1024||!['PK'].includes(String.fromCharCode(...new Uint8Array(await body.slice(0,2).arrayBuffer()))))
+      throw Error('O arquivo recebido não parece ser um XLSX válido. Confira a versão publicada.');
+   const file=new File([body],selected.name,{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+   await loadFiles([file]);
+   S.importWarnings.push('Estoque atualizado do GitHub: '+selected.name+' ('+body.size.toLocaleString('pt-BR')+' bytes).');
+   if(selected.other?.length)S.importWarnings.push('Outras versões de estoque presentes no GitHub, não importadas para evitar duplicação: '+selected.other.join(', ')+'.');
+   if(notice)S.importWarnings.push(notice);
+   if(!S.data.orders.length)S.importWarnings.push('O repositório forneceu a BASE_ESTOQUE, mas não uma Order operacional. Importe a Order em CSV/XLSX/ZIP para calcular atendimento, pendente, fill rate e relatórios de cliente.');
+   renderEverything();
+   const sheetCount=S.sheets.filter(s=>s.name===selected.name).length;
+   const info='Arquivo: '+selected.name+' · Abas: '+sheetCount+' · CAD '+(S.chosen.cad?.length||0)+' · VD '+(S.chosen.vd?.length||0)+' · Produção '+(S.chosen.production?.length||0)+' · Grades '+(S.chosen.grade?.length||0)+'.';
+   status.className='notice '+(sheetCount?'good':'bad');
+   status.textContent='GitHub: '+info+(S.data.orders.length?' Order disponível.':' Falta carregar a Order para calcular os pedidos.');
+ }catch(e){status.className='notice bad';status.textContent='Falha na importação do estoque atualizado: '+(e?.message||e)+'. Você pode baixar a planilha no GitHub e carregá-la manualmente aqui.';}
+ finally{button.disabled=false;button.textContent='Importar estoque atualizado do GitHub';}
+}
+$('loadGithub').onclick=loadGithubSources;
+
+function units(){if(S.unitsCache)return S.unitsCache;let m=new Map();for(const o of S.data.orders){let k=id(o);if(!m.has(k))m.set(k,{network:o.network,client:o.client,clientId:o.clientId,commercial:o.commercial,key:k,count:0});m.get(k).count++}return S.unitsCache=[...m.values()].sort((a,b)=>a.network.localeCompare(b.network,'pt-BR')||a.client.localeCompare(b.client,'pt-BR'))}
+function chosenNetworks(){return [...S.selected]}
+function getDpar(u){
+ const found=u.clientId?getIndexed('dparId',norm(u.clientId)):[];
+ const matches=found.length?found:getIndexed('dparName',norm(u.client));
+ const centers=[...new Set(matches.map(d=>resolveCenter(d.center,'CD')?.list||'').filter(Boolean))];
+ return {center:centers.length===1?centers[0]:'',status:centers.length>1?'DPAR ambíguo':centers.length===1?'DPAR identificado':'Sem DPAR'};
+}
+
+function originTypeHint(value){
+  const s=norm(value),compact=text(value).toUpperCase().replace(/\s/g,'');
+  if(/\d+[- ](?:VD|CD)$/.test(compact))return compact.endsWith('VD')?'VD':'CD';
+  if(/^(cdd|cdi|cdl|cd)\b/.test(s)||/\b(dc|cdd|cdi|cdl)\b/.test(s))return 'CD';
+  // CDR Extrema/Louveira sao centros VD no de/para oficial.
+  if(/^(f|fab|fabrica|cdr)\b/.test(s))return 'VD';
+  return '';
+}
+function centerCity(value){
+ const n=norm(value)
+   .replace(/\b(estoque|grade|grades|cdd|cdi|cdl|cdr|cd|dc|int|interior|fabrica|fab|f|de|do|da|das|dos|origem|centro|planta|industrial|distribuicao|distribuidor|distribuidora|gradeamento|saldo|local|filial|br)\b/g,' ')
+   .replace(/\s+/g,' ').trim();
+ const aliases={
+   'sj campos':'sao jose dos campos', 's j campos':'sao jose dos campos',
+   'sao jose':'sao jose dos campos','s jose campos':'sao jose dos campos',
+   'sao jose campos':'sao jose dos campos','sjc':'sao jose dos campos',
+   'rio janeiro':'rio de janeiro','pirai':'pirai','nova minas':'nova minas',
+   'ribeirao preto':'ribeirao preto'
+ };
+ return aliases[n]||n;
+}
+function resolveCenter(value,type=''){
+ const raw=text(value),s=norm(raw),compact=raw.toUpperCase().replace(/\s/g,'');
+ if(!s)return null;
+ const hint=originTypeHint(raw);
+ if(type&&hint&&hint!==type)return null; // impede cruzamento de fabrica VD com CDD CD
+ const allowed=CENTERS.filter(c=>!type||c.type===type);
+ const exact=allowed.filter(c=>norm(c.list)===s||norm(c.center)===s||norm(c.br)===s||norm(c.name)===s||compact===c.list);
+ if(exact.length===1)return exact[0];
+ if(exact.length>1)return null;
+ const city=centerCity(s);
+ if(!city||city.length<3)return null;
+ const candidates=allowed.filter(c=>centerCity(c.name)===city);
+ if(candidates.length===1)return candidates[0];
+ if(candidates.length>1)return null;
+ // Aceita somente extensoes inequivocas de um nome oficial, nao similaridade solta.
+ const fuzzy=allowed.filter(c=>{const other=centerCity(c.name);return city.length>=5&&other.length>=5&&
+   (city.startsWith(other+' ')||other.startsWith(city+' '));});
+ return fuzzy.length===1?fuzzy[0]:null;
+}
+
+function inferGradeCenter(tab){return resolveCenter(tab,'CD')?.list||'';}
+ function initData(isDemo){let prevSelected=new Set(S.selected),previous=S.channels,priorNetworks=new Set(Object.keys(previous).map(x=>x.split('|')[0]));S.selected=new Set([...new Set(S.data.orders.map(o=>o.network))].filter(n=>!priorNetworks.has(norm(n))||prevSelected.has(n)));S.checked=new Set();let saved={};try{saved=JSON.parse(localStorage.getItem('carteira_reversa_canais_v4')||'{}').channels||{}}catch(e){}for(const u of units()){let dc=getDpar(u),prior=previous[u.key]||saved[u.key],mode=['VD','CD'].includes(prior?.mode)?prior.mode:defaultChannel(u),center=prior?.center&&resolveCenter(prior.center,'CD')?.list||dc.center;S.channels[u.key]={mode,center,origin:prior?'Regra salva anteriormente':'Regra inicial (editável)',dpar:dc.status}}renderEverything();$('loadStatus').className='notice '+(isDemo?'good':S.data.orders.length?'good':'bad');$('loadStatus').textContent=isDemo?'EXEMPLO FICTÍCIO ativado: pedidos, DPAR, CAD, Malha, estoques e produção simulados. Os códigos são ilustrativos e não são as suas bases reais.':S.data.orders.length?`${S.sheets.length} abas importadas. ${S.data.orders.length.toLocaleString('pt-BR')} chaves únicas de pedido/SKU/cliente; ${[...new Set(S.data.orders.map(o=>o.network))].filter(n=>n!=='REDE NÃO IDENTIFICADA').length} redes identificadas. ${S.orderReadStats?.withoutNetwork||0} linhas sem Rede preservadas para auditoria.`:`${S.sheets.length} abas importadas, mas sem pedidos reconhecidos. Confira o reconhecimento dos campos Pedido ERP, EG Cliente, SKU EG e quantidades da Order.`;$('dataMode').textContent=isDemo?'Demonstração fictícia':`${S.sourceCount} arquivo(s) importado(s)`}
+ function renderSources(){
+ const a=$('importAudit');
+ a.innerHTML=S.demo?'':S.importSummary.map(i=>`<div class="auditrow"><div><b>${esc(i.name)}</b><div class="small">${fmt(i.used)} planilha(s) reconhecida(s) · ${fmt(i.added)} aba(s) lida(s)${i.ignored?' · '+fmt(i.ignored)+' outros arquivos ignorados':''}${i.errorCount?' · '+fmt(i.errorCount)+' erros':''}</div></div><span class="pill ${i.used?'gray':'orange'}">${i.used?'Importado':'Sem planilha'}</span></div>`).join('')+(S.importWarnings.length?`<div class="notice bad"><b>Problemas na importação:</b> ${esc(S.importWarnings.join(' · '))}</div>`:'');
+ const labels={originMap:'De/para de origens',orders:'Order / Pendente',dpar:'DeParaCDD / DPAR',cad:'CAD',malha:'Malha',vd:'Estoque fábrica VD',grade:'Grade estoque CD',production:'Produção',originMap:'De/para de origens'};const opts=[['','Não classificada'],...Object.entries(labels)].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');$('sheetInfo').innerHTML=S.demo?'<div class="notice good">Conjunto fictício carregado. Para ver as abas reais, carregue os arquivos Excel.</div>':S.sheets.map((s,i)=>`<div class="auditrow"><div><b>${esc(s.name)} · ${esc(s.tab)}</b><div class="small">Cabeçalho na linha ${s.headerRow} · ${s.fields.length} colunas · ${fmt(s.rows?.length??s.approxRows??0)} linhas</div><div class="small">Colunas: ${esc(s.fields.slice(0,12).join(' · '))}${s.fields.length>12?' ...':''}</div>${s.type==='orders'?`<div class="small" style="color:#185d63"><b>Order → colunas:</b> ${esc(['order','clientId','eg','network','updated','carWith','carWithout','billed','captured','created','validity'].map(k=>k+': '+(fieldMapFor(s)[k]||'N/D')).join(' · '))}<br><b>Origem U/V/W:</b> ${esc([20,21,22].map((k,i)=>'UVW'[i]+'='+ (s.fields[k]||'N/D')).join(' · '))}</div>`:''}${['production','grade','dpar'].includes(s.type)?`<div class="small" style="color:#185d63;margin-top:5px"><b>${esc(s.type==='production'?'Produção — campos padrão':s.type==='dpar'?'DeParaCDD — campos padrão':'Grade CDD — campos padrão')}:</b> ${esc((s.type==='production'?[['SKU EG','eg'],['Origem','origin'],['Data de produção','date']]:s.type==='dpar'?[['Cliente EG','clientId'],['Nome Loja','client'],['CDD','center']]:[['SKU EG sem dígito','eg'],['Saldo em CX','boxes']]).map(([label,k])=>label+': '+(fieldMapFor(s)[k]||'N/D')).join(' · '))}${s.type==='grade'?`<div class="small">CDD identificado pelo título: <b>${esc(inferGradeCenter(s.tab)||'N/D — revisar título')}</b></div>`:''}</div>`:''}<div class="small"><b>${esc(s.detection?.manual?'Definida manualmente':s.detection?.confidence||'Não reconhecida')}</b> · ${esc(s.detection?.reason||'Sem diagnóstico')}</div></div><select aria-label="Papel da aba" data-role="${i}" style="max-width:205px">${opts.replace('value="'+s.type+'"','value="'+s.type+'" selected')}</select></div>`).join('')+(S.problems.length?`<div class="notice bad"><b>Diagnóstico:</b> ${esc(S.problems.join(' · '))}</div>`:'<div class="notice good">Todas as fontes principais foram identificadas. Conferir valores e de/paras antes de enviar os relatórios.</div>')+((S.info||[]).length?`<div class="notice"><b>Informações não bloqueantes:</b> ${esc([...new Set(S.info)].join(' · '))}</div>`:'');document.querySelectorAll('[data-role]').forEach(el=>el.onchange=()=>{let s=S.sheets[+el.dataset.role];if(el.value)S.manualRoles[s.name+'|'+s.tab]=el.value;else delete S.manualRoles[s.name+'|'+s.tab];fromSheets();initData(false)});renderFieldRecovery()}
+ function renderNetworks(){
+   const ns=[...new Set(S.data.orders.map(o=>o.network))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+   const query=norm($('networkSearch').value);
+   const filtered=ns.filter(n=>!query||norm(n).includes(query));
+   const empty=S.sheets.length?'Não foram identificadas redes na Order. Confira os campos de Pedido ERP, EG Cliente e SKU EG.':'Importe a Order ou abra o exemplo.';
+   $('networks').innerHTML=ns.length?(filtered.length?filtered.map(n=>`<label class="netcheck"><input class="check" type="checkbox" data-net="${esc(n)}" ${S.selected.has(n)?'checked':''}><span>${esc(n)}</span><span class="netcount">${S.indices?.netCounts?.get(n)||0}</span></label>`).join(''):'<div class="search-empty">Nenhuma rede encontrada para esta busca.</div>'):`<div class="notice">${esc(empty)}</div>`;
+   $('networkCount').textContent=`${S.selected.size} de ${ns.length} selecionadas · ${filtered.length} visíveis`;
+   document.querySelectorAll('[data-net]').forEach(el=>el.onchange=()=>{el.checked?S.selected.add(el.dataset.net):S.selected.delete(el.dataset.net);onNetworkChanged();});
+ }
+ function onNetworkChanged(){S.analyticsCache.clear();refreshDropdowns();renderNetworks();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()}
+ $('networkSearch').oninput=renderNetworks;
+ $('pickVisible').onclick=()=>{const q=norm($('networkSearch').value);for(const n of new Set(S.data.orders.map(o=>o.network)))if(!q||norm(n).includes(q))S.selected.add(n);onNetworkChanged()};
+ $('clearVisible').onclick=()=>{const q=norm($('networkSearch').value);for(const n of new Set(S.data.orders.map(o=>o.network)))if(!q||norm(n).includes(q))S.selected.delete(n);onNetworkChanged()};
+ $('pickAll').onclick=()=>{S.selected=new Set(S.data.orders.map(o=>o.network));onNetworkChanged()};
+ $('pickNone').onclick=()=>{S.selected.clear();onNetworkChanged()};
+ $('toChannels').onclick=()=>show('origens');
+function opt(id,arr,prompt='Todas as redes'){let el=$(id),before=el.value;el.innerHTML=(prompt?`<option value="">${esc(prompt)}</option>`:'')+arr.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(arr.includes(before))el.value=before;else el.value=prompt?'':arr[0]||''}
+function refreshDropdowns(){let ns=chosenNetworks().sort();opt('configNetwork',ns,'');opt('analysisNetwork',ns,'Todas as redes');opt('exportNetwork',ns,'');}
+function visibleUnits(){let net=$('configNetwork').value,q=norm($('clientSearch').value);return units().filter(u=>S.selected.has(u.network)&&(!net||u.network===net)&&(!q||norm([u.client,u.clientId].join(' ')).includes(q)))}
+function centerOptions(current){return '<option value="">Sem centro validado</option>'+CENTERS.filter(c=>c.type==='CD').map(c=>`<option value="${esc(c.list)}" ${current===c.list?'selected':''}>${esc(c.list+' · '+c.name)}</option>`).join('')}
+function renderClients(){const u=visibleUnits(), visible=u.slice(0,120);$('clientRows').innerHTML=u.length?visible.map(x=>{let ch=S.channels[x.key]||{},hasDPAR=getDpar(x);let valid=ch.mode==='VD'?'Malha / fábrica':ch.center?'CDD definido':'CDD não identificado';return `<tr><td><input class="check" type="checkbox" data-unitcheck="${esc(x.key)}" ${S.checked.has(x.key)?'checked':''}></td><td>${esc(x.network)}</td><td><b>${esc(x.client)}</b><div class="small">EG: ${esc(x.clientId)} · ${x.count} linhas</div></td><td><select data-mode="${esc(x.key)}"><option value="VD" ${ch.mode==='VD'?'selected':''}>VD — fábrica</option><option value="CD" ${ch.mode==='CD'?'selected':''}>CD — CDD</option></select></td><td><select data-center="${esc(x.key)}" ${ch.mode==='VD'?'disabled':''}>${centerOptions(ch.center)}</select></td><td><span class="pill ${hasDPAR.center?'':'orange'}">${esc(hasDPAR.status)}</span></td><td><span class="pill ${ch.mode==='CD'&&!ch.center?'red':''}">${esc(valid)}</span></td></tr>`}).join(''):'<tr><td colspan="7">Nenhuma unidade disponível no filtro.</td></tr>';$('configCount').textContent=`${u.length} unidades encontradas · ${Math.min(u.length,120)} exibidas · ${S.checked.size} marcadas`;$('allVisible').checked=!!u.length&&u.every(x=>S.checked.has(x.key));document.querySelectorAll('[data-unitcheck]').forEach(el=>el.onchange=()=>{el.checked?S.checked.add(el.dataset.unitcheck):S.checked.delete(el.dataset.unitcheck);renderClients()});document.querySelectorAll('[data-mode]').forEach(el=>el.onchange=()=>{S.channels[el.dataset.mode].mode=el.value;S.channels[el.dataset.mode].origin='Ajuste manual';S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()});document.querySelectorAll('[data-center]').forEach(el=>el.onchange=()=>{S.channels[el.dataset.center].center=el.value;S.channels[el.dataset.center].origin='Centro ajustado manualmente';S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()})}
+$('configNetwork').onchange=()=>{S.checked.clear();renderClients()};$('clientSearch').oninput=renderClients;$('allVisible').onchange=e=>{for(const x of visibleUnits())e.target.checked?S.checked.add(x.key):S.checked.delete(x.key);renderClients()};$('selectVisible').onclick=()=>{for(const x of visibleUnits())S.checked.add(x.key);renderClients()};$('unselectVisible').onclick=()=>{for(const x of visibleUnits())S.checked.delete(x.key);renderClients()};
+function applyBatch(mode){for(const k of S.checked)if(S.channels[k]){S.channels[k].mode=mode;S.channels[k].origin='Edição em lote'}S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()}$('batchCD').onclick=()=>applyBatch('CD');$('batchVD').onclick=()=>applyBatch('VD');
+function saveRules(){try{localStorage.setItem('carteira_reversa_canais_v4',JSON.stringify({channels:S.channels,updated:new Date().toISOString()}));alert('Regras salvas neste navegador. Use Exportar regras para manter uma cópia compartilhável.')}catch(e){alert('Não foi possível salvar localmente: '+e.message)}}$('saveRules').onclick=saveRules;
+function saveBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
+$('exportRules').onclick=()=>saveBlob(new Blob([JSON.stringify({version:4,channels:S.channels,centers:CENTERS,generated:new Date().toISOString()},null,2)],{type:'application/json'}),'Regras_de_atendimento_VD_CD.json');$('importRules').onchange=async e=>{try{let j=JSON.parse(await e.target.files[0].text());if(!j.channels||typeof j.channels!=='object')throw Error('Arquivo sem canais');for(const [k,v] of Object.entries(j.channels))if(S.channels[k]&&['VD','CD'].includes(v.mode)){S.channels[k].mode=v.mode;let center=resolveCenter(v.center,'CD');S.channels[k].center=center?.list||'';S.channels[k].origin='Regras importadas'}S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()}catch(err){alert(err.message)}};
+function stockCenter(raw,type){let center=resolveCenter(raw,type);return center?.list||''}
+// A grade tem codigo EG SEM o ultimo digito verificador; nunca converta o codigo para Number.
+function gradeKey(v){const t=text(v).trim();return /^\d[\d .-]*$/.test(t)?t.replace(/[ .-]/g,''):'';}
+function gradeFromEG(v){const k=gradeKey(v);return k.length>1?k.slice(0,-1):'';}
+function getCad(o){
+ const byEg=getIndexed('cadEG',norm(o.eg)),bySap=o.sap?getIndexed('cadSAP',norm(o.sap)):[];
+ const found=byEg.length?byEg:bySap,keys=[...new Set(found.map(c=>norm(c.sap)))];
+ return keys.length===1?found.find(c=>c.cxPlt>0)||found[0]:null;
+}
+
+function skuDescription(o){
+ const direct=text(o.skuName);if(direct)return direct;
+ const eg=norm(o.eg);
+ for(const rows of [getIndexed('cadEG',eg),getIndexed('prodEG',eg),getIndexed('vdEG',eg)]){
+  const match=rows.find(v=>text(v.name));if(match)return text(match.name);
+ }
+ return 'Descrição não informada';
+}
+function stockLabel(p){if(p==null)return 'Não localizado';if(p<=0)return 'Sem estoque';return 'Com estoque'}
+function analyze(o){
+ let ch=S.channels[id(o)]||{},cad=getCad(o),sap=cad?.sap||o.sap,ratio=cad?.cxPlt||null;
+ let problems=[...(o.issuesInitial||[])],stock=null,stockPlt=null,prod=null,prodPlt=null,which='',primary='',qual='Não se aplica (CD)',originDetails=[],cdDate='',cdStatus='';
+ let date=$('referenceDate').value||today(),valid=o.validity?o.validity>=date:null;
+ if(o.pending==null)problems.push('Componentes incompletos: atualizada, com remessa, sem remessa ou faturado');
+ if(o.initial==null)problems.push('Qtd. Original ausente');
+ if(o.pending!=null&&o.pending<0)problems.push('Pendente negativo: verificar movimentos');
+ if(o.initial>0&&o.billed!=null&&o.billed>o.initial)problems.push('Faturado superior ao original: indicador visual limitado a 100%, revisar conciliação');
+ if(!o.validity)problems.push('Validade ausente');
+ if(ch.mode==='VD'&&!sap)problems.push('CAD sem conversão EG → SAP para consultar a Malha');
+ if(ch.mode==='CD'){
+  which=ch.center?`${ch.center} · CDD`:'CDD não identificado';primary=ch.center||'';
+  qual='Não se aplica (CD)';
+  // PRODUÇÃO é uma data, e ESTOQUE é uma categoria textual, inclusive no CDD.
+  const pcd=ch.center?getIndexed('prodCD',keyOf(o.eg,ch.center)):[];
+  cdDate=pcd.map(x=>x.date).filter(Boolean).sort()[0]||'';
+  cdStatus=[...new Set(pcd.map(x=>x.stockStatus).filter(Boolean))].join(' / ');
+  if(!ch.center)problems.push('Sem CDD/DPAR');
+  else if(!S.data.grade.length)problems.push('Grade CD ausente');
+  else{
+   const skuGrade=gradeFromEG(o.eg);
+   if(!skuGrade){problems.push('SKU EG da Order inválido para retirar o último dígito; sem cruzamento de grade');}
+   else{
+    const hits=getIndexed('gradeEG',keyOf(ch.center,skuGrade));
+    if(!hits.length){problems.push('Produto EG sem dígito final ('+skuGrade+') não encontrado na grade '+ch.center);}
+    else{
+      stock=hits.some(g=>g.boxes==null)?null:hits.reduce((s,g)=>s+g.boxes,0);
+      const gradeProd=hits.filter(g=>g.productionBoxes!=null);
+      if(gradeProd.length){prod=gradeProd.reduce((v,g)=>v+g.productionBoxes,0);problems.push('Produção CD da grade: informativa, sem cobertura temporal validada');}
+      else{
+        const sameCenter=getIndexed('prodCD',keyOf(o.eg,ch.center)).filter(g=>g.pallets!=null);
+        if(sameCenter.length&&ratio){prod=sameCenter.reduce((v,g)=>v+g.pallets*ratio,0);problems.push('Produção CD da mesma origem, convertida por CAD; sem data, informativa');}
+      }
+     }
+   }
+  }
+ }else if(ch.mode==='VD'){
+  if(!sap)problems.push('SKU SAP não encontrado na CAD: Malha não consultada');
+  if(!ratio)problems.push('Sem fator CAD (CX/PLT)');
+  if(!o.commercial)problems.push('Sem Comercial');
+  if(!S.data.malha.length)problems.push('Malha ausente');
+  if(sap&&o.commercial&&S.data.malha.length){
+   let allowed=new Map();
+   for(let m of getIndexed('malha',keyOf(o.commercial,sap))){
+    let c=resolveCenter(m.origin,'VD');if(c)allowed.set(c.list,c);
+   }
+   which=allowed.size?[...allowed.keys()].join(' · '):'Nenhuma fábrica autorizada';
+   if(!allowed.size)problems.push('Malha sem origem autorizada');
+   else{
+    if(!S.data.vd.length)problems.push('Estoque VD ausente');
+    originDetails=[...allowed.values()].map(c=>{
+      const rows=getIndexed('vd',keyOf(o.eg,c.list));
+      if(!rows.length)problems.push('SKU EG '+o.eg+' não encontrado no estoque da origem '+c.list);if(rows.some(v=>v.conflict))problems.push('Estoque conflitante entre fontes para '+c.list+' / SKU '+o.eg);
+      let stockRows=rows;
+       if(rows.some(v=>/estoque|disponivel/i.test(v.attribute||'')))stockRows=rows.filter(v=>/estoque|disponivel/i.test(v.attribute||''));
+       const multipleAttributes=new Set(stockRows.map(v=>norm(v.attribute)).filter(Boolean)).size>1;
+       const pallets=!stockRows.length?null:multipleAttributes||stockRows.some(v=>v.pallets==null)?null:stockRows.reduce((v,r)=>v+r.pallets,0);
+      const allprod=getIndexed('prod',keyOf(o.eg,c.list));
+       const nextDate=allprod.map(v=>v.date).filter(Boolean).sort()[0]||'';
+       const stockStatus=[...new Set(allprod.map(v=>v.stockStatus).filter(Boolean))].join(' / ');
+       return {center:c.list,name:c.name,pallets,production:null,productionDate:nextDate,productionStatus:stockStatus,undatedProduction:null,grade:stockLabel(pallets)};
+    });
+    const known=originDetails.filter(r=>r.pallets!==null);
+    if(known.length!==originDetails.length)problems.push('Estoque indefinido em origem autorizada');
+    if(!known.length&&originDetails.length){
+      const fallback=originDetails.find(z=>z.productionDate)||originDetails[0];
+      primary=fallback.center;qual='Não localizado';
+    }
+    if(known.length){
+      const needed=o.pending!=null&&ratio?Math.max(0,o.pending)/ratio:null;
+      const eligible=needed===null?known:known.filter(r=>r.pallets>=needed);
+      const candidates=eligible.length?eligible:known;
+      const mode=$('priorityMode').value;
+      // Stock and car-size are separate: a source with >=24 PLT is eligible as a truck source,
+      // but a 24-PLT order/EG truck still requires 24 PLT of qualified order volume.
+      if(mode==='near24'){
+        const qualified=candidates.filter(z=>z.pallets>=24);
+        if(qualified.length){candidates.length=0;candidates.push(...qualified);}
+        candidates.sort((a,b)=>Math.abs(a.pallets-24)-Math.abs(b.pallets-24)||b.pallets-a.pallets);
+      }else candidates.sort((a,b)=>b.pallets-a.pallets);
+      const chosen=candidates[0];
+       primary=chosen.center;stockPlt=chosen.pallets;qual=o.pending==null?'Pendente não calculado':chosen.pallets<=0?'Sem estoque':ratio?chosen.pallets*ratio>=Math.max(0,o.pending)?'Atende o pendente':'Atendimento parcial':'Conversão CAD pendente';
+       if(chosen.productionDate)problems.push('Produção informada para '+chosen.center+': '+formatDate(chosen.productionDate)+' (data, não volume)');
+       if(chosen.productionStatus)problems.push('Situação na base Produção: '+chosen.productionStatus);
+       const alternativeDates=originDetails.filter(z=>z.productionDate&&z.center!==chosen.center);
+       if(!chosen.productionDate&&alternativeDates.length)problems.push('Data de produção disponível apenas em outra origem autorizada: '+alternativeDates.map(x=>x.center+' '+formatDate(x.productionDate)).join(', '));
+       prodPlt=null;prod=null;
+      stock=ratio?chosen.pallets*ratio:null;
+      if(!eligible.length&&needed!=null)problems.push('Nenhuma origem cobre individualmente o pendente; não se deve somar origens para afirmar atendimento');
+    }
+   }
+  }
+ }else problems.push('Canal VD/CD não identificado');
+ let status='';
+ if(valid===false)status='Vencido';
+ else if(valid===null)status='Validade não identificada';
+ else if(o.pending==null)status='Pendente não calculado';
+ else if(stock==null)status='Validar estoque / cruzamento';
+ else if(stock>=o.pending)status='Tem estoque para o pedido';
+ else if(ch.mode==='VD'&&prod!=null&&stock+prod>=o.pending)status='Potencial com produção (origem prioritária)';
+ else status='Estoque insuficiente';
+ // Negative order balances cannot represent positive stock coverage.
+ if(o.pending!=null&&o.pending<0)status='Saldo negativo — validar';
+ return {...o,skuName:skuDescription(o),channel:ch.mode||'',center:ch.center||'',sap,ratio,stock,stockPlt,production:null,productionPlt:null,productionDate:ch.mode==='CD'?cdDate:(originDetails.find(x=>x.center===primary)?.productionDate||''),productionStatus:ch.mode==='CD'?cdStatus:(originDetails.find(x=>x.center===primary)?.productionStatus||''),where:which,primary,originDetails,qualification:qual,valid,issues:[...new Set(problems)].join(' · '),status};
+}
+function publicStockQualification(r){
+ // Externo: informar somente CATEGORIA, nunca volumes D1, grade ou disponibilidade quantitativa.
+ if(r.channel==='VD')return r.qualification||'Não localizado';
+ if(r.stock==null)return 'Não localizado (CDD)';
+ if(r.stock<=0)return 'Sem estoque (CDD)';
+ return r.status==='Tem estoque para o pedido'?'Atende o pendente (CDD)':'Atendimento parcial (CDD)';
+}
+function passesDate(o){
+ const dt=$('referenceDate').value||today();
+ return !!o.validity&&o.validity>=dt; // inclusive, no other validity modes
+}
+function passesCapture(o){
+ const start=$('captureStart').value,end=$('captureEnd').value;
+ if(!start&&!end)return true;
+ if(!o.captured)return false;
+ return (!start||o.captured>=start)&&(!end||o.captured<=end);
+}
+function analysisRows(net=''){
+ const k=[net,$('referenceDate').value,$('captureStart').value,$('captureEnd').value,$('priorityMode').value,[...S.selected].sort().join('|')].join('§');
+ if(S.analyticsCache.has(k))return S.analyticsCache.get(k);
+ const r=S.data.orders.filter(o=>S.selected.has(o.network)&&(!net||o.network===net)&&passesDate(o)&&passesCapture(o)).map(analyze);
+ S.analyticsCache.set(k,r);if(S.analyticsCache.size>12)S.analyticsCache.delete(S.analyticsCache.keys().next().value);
+ return r;
+}
+function managerOrders(rs){
+ const groups=new Map();
+ for(const r of rs){
+  const k=[r.network,r.order,r.clientId||r.client,r.channel].map(norm).join('|');
+  if(!groups.has(k))groups.set(k,{key:k,network:r.network,order:r.order,client:r.client,clientId:r.clientId,
+    channel:r.channel,center:r.channel==='CD'?r.center:'',primary:r.channel==='VD'?r.primary:'',production:0,productionKnown:false,initialHL:0,initialPlt:0,hlKnown:true,pltKnown:true,
+    lines:0,initial:0,billed:0,pending:0,originalKnown:true,billedKnown:true,pendingKnown:true,covered:0,expiry:'',captured:'',productionDate:'',originVolume:new Map()});
+  const g=groups.get(k);g.lines++;g.originalKnown&&=r.initial!=null;g.billedKnown&&=r.billed!=null;g.pendingKnown&&=r.pending!=null;
+  g.initial+=r.initial||0;g.billed+=r.billed||0;g.pending+=r.pending||0;g.initialHL+=r.initialHL||0;g.initialPlt+=r.initialPlt||0;g.hlKnown&&=r.initialHL!=null;g.pltKnown&&=r.initialPlt!=null;
+  if(r.status==='Tem estoque para o pedido')g.covered++;if(r.captured&&(!g.captured||r.captured<g.captured))g.captured=r.captured;if(r.productionDate&&(!g.productionDate||r.productionDate<g.productionDate))g.productionDate=r.productionDate; if(r.channel==='VD'&&r.pending>0&&r.ratio){for(const z of r.originDetails){if(z.pallets==null)continue;const k=z.center+'|'+norm(r.eg);const q=Math.min(Math.max(0,r.pending/r.ratio),Math.max(0,z.pallets));const old=g.originVolume.get(k);g.originVolume.set(k,old?{center:z.center,qty:old.qty+q,stock:Math.max(old.stock,z.pallets)}:{center:z.center,qty:q,stock:z.pallets});}}
+  if(r.production!=null){g.productionKnown=true;g.production+=r.production;}
+  if(r.validity&&(!g.expiry||r.validity<g.expiry))g.expiry=r.validity;
+  if(r.channel==='VD'&&g.primary&&g.primary!==r.primary)g.primary='Múltiplas origens';
+  if(r.channel==='CD'&&g.center&&g.center!==r.center)g.center='Múltiplos CDDs';
+ }
+ return [...groups.values()].map(g=>{ const byOrigin=new Map();for(const e of g.originVolume.values())byOrigin.set(e.center,(byOrigin.get(e.center)||0)+Math.min(e.qty,e.stock));const cars=[...byOrigin.entries()].sort((a,b)=>b[1]-a[1]);const qualifying=cars.filter(x=>x[1]>=24);const best=(qualifying.length?qualifying:cars)[0];return {...g,truckOrigin:best?.[0]||'',qualifiedPlt:best?.[1]??null,fullTruck:!!qualifying.length,initial:g.originalKnown?g.initial:null,billed:g.billedKnown?g.billed:null,
+   pending:g.pendingKnown?g.pending:null,initialHL:g.hlKnown?g.initialHL:null,initialPlt:g.pltKnown?g.initialPlt:null,production:g.productionKnown?g.production:null,
+   fillRate:g.originalKnown&&g.billedKnown&&g.initial>0?Math.max(0,Math.min(100,100*g.billed/g.initial)):null};});
+}
+function shibataSegment(r){
+ if(!norm(r.network).includes('shibata'))return r.channel==='VD'?'VD':'CD';
+ if(r.channel==='VD'&&(/\bcd\b/.test(norm(r.client))||/\bcdd\b/.test(norm(r.client))||norm(r.clientId).includes('cd')))return 'CD Shibata · VD';
+ if(r.channel==='CD')return 'Lojas Shibata · CD';
+ return 'Outros VD · revisar unidade';
+}
+function metricSummary(rs){const agg=k=>rs.every(r=>r[k]!=null)?rs.reduce((t,r)=>t+r[k],0):null;const initial=agg('initial'),billed=agg('billed'),pending=agg('pending');return {initial,billed,pending,fillRate:initial>0&&billed!=null?Math.max(0,Math.min(100,100*billed/initial)):null};}
+function renderShibataBreakdown(rs){
+ const target=$('shibataBreakdown');const ss=rs.filter(r=>norm(r.network).includes('shibata'));
+ if(!ss.length){target.innerHTML='';return;}
+ const groups=[['CD Shibata · VD',ss.filter(x=>shibataSegment(x)==='CD Shibata · VD')],['Lojas Shibata · CD',ss.filter(x=>shibataSegment(x)==='Lojas Shibata · CD')],['Outros VD · revisar unidade',ss.filter(x=>shibataSegment(x)==='Outros VD · revisar unidade')]].filter(([name,r])=>r.length);
+ const html=groups.map(([name,lines],i)=>{const m=metricSummary(lines),orders=managerOrders(lines).sort((a,b)=>(b.pending||0)-(a.pending||0));return `<div class="segment-card ${i?'secondary':''}"><div class="accentbar"></div><h3>${esc(name)}</h3><div class="keyline"><span>${orders.length} pedido(s)/EG</span><span>${new Set(lines.map(x=>x.clientId)).size} EG cliente</span></div><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:6px"><div><div class="mini">Faturado</div><div class="num">${fmt(m.billed)}</div><div class="mini">CX</div></div><div><div class="mini">Pendente</div><div class="num">${fmt(m.pending)}</div><div class="mini">CX</div></div><div><div class="mini">Fill rate</div><div class="num">${m.fillRate==null?'N/D':fmt(m.fillRate)+'%'}</div></div></div><div class="mini" style="margin-top:10px">Pedidos por EG Cliente — ${name.includes('Lojas')?'loja a loja':'CD de atendimento VD'}:</div>${orders.slice(0,5).map(g=>`<div class="segrow"><span>ERP ${esc(g.order)} · EG ${esc(g.clientId)}</span><b>${fmt(g.pending)} CX · ${g.fillRate==null?'N/D':fmt(g.fillRate)+'%'}</b></div>`).join('')}<div class="mini" style="margin-top:9px">${orders.length>5?'Outros '+(orders.length-5)+' pedidos disponíveis na tabela/Excel.':'Separação por pedido e EG, sem somar canais diferentes.'}</div></div>`}).join('');
+ target.innerHTML=`<h3 class="section-sub">Shibata — atendimento separado por canal e EG Cliente</h3><div class="segment-area">${html}</div>`;
+}
+function cellStatus(s){let cls=/Vencido|insuficiente|negativo/.test(s)?'red':/Validar|Potencial|não identificado/.test(s)?'orange':'';return `<span class="pill ${cls}">${esc(s)}</span>`}
+function groupMetric(rows,field,metric='pending'){
+ const map=new Map(); for(const r of rows){const name=String(typeof field==='function'?field(r):r[field]||'Não informado'); const v=Number(r[metric]);if(!Number.isFinite(v))continue;map.set(name,(map.get(name)||0)+Math.max(0,v));}
+ return [...map].map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+}
+function compactBars(target,values,opt={}){
+ const node=$(target);if(!node)return;const items=values.filter(v=>Number.isFinite(v.value)).slice(0,opt.limit||6);const max=Math.max(1,...items.map(v=>v.value));
+ node.innerHTML=items.length?items.map((item,i)=>`<div class="metricbar"><div class="metricrow"><span title="${esc(item.name)}">${esc(item.name)}</span><b>${opt.suffix==='count'?fmt(item.value):fmt(item.value)+' CX'}</b></div><div class="progress-track"><div class="progress-fill" style="width:${Math.max(1,100*item.value/max).toFixed(2)}%;--bar-color:${opt.colors?.[i%opt.colors.length]||'#1985a1'}"></div></div></div>`).join(''):'<p class="small">Sem informações suficientes neste filtro.</p>';
+}
+function drawInsightPanels(rows){
+ const ini=rows.reduce((a,r)=>a+(r.initial||0),0),bil=rows.reduce((a,r)=>a+(r.billed||0),0),pending=rows.reduce((a,r)=>a+Math.max(0,r.pending||0),0);
+ const hasInit=rows.every(r=>r.initial!=null),hasBill=rows.every(r=>r.billed!=null),hasPend=rows.every(r=>r.pending!=null);
+ if(!rows.length){for(const id of ['balanceVisual','coverageVisual','networkVisual','skuVisual','clientVisual','productionVisual','validityVisual','channelVisual'])$(id).innerHTML='<p class="small">Escolha redes e carregue as bases para visualizar.</p>';return;}
+ if(hasInit&&hasBill&&hasPend&&ini>0){const other=Math.max(0,ini-bil-pending);const x=[{label:'Faturado',amount:Math.max(0,bil),c:'#17866C'},{label:'Pendente',amount:pending,c:'#E5A23C'},{label:'Diferença/movimentos',amount:other,c:'#748BA8'}];const max=Math.max(ini,x.reduce((a,z)=>a+z.amount,0),1);$('balanceVisual').innerHTML=`<div class="stackedbar">${x.map(z=>`<div title="${esc(z.label)}: ${fmt(z.amount)} CX" style="width:${Math.max(0,100*z.amount/max)}%;background:${z.c}"></div>`).join('')}</div><div class="legend">${x.map(z=>`<span><i style="background:${z.c}"></i>${z.label}: <b>${fmt(z.amount)}</b></span>`).join('')}</div><p class="mini">A diferença inclui atualizações e movimentos; não significa necessariamente erro.</p>`;}else $('balanceVisual').innerHTML='<div class="notice">Há campos de quantidade não identificados. Sem completar o cálculo, a composição não é exibida.</div>';
+ const status=[{name:'Atende o pendente',count:rows.filter(r=>r.status==='Tem estoque para o pedido').length,color:'#1C937D'},{name:'Atendimento parcial',count:rows.filter(r=>r.status==='Estoque insuficiente'&&r.stock>0).length,color:'#D69D40'},{name:'Sem estoque',count:rows.filter(r=>r.status==='Estoque insuficiente'&&r.stock===0).length,color:'#CD6661'},{name:'A validar / outros',count:rows.filter(r=>!['Tem estoque para o pedido','Estoque insuficiente'].includes(r.status)||r.status==='Estoque insuficiente'&&r.stock==null).length,color:'#8B9AAF'}];const total=Math.max(1,rows.length),pc=status.map(z=>z.count/total*100),gradient='conic-gradient('+status.map((z,i)=>`${z.color} ${pc.slice(0,i).reduce((a,b)=>a+b,0).toFixed(3)}% ${pc.slice(0,i+1).reduce((a,b)=>a+b,0).toFixed(3)}%`).join(',')+')';
+ $('coverageVisual').innerHTML=`<div class="donutline"><div class="donut" style="background:${gradient}"><div class="donut-center"><strong>${rows.length}</strong><small>itens</small></div></div><div class="legend vertical">${status.map(z=>`<span><i style="background:${z.color}"></i>${z.name} <b>${z.count}</b></span>`).join('')}</div></div>`;
+ const vdRows=rows.filter(x=>x.channel==='VD');
+ const qCats=[['Sem estoque','#C95D65'],['Muito crítico','#D77B55'],['Crítico','#E0AC43'],['Intermediário','#789FBC'],['OK','#17866C'],['Não identificado','#98A8B8']].map(([name,color])=>({name,color,count:vdRows.filter(x=>x.qualification===name).length})).filter(x=>x.count);
+ if(vdRows.length){
+   const grad='conic-gradient('+qCats.map((z,i)=>{const st=100*qCats.slice(0,i).reduce((a,x)=>a+x.count,0)/vdRows.length,en=100*qCats.slice(0,i+1).reduce((a,x)=>a+x.count,0)/vdRows.length;return `${z.color} ${st.toFixed(3)}% ${en.toFixed(3)}%`}).join(',')+')';
+   $('coverageVisual').innerHTML+=`<div class="divider"></div><h4 style="margin:8px 0 14px;color:#253F55">Qualificação de estoque VD • D1</h4><div class="donutline"><div class="donut" style="background:${grad}"><div class="donut-center"><strong>${vdRows.length}</strong><small>itens VD</small></div></div><div class="legend vertical">${qCats.map(z=>`<span><i style="background:${z.color}"></i>${z.name} <b>${z.count}</b></span>`).join('')}</div></div><div class="mini" style="margin-top:12px">CD: avaliação pela grade em caixas, fora da escala VD.</div>`;
+ }
+
+ compactBars('networkVisual',groupMetric(rows,'network'));
+ compactBars('skuVisual',groupMetric(rows,r=>r.eg+' · '+(r.skuName||'SKU sem descrição')));
+ compactBars('clientVisual',groupMetric(rows, r=>r.client+' · '+r.clientId));
+ const prodDate=rows.filter(r=>r.productionDate).length,prodNoDate=rows.filter(r=>r.productionStatus&&!r.productionDate).length;
+ const dated=rows.filter(r=>r.productionDate).sort((a,b)=>a.productionDate.localeCompare(b.productionDate)).slice(0,7);
+ $('productionVisual').innerHTML=`<div class="channel-pills"><div><strong>${prodDate}</strong><small>Itens com data de produção</small></div><div><strong>${prodNoDate}</strong><small>Classificação sem data</small></div></div><div style="margin-top:13px">${dated.map(r=>`<div class="metricrow" style="border-bottom:1px solid #E8EEF2;padding:8px 0;align-items:flex-start"><span style="white-space:normal;max-width:73%"><b>ERP ${esc(r.order)}</b> · ${esc(r.eg)}<br><span class="mini">${esc(r.skuName)} · ${esc(r.channel==='CD'?r.center:r.primary)} · ${esc(r.productionStatus)}</span></span><b>${formatDate(r.productionDate)}</b></div>`).join('')||'<p class="small">Sem data de produção associada à origem deste recorte.</p>'}</div><p class="small">Coluna PRODUÇÃO = data; ESTOQUE = classificação textual, sem quantidade futura nem cobertura garantida.</p>`;
+ const dt=$('referenceDate').value||today(), parse=x=>new Date(x+'T12:00:00').getTime(), day=864e5,base=parse(dt);
+ const validity=[{name:'Vencidos',value:0},{name:'Vence em até 7 dias',value:0},{name:'8 a 30 dias',value:0},{name:'Mais de 30 dias',value:0},{name:'Sem validade',value:0}];
+ for(const r of rows){const n=r.validity?Math.round((parse(r.validity)-base)/day):null;const j=n==null?4:n<0?0:n<=7?1:n<=30?2:3;validity[j].value++;}
+ compactBars('validityVisual',validity,{suffix:'count',limit:5,colors:['#D65B5B','#E4A03B','#1985A1','#17866C','#A4AABB']});
+ const vd=rows.filter(r=>r.channel==='VD'),cd=rows.filter(r=>r.channel==='CD');
+ $('channelVisual').innerHTML=`<div class="channel-pills"><div><strong>${vd.length}</strong><small>Itens VD (Malha SAP + D1)</small></div><div><strong>${cd.length}</strong><small>Itens CD (Grade CX)</small></div></div><div class="legend vertical"><span><i style="background:#D65B5B"></i>VD muito crítico: <b>${vd.filter(r=>r.qualification==='Muito crítico').length}</b></span><span><i style="background:#E4A03B"></i>VD crítico: <b>${vd.filter(r=>r.qualification==='Crítico').length}</b></span><span><i style="background:#17866C"></i>VD OK: <b>${vd.filter(r=>r.qualification==='OK').length}</b></span></div><p class="mini">CD não recebe faixa de criticidade em pallets.</p>`;
+}
+function renderOrders(){
+ const rs=analysisRows($('analysisNetwork').value),mg=managerOrders(rs);
+ const sum=k=>rs.every(x=>x[k]!=null)?rs.reduce((a,r)=>a+r[k],0):null;
+ const totalInit=sum('initial'),totalBill=sum('billed'),totalPend=sum('pending');
+ const fill=totalInit>0&&totalBill!==null?Math.max(0,Math.min(100,100*totalBill/totalInit)):null;
+ drawInsightPanels(rs);renderShibataBreakdown(rs);
+	 $('kpis').innerHTML=[['Pedidos / EG / canal',`${mg.length}`],['Linhas únicas',`${rs.length}`],['Entrada inicial (CX)',fmt(totalInit)],['Faturado (CX)',fmt(totalBill)],['Pendente (CX)',fmt(totalPend)],['Fill rate faturado',fill==null?'N/D':fmt(fill)+'%'],['Linhas com estoque',fmt(rs.filter(x=>x.status==='Tem estoque para o pedido').length)],['VD muito crítico',fmt(rs.filter(x=>x.channel==='VD'&&x.qualification==='Muito crítico').length)],['Pedidos VD ≥ 24 PLT qualificados',fmt(mg.filter(x=>x.channel==='VD'&&x.fullTruck).length)]].map(([title,value])=>`<div class="kpi"><span>${title}</span><strong>${value}</strong></div>`).join('');
+ $('audit').innerHTML=`${rs.filter(r=>!r.captured).length&&($('captureStart').value||$('captureEnd').value)?'Captação ausente excluída do filtro. · ':''}${rs.length} linhas únicas (até 150 exibidas para manter a tela rápida; Excel exporta todas) · ${rs.filter(r=>r.duplicateCount>1).length} com linhas duplicadas consolidadas · ${rs.filter(r=>r.issues).length} alertas · ${rs.filter(r=>r.channel==='CD').length} linhas CD sem qualificação de pallets. <b>Importante:</b> cobertura é apenas indicativa e não reserva estoque. A diferença Inicial − Faturado − Pendente inclui alterações e movimentos; não equivale automaticamente a um erro.`;
+ $('analysisMode').textContent=S.demo?'EXEMPLO FICTÍCIO':'BASE IMPORTADA — A VALIDAR';
+ $('orderRows').innerHTML=rs.length?rs.slice(0,150).map(r=>`<tr><td><b>${esc(r.network)}</b><div class="small">${esc(r.client)} · EG ${esc(r.clientId)}</div></td><td><b>${esc(r.order)}</b><div class="small">SKU EG ${esc(r.eg)} · ${esc(r.skuName)}</div></td><td>${esc(r.channel)}</td><td><b>${fmt(r.initial)}</b><div class="small">${fmt(r.initialPlt)} PLT · ${fmt(r.initialHL)} HL</div></td><td>${fmt(r.billed)}</td><td><b>${fmt(r.pending)}</b></td><td>${r.fillRate==null?'N/D':fmt(r.fillRate)+'%'}</td><td>${formatDate(r.validity)}<div class="small">Captação: ${formatDate(r.captured)}</div></td><td><b>${esc(r.channel==='VD'?r.primary:r.center)}</b>${r.channel==='VD'&&r.originDetails.length?`<details><summary>${r.originDetails.length} origens</summary>${r.originDetails.map(x=>esc(x.center)+' · '+fmt(x.pallets)+' PLT · '+esc(x.grade)+' · produção: '+(x.productionDate?formatDate(x.productionDate):'—')).join('<div></div>')}</details>`:''}</td><td>${r.channel==='VD'?fmt(r.stockPlt):'—'}</td><td>${r.channel==='VD'?`<span class="pill ${r.qualification==='Sem estoque'?'red':r.qualification==='Atendimento parcial'?'orange':''}">${esc(r.qualification)}</span>`:'—'}</td><td>${r.productionDate?formatDate(r.productionDate):'—'}<div class="small">${esc(r.productionStatus||'')}</div></td><td>${cellStatus(r.status)}</td><td><details><summary>${r.issues?'Ver alerta':'Detalhes'}</summary><div style="min-width:220px;max-width:330px;white-space:normal">${esc(r.issues||'Sem alertas de consistência')}<div>Qtd. atualizada: ${fmt(r.updated)} · c/ remessa: ${fmt(r.carWith)} · s/ remessa: ${fmt(r.carWithout)} · Diferença: ${fmt(r.diff)}</div></div></details></td></tr>`).join(''):'<tr><td colspan="14">Sem pedidos válidos no recorte.</td></tr>';
+ $('managerRows').innerHTML=mg.length?mg.slice(0,150).map(r=>`<tr><td>${esc(r.network)}</td><td><b>${esc(r.order)}</b></td><td><b>${esc(r.clientId)}</b><div class="small">${esc(r.client)}</div></td><td><span class="pill ${r.channel==='CD'?'gray':''}">${esc(r.channel)}</span></td><td>${r.lines}</td><td>${fmt(r.initial)}</td><td>${fmt(r.billed)}</td><td><b>${fmt(r.pending)}</b></td><td>${r.fillRate==null?'N/D':fmt(r.fillRate)+'%'}</td><td>${r.covered}/${r.lines}</td><td>${esc(r.channel==='CD'?r.center:r.primary)}</td><td>${formatDate(r.productionDate)}</td><td>${formatDate(r.expiry)}<div class="small">Captação: ${formatDate(r.captured)}</div>${r.channel==='VD'?'<div class="small">'+(r.fullTruck?'Potencial carro 24 PLT ('+fmt(r.qualifiedPlt)+' PLT · '+esc(r.truckOrigin)+')':'Não fecha 24 PLT no mesmo pedido/EG')+'</div>':''}</td></tr>`).join(''):'<tr><td colspan="13">Sem pedidos neste recorte.</td></tr>';
+}
+$('analysisNetwork').onchange=renderOrders;for(const id of ['captureStart','captureEnd'])$(id).onchange=()=>{S.analyticsCache.clear();renderOrders();renderPreview()};$('clearCapture').onclick=()=>{$('captureStart').value='';$('captureEnd').value='';S.analyticsCache.clear();renderOrders();renderPreview()};$('validityMode').onchange=()=>{S.analyticsCache.clear();renderOrders();renderPreview()};$('referenceDate').onchange=()=>{S.analyticsCache.clear();renderOrders();renderPreview()};$('priorityMode').onchange=()=>{S.analyticsCache.clear();renderOrders();renderPreview()};
+function emailScope(){const start=$('captureStart').value,end=$('captureEnd').value;return 'Validade do pedido a partir de '+formatDate($('referenceDate').value||today())+' (inclusive)'+(start||end?' · Captação (menor criação): '+(start?formatDate(start):'início')+' a '+(end?formatDate(end):'atual'):' · Captação (menor criação): sem filtro');}
+function emailSubject(net){return `Carteira Reversa | ${net} | Atendimento e pendências | ${formatDate(today())}`;}
+function emailBodyText(net){
+ const rs=analysisRows(net),mg=managerOrders(rs).sort((a,b)=>(b.pending||0)-(a.pending||0)),m=metricSummary(rs);
+ const cap=(x)=>x==null?'N/D':fmt(x);
+ let lines=['Olá, pessoal!','','Compartilho a atualização da Carteira Reversa para acompanhamento do atendimento dos pedidos.','',emailScope(),'',`Entrada original: ${cap(m.initial)} CX`,`Quantidade faturada: ${cap(m.billed)} CX`,`Quantidade pendente: ${cap(m.pending)} CX`,`Fill rate de faturamento: ${m.fillRate==null?'N/D':fmt(m.fillRate)+'%'}`,''];
+ if(norm(net).includes('shibata')){
+   lines.push('SHIBATA — ATENDIMENTO SEPARADO POR CANAL');
+   for(const [name,group] of [['CD Shibata (VD)',rs.filter(x=>shibataSegment(x)==='CD Shibata · VD')],['Lojas Shibata (CD / loja a loja)',rs.filter(x=>shibataSegment(x)==='Lojas Shibata · CD')]]){
+     const z=metricSummary(group);lines.push(`• ${name}: ${managerOrders(group).length} pedidos/EG; faturado ${cap(z.billed)} CX; pendente ${cap(z.pending)} CX; fill rate ${z.fillRate==null?'N/D':fmt(z.fillRate)+'%'}`);
+   }
+   lines.push('Cada pedido é apresentado com seu EG Cliente, sem misturar o CD Shibata com as lojas.','');
+ }
+ lines.push('PEDIDOS QUE CONCENTRAM PENDÊNCIA');
+ if(!mg.length)lines.push('Nenhum pedido identificado no período selecionado.');
+ for(const g of mg.slice(0,5))lines.push(`• ERP ${g.order} | EG Cliente ${g.clientId} | ${g.channel} | Pendente ${cap(g.pending)} CX | Fill ${g.fillRate==null?'N/D':fmt(g.fillRate)+'%'}`);
+ lines.push('','O Excel anexo traz o detalhamento por pedido e SKU, com a qualificação de atendimento e a validade, sem valores de estoque. A imagem abaixo resume os principais indicadores.','', 'Peço, por gentileza, a avaliação dos pedidos pendentes e o retorno sobre as tratativas e prioridades.','','Observação: a disponibilidade é indicativa, não representa reserva de estoque ou confirmação de faturamento.','', 'Obrigada!');
+ return lines.join('\n');
+}
+const PUBLIC_QUAL_CACHE=new WeakMap();
+function publicManagerQualification(g,details){
+ let groups=PUBLIC_QUAL_CACHE.get(details);
+ if(!groups){groups=new Map();for(const r of details){const key=[r.network,r.order,r.clientId||r.client,r.channel].map(norm).join('|');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)}PUBLIC_QUAL_CACHE.set(details,groups)}
+ const matching=groups.get(g.key)||[];
+ if(!matching.length)return 'Em validação';
+ const qualifications=[...new Set(matching.map(publicStockQualification))];
+ return qualifications.slice(0,3).join(' · ')+(qualifications.length>3?' · Outros':'');
+}
+function managerSegment(g,net){
+ if(norm(net).includes('shibata')){
+  if(g.channel==='CD')return 'Lojas Shibata · CD';
+  if(g.channel==='VD'&&(/\bcd\b/.test(norm(g.client))||/\bcdd\b/.test(norm(g.client))||norm(g.clientId).includes('cd')))return 'CD Shibata · VD';
+  return 'Outros VD · revisar unidade';
+ }
+ return g.channel==='VD'?'Atendimento VD':'Atendimento CD (loja a loja)';
+}
+function recipientHTML(net){
+ const rs=analysisRows(net),mg=managerOrders(rs),m=metricSummary(rs);
+ const cards=[['Entrada original (CX)',m.initial],['Faturado (CX)',m.billed],['Pendente (CX)',m.pending],['Fill rate',m.fillRate==null?'N/D':fmt(m.fillRate)+'%']];
+ const byChannel=new Map();
+ for(const g of mg){const label=managerSegment(g,net);if(!byChannel.has(label))byChannel.set(label,[]);byChannel.get(label).push(g);}
+ const headings=['Pedido ERP','EG Cliente / Loja','Canal','Captação','Faturado CX','Pendente CX','Fill rate','Validade','Qualificação','Produção'];
+ const th=headings.map(x=>`<th style="background:#1D3B55;color:#fff;text-align:left;border:0;padding:10px 9px;font:600 11px Arial,sans-serif;white-space:nowrap">${esc(x)}</th>`).join('');
+ const tr=g=>{
+  const q=publicManagerQualification(g,rs);const qualifyColor=(/^(OK|Cobertura indicativa)/.test(q)?'#19775D':(/Sem estoque|Muito crítico/.test(q)?'#A7333C':'#9A6E1D'));
+  return `<tr style="background:#fff"><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0"><b>${esc(g.order)}</b></td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0"><b>${esc(g.clientId)}</b><div style="font-size:11px;color:#698092">${esc(g.client)}</div></td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0">${esc(g.channel)}</td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0">${formatDate(g.captured)}</td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0">${fmt(g.billed)}</td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0"><b>${fmt(g.pending)}</b></td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0">${g.fillRate==null?'N/D':fmt(g.fillRate)+'%'}</td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0">${formatDate(g.expiry)}</td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0;color:${qualifyColor};font-weight:bold">${esc(q)}</td><td style="padding:8px 9px;border-bottom:1px solid #e1ebf0">${formatDate(g.productionDate)}</td></tr>`;
+ };
+ const sections=[...byChannel.entries()].map(([name,groups])=>{
+  const one=rs.filter(r=>managerSegment({key:[r.network,r.order,r.clientId||r.client,r.channel].map(norm).join('|'),channel:r.channel,client:r.client,clientId:r.clientId},net)===name);
+  const z=metricSummary(one),sorted=[...groups].sort((a,b)=>(b.pending||0)-(a.pending||0));
+  const visible=sorted.slice(0,200);
+  return `<div style="padding:13px 19px 18px;border-top:1px solid #d9e6ed"><div style="font:700 16px Arial,sans-serif;color:#18354C;margin:0 0 6px">${esc(name)}</div><div style="font:12px Arial,sans-serif;color:#526F7D;margin-bottom:10px">${groups.length} pedido(s)/EG · Faturado ${fmt(z.billed)} CX · Pendente ${fmt(z.pending)} CX · Fill rate ${z.fillRate==null?'N/D':fmt(z.fillRate)+'%'}</div><div style="overflow-x:auto"><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;min-width:850px;width:100%;font:12px Arial,sans-serif;color:#223F52"><thead><tr>${th}</tr></thead><tbody>${visible.map(tr).join('')}</tbody></table></div>${groups.length>200?`<div style="font-size:11px;color:#8A5A24;padding-top:8px">Tabela resumida aos 200 pedidos mais pendentes deste canal. O Excel anexo contém TODOS os ${groups.length} pedidos.</div>`:''}</div>`;
+ }).join('');
+ return `<div style="font:14px/1.5 Arial,sans-serif;border:1px solid #dbe7ec;border-radius:14px;overflow:hidden;max-width:1100px;background:#fff"><div style="background:#18314d;color:white;padding:22px 24px"><div style="font-size:11px;letter-spacing:1.3px;color:#c3e5e7">CARTEIRA REVERSA | ATENDIMENTO AO PEDIDO</div><div style="font-size:23px;font-weight:bold;margin:5px 0 7px">${esc(net)}</div><div style="font-size:12px;color:#d1e3eb">${esc(emailScope())} · Emissão ${formatDate(today())}</div></div><table cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:9px;width:100%;padding:12px;background:#fff"><tbody><tr>${cards.map(([label,v])=>`<td style="background:#eef5f8;padding:13px;border-radius:8px;width:25%"><div style="font-size:11px;color:#526F80">${esc(label)}</div><div style="font-size:21px;font-weight:bold;color:#17304d">${typeof v==='number'?fmt(v):esc(v)}</div></td>`).join('')}</tr></tbody></table>${sections||'<div style="padding:18px">Sem pedidos no recorte.</div>'}<div style="padding:14px 19px;background:#F1F6F8;font-size:11px;color:#526B7A">Qualificação indicativa de estoque, sem divulgação de saldos por origem. Não representa reserva, confirmação de faturamento ou promessa de atendimento. A coluna PRODUÇÃO representa data informada, não volume.</div></div>`;
+}
+function htmlEmailDocument(net,inlineImage=false){
+ const top=`<p style="margin:0 0 13px;font:14px/1.6 Arial,sans-serif">Olá, pessoal!<br><br>Compartilho o acompanhamento de atendimento dos pedidos para conferência das pendências e prioridades.</p>`;
+ const pic=inlineImage?'<p style="margin:8px 0 16px"><img src="cid:carteira-resumo" width="780" alt="Resumo visual de atendimento por rede" style="max-width:100%;height:auto;border-radius:9px"></p>':'';
+ const bottom=`<p style="font:13px/1.6 Arial,sans-serif;margin:16px 0">A tabela acima apresenta o atendimento <b>por pedido e EG Cliente</b>, com os canais VD e CD separados quando aplicável. O arquivo Excel anexo contém todos os itens e qualificações, sem divulgar quantidades de estoque.</p><p style="font:13px/1.6 Arial,sans-serif;margin:16px 0">Por favor, avaliem os pedidos pendentes e compartilhem as prioridades e tratativas.<br><br>Obrigada!</p>`;
+ return '<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body style="margin:0;padding:19px;background:#fff;color:#234055">'+top+pic+recipientHTML(net)+bottom+'</body></html>';
+}
+
+function renderPreview(){const net=$('exportNetwork').value;$('recipientPreview').innerHTML=net?recipientHTML(net):'<p>Marque uma rede para visualizar o resumo.</p>';$('emailSubject').value=net?emailSubject(net):'';$('emailBody').value=net?emailBodyText(net):'';}
+$('exportNetwork').onchange=renderPreview;
+async function copyText(t){try{await navigator.clipboard.writeText(t);$('copyStatus').textContent='Copiado!'}catch(e){const el=document.createElement('textarea');el.value=t;document.body.appendChild(el);el.select();document.execCommand('copy');el.remove();$('copyStatus').textContent='Texto selecionado para copiar.'}}
+$('copyEmailSubject').onclick=()=>copyText($('emailSubject').value);
+$('copyEmailBody').onclick=()=>copyText($('emailBody').value);
+$('downloadEmailTXT').onclick=()=>{const net=$('exportNetwork').value;if(!net)return;saveBlob(new Blob([emailSubject(net)+'\n\n'+emailBodyText(net)],{type:'text/plain;charset=utf-8'}),filename(net,'txt'))};
+$('downloadEmailHTML').onclick=()=>{const net=$('exportNetwork').value;if(!net)return;const body=htmlEmailDocument(net,false);saveBlob(new Blob([body],{type:'text/html;charset=utf-8'}),filename(net,'html'))};
+function filename(net,ext){return `Carteira reversa ${clean(net)} ${formatDate(today()).replaceAll('/','-')}.${ext}`}
+function validateRecipientExport(net){
+ if(!net||net==='REDE NÃO IDENTIFICADA')throw Error('A rede deve estar identificada antes de preparar materiais externos.');
+ if(!analysisRows(net).length)throw Error('Não há pedidos na rede e no recorte atual.');
+ if(S.demo)throw Error('O exemplo fictício não pode ser preparado para envio ao cliente. Importe a base real.');
+}
+function base64FromBytes(bytes){
+ const u=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+ const step=16384;let out='';for(let i=0;i<u.length;i+=step)out+=String.fromCharCode(...u.subarray(i,i+step));return btoa(out);
+}
+function base64Utf8(content){return base64FromBytes(new TextEncoder().encode(content))}
+function foldB64(b64){return b64.replace(/.{1,76}/g,'$&\r\n').replace(/\r\n$/,'')}
+function emailHeaderUtf8(s){return '=?UTF-8?B?'+base64Utf8(s)+'?='}
+async function emailDraft(net){
+ validateRecipientExport(net);
+ if(typeof XLSX==='undefined')throw Error('A biblioteca Excel não carregou. Conecte a internet e recarregue a página.');
+ const excelBuffer=buildExcel(net,false);
+ const binary=foldB64(base64FromBytes(excelBuffer));
+ const subj=emailSubject(net),html=htmlEmailDocument(net,false),plain=emailBodyText(net);
+ const boundary='carteira-mixed-'+Date.now(),alternative='carteira-alt-'+Date.now();
+ const attachmentName='Carteira_Reversa_Atendimento_'+clean(net).replace(/[^\x20-\x7E]/g,'_').replaceAll(' ','_')+'.xlsx';
+ // MIME draft: HTML table in body + full client Excel as file attachment.
+ // X-Unsent: 1 is recognized as a compose draft in several Outlook desktop versions.
+ const mime=[
+  'X-Unsent: 1',
+  'MIME-Version: 1.0',
+  'Date: '+new Date().toUTCString(),
+  'Subject: '+emailHeaderUtf8(subj),
+  'Content-Type: multipart/mixed; boundary="'+boundary+'"',
+  '',
+  '--'+boundary,
+  'Content-Type: multipart/alternative; boundary="'+alternative+'"',
+  '',
+  '--'+alternative,
+  'Content-Type: text/plain; charset="utf-8"',
+  'Content-Transfer-Encoding: base64',
+  '',
+  foldB64(base64Utf8(plain)),
+  '--'+alternative,
+  'Content-Type: text/html; charset="utf-8"',
+  'Content-Transfer-Encoding: base64',
+  '',
+  foldB64(base64Utf8(html)),
+  '--'+alternative+'--',
+  '--'+boundary,
+  'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; name="'+attachmentName+'"',
+  'Content-Transfer-Encoding: base64',
+  'Content-Disposition: attachment; filename="'+attachmentName+'"',
+  '',binary,
+  '--'+boundary+'--',''
+ ].join('\r\n');
+ saveBlob(new Blob([mime],{type:'message/rfc822'}),filename(net,'eml'));
+ return {attachmentName,orders:managerOrders(analysisRows(net)).length};
+}
+$('prepareEmail').onclick=async()=>{
+ const net=$('exportNetwork').value,btn=$('prepareEmail'),st=$('emailActionStatus');
+ btn.disabled=true;st.textContent='Montando e-mail visual e Excel do cliente...';
+ try{const r=await emailDraft(net);st.textContent='Rascunho .eml preparado com '+r.orders+' pedidos e Excel anexo. Abra o arquivo baixado no Outlook ou aplicativo compatível e revise antes de enviar.';}
+ catch(e){st.textContent=e.message;alert(e.message)}finally{btn.disabled=false}
+};
+$('openMailto').onclick=()=>{
+ const net=$('exportNetwork').value;
+ try{validateRecipientExport(net);window.location.href='mailto:?subject='+encodeURIComponent(emailSubject(net))+'&body='+encodeURIComponent(emailBodyText(net)+'\n\nObservação: esta abertura direta não inclui o Excel nem a formatação do painel.');$('emailActionStatus').textContent='Aplicativo de e-mail solicitado. Nesta alternativa o navegador não anexa Excel nem preserva formatação HTML.';}
+ catch(e){alert(e.message)}
+};
+
+function buildExcel(net,internal=false){
+ const data=analysisRows(net);if(!data.length)return alert('Sem pedidos para exportar.');
+ if(typeof XLSX==='undefined')return alert('Biblioteca Excel indisponível. Abra o HTML conectado à internet.');
+ const wb=XLSX.utils.book_new();
+ const manager=managerOrders(data).sort((a,b)=>(b.pending??-1)-(a.pending??-1));
+ const total=k=>data.every(x=>x[k]!=null)?data.reduce((a,x)=>a+x[k],0):null;
+ const ini=total('initial'),bill=total('billed'),pend=total('pending');
+ const fill=ini>0&&bill!=null?Math.max(0,Math.min(100,100*bill/ini)):null;
+ const COLORS={navy:'17314C',teal:'087F7E',ink:'213B50',muted:'64798A',line:'DCE6EC',pale:'F1F7F8',white:'FFFFFF',green:'DCFCE7',greenInk:'17633F',red:'FDE6E6',redInk:'A32336',amber:'FFF1CE',amberInk:'84580E',blue:'E8F2FA'};
+ const baseFont={name:'Aptos',sz:10,color:{rgb:COLORS.ink}};
+ const headerStyle={font:{name:'Aptos',sz:10,bold:true,color:{rgb:COLORS.white}},fill:{fgColor:{rgb:COLORS.navy}},alignment:{vertical:'center',horizontal:'left',wrapText:true}};
+ const rowStyleA={font:baseFont,fill:{fgColor:{rgb:COLORS.white}},alignment:{vertical:'center'}};
+ const rowStyleB={font:baseFont,fill:{fgColor:{rgb:COLORS.pale}},alignment:{vertical:'center'}};
+ const numberFmt='#,##0.0;[Red](#,##0.0);–';
+ const perFmt='0.0"%"';
+ const dExcel=v=>v&&/^\d{4}-\d{2}-\d{2}$/.test(v)?(Date.parse(v+'T00:00:00Z')-Date.UTC(1899,11,30))/86400000:null;
+ function tab(name,headers,rows,options={}){
+   const headerRow=5, n=rows.length, first=headerRow+1;
+   const matrix=[['CARTEIRA REVERSA | '+net],[''+name+'  ·  '+formatDate(today())],[],['Total de registros: '+n],headers,...rows];
+   const ws=XLSX.utils.aoa_to_sheet(matrix);
+   const endCol=XLSX.utils.encode_col(headers.length-1);
+   ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:headers.length-1}},{s:{r:1,c:0},e:{r:1,c:headers.length-1}}];
+   ws['!cols']=headers.map((h,i)=>({wch:Math.max(10,Math.min(28,(options.widths||{})[h]||Math.max(12,Math.min(23,h.length+2))))}));
+   ws['!rows']=[{hpt:34},{hpt:25},{hpt:9},{hpt:21},{hpt:32}];
+   ws['!autofilter']={ref:`A${headerRow}:${endCol}${Math.max(headerRow,n+headerRow)}`};
+   ws['!views']=[{state:'frozen',ySplit:5,xSplit:Math.min(2,headers.length),topLeftCell:'C6',activePane:'bottomRight'}];
+   const ttl=ws.A1;ttl.s={font:{name:'Aptos Display',sz:17,bold:true,color:{rgb:COLORS.white}},fill:{fgColor:{rgb:COLORS.navy}},alignment:{vertical:'center'}};
+   ws.A2.s={font:{name:'Aptos',sz:10,color:{rgb:COLORS.teal}},fill:{fgColor:{rgb:COLORS.pale}}};
+   ws.A4.s={font:{name:'Aptos',sz:10,color:{rgb:COLORS.muted}}};
+   for(let col=0;col<headers.length;col++){
+     const cell=ws[XLSX.utils.encode_cell({r:4,c:col})];if(cell)cell.s=headerStyle;
+   }
+   const numeric=new Set(options.numbers||[]),perc=new Set(options.percent||[]),dates=new Set(options.dates||[]),emph=new Set(options.emphasis||[]);
+   for(let i=0;i<n;i++){
+     for(let j=0;j<headers.length;j++){
+       const addr=XLSX.utils.encode_cell({r:i+5,c:j});const cell=ws[addr];if(!cell)continue;
+       const h=headers[j];let style=i%2?rowStyleB:rowStyleA;
+       if(emph.has(h))style={font:{...baseFont,bold:true},fill:{fgColor:{rgb:i%2?COLORS.pale:COLORS.white}},alignment:{vertical:'center'}};
+       if(dates.has(h)){
+         const isoDate=typeof cell.v==='string'?cell.v:'';const serial=dExcel(isoDate);
+         if(serial!==null){cell.v=serial;cell.t='n';cell.z='dd/mm/yyyy'}
+       }else if((numeric.has(h)||perc.has(h))&&typeof cell.v==='number')cell.z=perc.has(h)?perFmt:numberFmt;
+       if(/Situação|Cobertura|Qualificação|Alerta/.test(h)){
+         const t=norm(cell.v);
+         const bad=/vencid|sem estoque|muito critico|insuficiente|negativ|sem dpar|conflito|erro/.test(t);
+         const warn=/critico|intermediario|validar|potencial|nao identificado|n d|revisao/.test(t);
+         const good=/tem estoque|\bok\b|cobert|valido/.test(t)&&!bad;
+         if(bad)style={font:{...baseFont,bold:true,color:{rgb:COLORS.redInk}},fill:{fgColor:{rgb:COLORS.red}}};
+         else if(warn)style={font:{...baseFont,bold:true,color:{rgb:COLORS.amberInk}},fill:{fgColor:{rgb:COLORS.amber}}};
+         else if(good)style={font:{...baseFont,bold:true,color:{rgb:COLORS.greenInk}},fill:{fgColor:{rgb:COLORS.green}}};
+       }
+       cell.s=style;
+     }
+   }
+   XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31));
+ }
+ // Summary with a small horizontal footprint: no 78-character-wide columns.
+ const overview=[
+  ['CARTEIRA REVERSA  |  '+net],
+  ['EMISSÃO: '+formatDate(today())+'    •    '+(S.demo?'DEMONSTRAÇÃO FICTÍCIA':'BASE IMPORTADA — NÃO HOMOLOGADA')],
+  [],
+  ['ENTRADA INICIAL (CX)','','','FATURADO (CX)','','','PENDENTE (CX)','','','FILL RATE'],
+  [ini??'N/D','','',bill??'N/D','','',pend??'N/D','','',fill==null?'N/D':fill/100],
+  [],
+  ['VISÃO DE ATENDIMENTO'],
+  ['Pedidos / EG / canal',manager.length,'Itens únicos',data.length,'Itens com estoque',data.filter(x=>x.status==='Tem estoque para o pedido').length],
+  ['Itens VD',data.filter(x=>x.channel==='VD').length,'Itens CD',data.filter(x=>x.channel==='CD').length,'Sem CDD/DPAR',data.filter(x=>x.channel==='CD'&&!x.center).length],
+  ['Validade mínima (inclusive)',formatDate($('referenceDate').value||today()),'Captação de',formatDate($('captureStart').value),'Captação até',formatDate($('captureEnd').value)],
+  ['Prioridade VD',$('priorityMode').selectedOptions[0].textContent],
+  [],['NOTAS DE LEITURA'],
+  ['Pendente','Soma dos saldos por linha = Σ (Atualizada − Carro com remessa − Carro sem remessa − Faturado), em CX'],
+  ['Entrada original','Uma linha por chave EG Cliente + SKU EG + Pedido ERP (U / V / W)'],
+  ['Fill rate','Faturado somado das movimentações / Qtd. Original única; por pedido, calculado sobre somas'],
+  ['VD','Somente origem prioritária por Malha/SAP com estoque D1; alternativas em aba própria. Não representa reserva.'],
+  ['CD','Grade do CDD por de/para, sem criticidade VD; produção somente se vinculada ao mesmo CDD/SKU'],
+  ['Produção','Campo PRODUÇÃO = data, campo ESTOQUE = classificação textual; não representa volume futuro.'],
+  ['Qualidade',internal?'Inicial único por chave; movimentos somados por linha. Conferir aba Conciliação.':'Inicial único por chave; movimentos somados por linha. Dados de estoque em valor restritos ao relatório interno.']
+ ];
+ const summary=XLSX.utils.aoa_to_sheet(overview);
+ summary['!cols']=Array.from({length:10},(_,i)=>({wch:i===0?27:i===1?25:13}));
+ summary['!rows']=[{hpt:37},{hpt:27},{hpt:10},{hpt:26},{hpt:40}];
+ summary['!merges']=[{s:{r:0,c:0},e:{r:0,c:9}},{s:{r:1,c:0},e:{r:1,c:9}},...[[3,0,2],[3,3,5],[3,6,8],[4,0,2],[4,3,5],[4,6,8]].map(([r,c,e])=>({s:{r,c},e:{r,c:e}}))];
+ for(let c=0;c<10;c++){
+  for(let r of [3,4]){
+    const addr=XLSX.utils.encode_cell({r,c}),cell=summary[addr];if(!cell)continue;
+    cell.s=r===3?{font:{name:'Aptos',sz:10,color:{rgb:COLORS.white},bold:true},fill:{fgColor:{rgb:COLORS.teal}}}:{font:{name:'Aptos Display',sz:20,color:{rgb:COLORS.navy},bold:true},fill:{fgColor:{rgb:COLORS.pale}}};
+  }
+ }
+ summary.A1.s={font:{name:'Aptos Display',sz:19,bold:true,color:{rgb:COLORS.white}},fill:{fgColor:{rgb:COLORS.navy}}};
+ summary.A2.s={font:{name:'Aptos',sz:10,color:{rgb:COLORS.white}},fill:{fgColor:{rgb:COLORS.navy}}};
+ summary.J5.z='0.0%';
+ for(let r of [6,12]){let cell=summary['A'+(r+1)];if(cell)cell.s={font:{name:'Aptos',sz:12,bold:true,color:{rgb:COLORS.navy}},fill:{fgColor:{rgb:COLORS.blue}}}}
+ XLSX.utils.book_append_sheet(wb,summary,'Resumo Executivo');
+ const mheaders=['Pedido ERP','Cliente EG','Cliente / Loja','Grupo atendimento','Canal','Captação','Itens','Original HL','Original PLT','Inicial CX','Faturado CX','Pendente CX','Fill rate %','Itens cobertos','Origem / CDD',...(internal?['Volume qualificado PLT']:['Qualificação estoque']),'Carro 24 PLT','Data produção','Validade','Situação do pedido'];
+ const orderStatuses=new Map();
+ for(const r of data){const k=[r.network,r.order,r.clientId||r.client,r.channel].map(norm).join('|');
+  if(!orderStatuses.has(k))orderStatuses.set(k,[]);orderStatuses.get(k).push(r.status);}
+ const byOrderStatus=g=>{const lines=orderStatuses.get(g.key)||[];
+   if(lines.some(x=>x==='Vencido'))return 'Há item vencido';
+   if(lines.some(x=>/validar|nao identificado/i.test(norm(x))))return 'Validar cruzamentos';
+   if(lines.length&&lines.every(x=>x==='Tem estoque para o pedido'))return 'Itens com estoque';
+   return 'Cobertura parcial / insuficiente';};
+ tab('Gerencial por Pedido',mheaders,manager.map(g=>[g.order,g.clientId,g.client,shibataSegment(g),g.channel,g.captured,g.lines,g.initialHL,g.initialPlt,g.initial,g.billed,g.pending,g.fillRate,g.covered,g.channel==='CD'?g.center:g.primary,internal?g.qualifiedPlt:publicManagerQualification(g,data),g.channel==='VD'?(g.fullTruck?'Potencial 1 carro':'Não fecha 24 PLT'):'Não se aplica',g.productionDate,g.expiry,byOrderStatus(g)]),{
+   numbers:['Itens','Original HL','Original PLT','Inicial CX','Faturado CX','Pendente CX','Itens cobertos',...(internal?['Volume qualificado PLT']:[])],percent:['Fill rate %'],dates:['Validade','Captação','Data produção'],
+   emphasis:['Pedido ERP','Cliente EG','Pendente CX'],widths:{'Pedido ERP':17,'Cliente EG':16,'Cliente / Loja':25,'Canal':10,'Origem / CDD':17,'Situação do pedido':26}
+ });
+ const headers=['Pedido ERP','Cliente EG','Loja','Grupo atendimento','SKU EG','Nome SKU','Canal','Captação','Inicial CX','Faturado CX','Pendente CX','Fill rate %','Validade','Origem / CDD',...(internal?['Estoque CX']:[]),'Qualificação estoque','Data produção','Situação estoque (produção)','Cobertura','Observação'];
+ tab('Itens para Tratativa',headers,data.map(r=>[r.order,r.clientId,r.client,shibataSegment(r),r.eg,r.skuName,r.channel,r.captured,r.initial,r.billed,r.pending,r.fillRate,r.validity,r.channel==='VD'?r.primary:r.center,...(internal?[r.stock]:[]),internal?(r.channel==='VD'?r.qualification:'Não se aplica'):publicStockQualification(r),r.productionDate,r.productionStatus,r.status,r.issues]),{
+   numbers:['Inicial CX','Faturado CX','Pendente CX',...(internal?['Estoque CX']:[])],percent:['Fill rate %'],dates:['Validade','Captação','Data produção'],
+   emphasis:['Pedido ERP','Cliente EG','Pendente CX'],widths:{'Pedido ERP':18,'Cliente EG':16,'Loja':25,'Nome SKU':30,'SKU EG':14,'Canal':10,'Origem / CDD':17,'Cobertura':27,'Qualificação VD':18,'Observação':30}
+ });
+ // Technical reconciliation is INTERNAL only; never disclose stock or production source data in customer exports.
+ if(internal){
+ const reconHeaders=['Pedido ERP','Cliente EG','SKU EG','Canal','Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Carro c/ remessa CX','Carro s/ remessa CX','Faturado CX','Pendente CX','Diferença CX','Linhas movimento','Alertas'];
+ tab('Conciliação',reconHeaders,data.map(r=>[r.order,r.clientId,r.eg,r.channel,r.initialHL,r.initialPlt,r.initial,r.updated,r.carWith,r.carWithout,r.billed,r.pending,r.diff,r.movementRows||1,r.issues]),{
+   numbers:['Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Carro c/ remessa CX','Carro s/ remessa CX','Faturado CX','Pendente CX','Diferença CX','Linhas movimento'],
+   emphasis:['Pedido ERP','Pendente CX'],widths:{'Cliente EG':16,'SKU EG':14,'Alertas':30}
+ });
+ const origins=data.flatMap(r=>r.channel!=='VD'?[]:r.originDetails.map(x=>[r.order,r.clientId,r.eg,r.commercial,x.center,x.name,x.pallets,x.grade,x.productionDate,x.productionStatus,x.center===r.primary?'Sim':'',r.pending]));
+ if(origins.length)tab('Origens VD', ['Pedido ERP','Cliente EG','SKU EG','Comercial','Origem','Fábrica','Estoque D1 PLT','Qualificação VD','Data produção','Situação estoque (produção)','Prioritária','Pendente CX'],origins,{
+   numbers:['Estoque D1 PLT','Pendente CX'],dates:['Data produção'],emphasis:['Pedido ERP'],widths:{'Fábrica':25,'Qualificação VD':19,'Origem':14,'Comercial':18}
+ });
+ } // end internal technical sheets
+ // Preserve Order original only in explicit INTERNAL export.
+ const originals=(!internal||!$('includeRawOrder').checked)?[]:(S.demo?data.flatMap(r=>r.raw&&Object.keys(r.raw).length?[r.raw]:[]):(S.data.sourceOrders||[]).filter(r=>norm(field(r,'network'))===norm(net)));
+ if(originals.length){
+   const cols=[...new Set(originals.flatMap(o=>Object.keys(o).filter(k=>!k.startsWith('__'))))];
+   const sampleOriginal=originals.map(r=>cols.map(k=>r[k]??''));
+   const raw=XLSX.utils.aoa_to_sheet([cols,...sampleOriginal]);
+   raw['!cols']=cols.map(h=>({wch:Math.max(11,Math.min(22,h.length+2))}));
+   raw['!autofilter']={ref:`A1:${XLSX.utils.encode_col(cols.length-1)}${sampleOriginal.length+1}`};
+   raw['!rows']=[{hpt:32}];
+   raw['!views']=[{state:'frozen',ySplit:1,xSplit:2,topLeftCell:'C2',activePane:'bottomRight'}];
+   for(let j=0;j<cols.length;j++){const c=raw[XLSX.utils.encode_cell({r:0,c:j})];if(c)c.s=headerStyle}
+   XLSX.utils.book_append_sheet(wb,raw,'Order Original');
+ }
+ return XLSX.write(wb,{bookType:'xlsx',type:'array',compression:true});
+}
+function excel(net,internal=false){if(!net||net==='REDE NÃO IDENTIFICADA')return alert('É necessário validar a rede antes de exportar.');try{const bytes=buildExcel(net,internal);if(!bytes)return;saveBlob(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),internal?`Carteira reversa ${clean(net)} INTERNO ${formatDate(today()).replaceAll('/','-')}.xlsx`:filename(net,'xlsx'));}catch(e){alert('Erro ao gerar Excel: '+e.message)}}
+$('excel').onclick=()=>excel($('exportNetwork').value);$('excelInternal').onclick=()=>excel($('exportNetwork').value,true);$('exportAll').onclick=()=>{let ns=chosenNetworks();if(!ns.length)return alert('Nenhuma rede selecionada.');for(const n of ns.filter(n=>n!=='REDE NÃO IDENTIFICADA'))excel(n)};
+function png(net){
+ let data=analysisRows(net);if(!data.length)return alert('Sem dados para imagem.');
+ let mg=managerOrders(data).sort((a,b)=>(b.pending||0)-(a.pending||0));
+ let w=1600,h=900,can=document.createElement('canvas');can.width=w*2;can.height=h*2;
+ let c=can.getContext('2d');c.scale(2,2);
+ const C={navy:'#12243D',teal:'#177E91',green:'#17866C',amber:'#D99A37',red:'#CF5960',ink:'#1D354B',muted:'#6C8192',white:'#FFFFFF',bg:'#F4F7FB',line:'#E2EAF0'};
+ const rect=(x,y,ww,hh,color,r=0)=>{c.fillStyle=color;c.beginPath();if(r&&c.roundRect)c.roundRect(x,y,ww,hh,r);else c.rect(x,y,ww,hh);c.fill()};
+ const txt=(v,x,y,size=18,color=C.ink,bold=false)=>{c.fillStyle=color;c.font=(bold?'700 ':'400 ')+size+'px Arial';c.fillText(String(v),x,y)};
+ const line=(x,y,ww)=>rect(x,y,ww,1,C.line);
+ rect(0,0,w,h,C.bg);rect(0,0,w,175,C.navy);
+ const gradient=c.createLinearGradient(900,0,1600,250);gradient.addColorStop(0,'#14678300');gradient.addColorStop(1,'#157A9290');rect(900,0,700,175,gradient);
+ txt('CARTEIRA REVERSA  /  ATENDIMENTO GERENCIAL',45,45,18,'#BAE2E8',true);
+ txt(net.slice(0,55),45,109,43,C.white,true);
+ txt(formatDate(today())+'   •   '+(S.demo?'EXEMPLO FICTÍCIO':'DADOS IMPORTADOS — VALIDAR')+'   •   '+emailScope().slice(0,75),47,145,14,'#D3E7EE');
+ const initial=data.every(x=>x.initial!=null)?data.reduce((a,x)=>a+x.initial,0):null;
+ const bill=data.every(x=>x.billed!=null)?data.reduce((a,x)=>a+x.billed,0):null;
+ const pend=data.every(x=>x.pending!=null)?data.reduce((a,x)=>a+x.pending,0):null;
+ const fill=initial>0&&bill!=null?fmt(Math.max(0,Math.min(100,100*bill/initial)))+'%':'N/D';
+ const cards=[['ENTRADA INICIAL',fmt(initial)+' CX',C.teal],['FATURADO',fmt(bill)+' CX',C.green],['PENDENTE',fmt(pend)+' CX',C.amber],['FILL RATE',fill,'#456C98']];
+ cards.forEach(([label,value,color],i)=>{let x=43+i*388;rect(x,210,360,130,C.white,16);rect(x,210,360,5,color,4);txt(label,x+22,255,15,C.muted,true);txt(value,x+22,314,34,C.ink,true)});
+ const leftX=43,rightX=820,panelY=374;
+ rect(leftX,panelY,740,427,C.white,15);rect(rightX,panelY,737,427,C.white,15);
+ txt('COBERTURA DOS ITENS',leftX+24,panelY+41,21,C.ink,true);
+ txt('Classificação indicativa por item, sem reservar estoque',leftX+24,panelY+68,14,C.muted);
+ const cats=[['Tem estoque',data.filter(x=>x.status==='Tem estoque para o pedido').length,C.green],['Insuficiente',data.filter(x=>x.status==='Estoque insuficiente').length,C.amber],['Vencido',data.filter(x=>x.status==='Vencido').length,C.red],['Outros / validar',data.filter(x=>!['Tem estoque para o pedido','Estoque insuficiente','Vencido'].includes(x.status)).length,'#7D93A8']];
+ const max=Math.max(1,...cats.map(x=>x[1]));
+ cats.forEach(([label,value,col],i)=>{let yy=panelY+125+i*71;txt(label,leftX+26,yy,17,C.ink,true);txt(value+' '+(value===1?'item':'itens'),leftX+630,yy,16,C.ink,true);rect(leftX+27,yy+13,675,12,'#EAF0F4',6);rect(leftX+27,yy+13,675*value/max,12,col,6)});
+ txt(norm(net).includes('shibata')?'SHIBATA · CD SHIBATA (VD) X LOJAS (CD)':'PEDIDOS COM MAIOR PENDÊNCIA',rightX+25,panelY+41,21,C.ink,true);
+ txt('Pedido ERP · Pendente · Fill rate de faturamento',rightX+25,panelY+68,14,C.muted);
+ if(norm(net).includes('shibata')){
+  const a=metricSummary(data.filter(x=>shibataSegment(x)==='CD Shibata · VD'));
+  const b=metricSummary(data.filter(x=>shibataSegment(x)==='Lojas Shibata · CD'));
+  [[a,'CD Shibata · VD'],[b,'Lojas · CD']].forEach(([z,label],i)=>{const yy=panelY+102+i*92;rect(rightX+22,yy,688,76,i?'#F5F8FC':'#EAF7F4',8);txt(label,rightX+38,yy+28,18,C.ink,true);txt('Pendente '+fmt(z.pending)+' CX',rightX+38,yy+57,16,C.ink);txt('Fill '+(z.fillRate==null?'N/D':fmt(z.fillRate)+'%'),rightX+540,yy+54,18,C.teal,true)});
+  mg.slice(0,2).forEach((r,i)=>{const yy=panelY+311+i*51;txt('ERP '+r.order+' · EG '+r.clientId,rightX+35,yy,16,C.ink,true);txt(fmt(r.pending)+' CX',rightX+540,yy,16,C.teal,true)});
+ }else mg.slice(0,5).forEach((r,i)=>{const yy=panelY+96+i*59;if(i%2===0)rect(rightX+22,yy,688,51,'#F4F8FB',8);txt('ERP '+r.order,rightX+38,yy+32,18,C.ink,true);txt(fmt(r.pending)+' CX',rightX+335,yy+32,17,C.ink,true);txt(r.fillRate==null?'Fill N/D':'Fill '+fmt(r.fillRate)+'%',rightX+541,yy+32,17,C.teal,true)});
+ rect(43,825,1515,47,'#E6EEF3',12);
+ txt('VD: estoque D1 em PLT, Malha por SKU SAP via CAD, origem prioritária individual. CD: grade do CDD em CX, sem criticidade VD.',61,855,14,C.muted);
+ can.toBlob(b=>saveBlob(b,filename(net,'png')),'image/png');
+}
+$('png').onclick=()=>{const n=$('exportNetwork').value;if(n==='REDE NÃO IDENTIFICADA')return alert('A rede ainda não foi identificada. Não gere material externo deste grupo.');png(n)};
+function renderEverything(){renderSources();renderNetworks();refreshDropdowns();renderClients();$('kpis').innerHTML='<div class="kpi"><span>ATENDIMENTO</span><strong>Selecione uma rede</strong></div>'; $('orderRows').innerHTML='';$('managerRows').innerHTML='';$('recipientPreview').innerHTML='<p>Abra a aba de exportação para gerar o resumo.</p>'}
+$('reset').onclick=()=>{S.demo=false;S.sheets=[];S.data={orders:[],cad:[],malha:[],vd:[],grade:[],dpar:[],production:[],originMap:[]};S.channels={};S.problems=[];S.manualRoles={};S.manualFields={};S.chosen={};S.fileCache.clear();S.importSummary=[];S.importWarnings=[];S.selected.clear();S.checked.clear();$('files').value='';$('loadStatus').textContent='Carregue a base de pedidos/pendente e a base de estoque, com qualquer nome, em Excel ou ZIP.';$('dataMode').textContent='Nenhuma base carregada';renderEverything()};
+
+// Relatório diagnóstico mínimo: nomes de abas, colunas, função e linhas; sem registros de clientes.
+const diagBtn=document.createElement('button');diagBtn.className='btn';diagBtn.textContent='Baixar diagnóstico de leitura';
+$('importAudit').before(diagBtn);
+diagBtn.onclick=()=>{const d={version:'22',generated:new Date().toISOString(),sources:S.importSummary,problems:S.problems,information:S.info||[],
+ sheets:S.sheets.map(s=>({arquivo:s.name,aba:s.tab,headerRow:s.headerRow,colunas:s.fields,funcao:s.type,detect:s.detection,linhas:s.rows?.length??s.approxRows}))};saveBlob(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}),'Diagnostico_Carteira_Reversa.json')};
+renderEverything();
+</script><script>(function(){
+  function initVisual(){
+    const f=document.getElementById('files'), n=document.getElementById('fileSelectInfo');
+    if(f&&n)f.addEventListener('change',()=>{const fs=Array.from(f.files||[]);n.textContent=fs.length===0?'Nenhum arquivo selecionado':fs.length===1?fs[0].name:fs.length+' arquivos selecionados';});
+    const mode=document.getElementById('dataMode');
+    if(mode){const update=()=>document.body.classList.toggle('is-empty',mode.textContent.includes('Nenhuma base carregada'));
+      new MutationObserver(update).observe(mode,{childList:true,characterData:true,subtree:true}); update();}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initVisual);else initVisual();
+})();</script></body></html>
