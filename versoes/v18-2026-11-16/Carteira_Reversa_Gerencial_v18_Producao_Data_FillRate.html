@@ -998,3 +998,15 @@ function png(net){
  rect(43,825,1515,47,'#E6EEF3',12);
  txt('VD: estoque D1 em PLT, Malha por SKU SAP via CAD, origem prioritária individual. CD: grade do CDD em CX, sem criticidade VD.',61,855,14,C.muted);
  can.toBlob(b=>saveBlob(b,filename(net,'png')),'image/png');
+}
+$('png').onclick=()=>png($('exportNetwork').value);
+function renderEverything(){renderSources();renderNetworks();refreshDropdowns();renderClients();$('kpis').innerHTML='<div class="kpi">Análise sob demanda — abra a aba 03</div>'; $('orderRows').innerHTML='';$('managerRows').innerHTML='';$('recipientPreview').innerHTML='<p>Abra a aba de exportação para gerar o resumo.</p>'}
+$('reset').onclick=()=>{S.demo=false;S.sheets=[];S.data={orders:[],cad:[],malha:[],vd:[],grade:[],dpar:[],production:[],originMap:[]};S.channels={};S.problems=[];S.manualRoles={};S.manualFields={};S.chosen={};S.fileCache.clear();S.importSummary=[];S.importWarnings=[];S.selected.clear();S.checked.clear();$('files').value='';$('loadStatus').textContent='Carregue a base de pedidos/pendente e a base de estoque, com qualquer nome, em Excel ou ZIP.';$('dataMode').textContent='Nenhuma base carregada';renderEverything()};
+
+// Relatório diagnóstico mínimo: nomes de abas, colunas, função e linhas; sem registros de clientes.
+const diagBtn=document.createElement('button');diagBtn.className='btn';diagBtn.textContent='Baixar diagnóstico de leitura';
+$('importAudit').before(diagBtn);
+diagBtn.onclick=()=>{const d={version:'15',generated:new Date().toISOString(),sources:S.importSummary,problems:S.problems,information:S.info||[],
+ sheets:S.sheets.map(s=>({arquivo:s.name,aba:s.tab,headerRow:s.headerRow,colunas:s.fields,funcao:s.type,detect:s.detection,linhas:s.rows?.length??s.approxRows}))};saveBlob(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}),'Diagnostico_Carteira_Reversa.json')};
+renderEverything();
+</script></body></html>
