@@ -4,6 +4,7 @@ Gerencial de atendimento por pedido/EG Cliente/SKU com canais VD e CD, consolida
 
 ## Versões e arquivos
 
+- **[v18 · 16/11/2026 · produção como data, SKU PCA/EG, fill rate ≤100%](versoes/v18-2026-11-16/README.md)**: HTML, inicializador Python/BAT, de-para interno de 24 origens e Excel de conciliação; [abrir HTML](versoes/v18-2026-11-16/Carteira_Reversa_Gerencial_v18_Producao_Data_FillRate.html).
 - **[v17 · 16/11/2026 · Canva + cálculo revisado](versoes/v17-2026-11-16/README.md)**: painel HTML, inicializador Python, arquivo BAT para Windows, regras e histórico. [Abrir HTML](versoes/v17-2026-11-16/Carteira_Reversa_Gerencial_v17_Canva_Motor.html)
 - **[Pacote original v15](analise-carteira-reversa%20(15).zip)**: referência técnica preservada, não substituída.
 - **[Base de estoque](BASE_ESTOQUE.xlsx)**: CAD, Malha, fábrica, CDDs, DPAR e produção. Não publicar bases de clientes ou pedidos sensíveis.
