@@ -1,0 +1,710 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Carteira Reversa | Reconhecimento VD/CD, CAD, Malha e DeParaCDD</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+:root{--navy:#172e49;--blue:#234b67;--teal:#087f7e;--mint:#e2f6ee;--gold:#b78020;--danger:#bc3d46;--txt:#23394d;--muted:#647b8b;--edge:#dce6ec;--bg:#f3f7fa}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 Inter,'Segoe UI',Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer}header{background:linear-gradient(120deg,#162c47,#116d7b);color:#fff;padding:28px max(24px,calc((100% - 1280px)/2));display:flex;justify-content:space-between;align-items:center;gap:20px}h1{font-size:27px;line-height:1.2;letter-spacing:-.4px;margin:0}header p{color:#cde6eb;margin:6px 0 0}.wrap{max-width:1280px;padding:22px 20px 40px;margin:auto}.topnav{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:19px}.tab{background:white;border:1px solid var(--edge);padding:11px 17px;border-radius:10px;font-weight:750;color:var(--navy)}.tab.active{background:var(--navy);border-color:var(--navy);color:white}.view{display:none}.view.active{display:block}.panel{background:white;border:1px solid var(--edge);border-radius:16px;padding:22px;margin-bottom:19px;box-shadow:0 5px 18px #14304907}h2{font-size:19px;margin:0 0 5px}h3{font-size:15px;margin:0 0 8px}.lead{margin:0 0 17px;color:var(--muted)}.btn{border:1px solid #bbd0d8;background:#fff;color:var(--navy);font-weight:750;border-radius:9px;padding:10px 14px}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--navy);color:#fff;border-color:var(--navy)}.btn:disabled{opacity:.47;cursor:not-allowed}.barrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.right{margin-left:auto}.notice{background:#fdf7e8;border-left:4px solid #c3973e;border-radius:9px;padding:12px 14px;margin:15px 0;color:#695222}.notice.bad{background:#fff1f1;border-left-color:var(--danger);color:#a4313a}.notice.good{background:#edf8f1;border-left-color:#2e9772;color:#216348}.upload{background:#f6fafb;border:2px dashed #adcbd6;border-radius:13px;padding:23px}.upload input{max-width:100%}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;background:#e5f3f3;color:#176968;border-radius:30px;font-size:11px;font-weight:800;padding:4px 9px;white-space:nowrap}.pill.orange{background:#fff0cf;color:#966119}.pill.red{background:#ffe8e9;color:#b23a44}.pill.gray{background:#edf2f5;color:#526a7e}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.kpi{background:#f7fafc;padding:17px;border:1px solid #e2ebee;border-radius:12px}.kpi span{color:var(--muted);display:block;font-size:12px;font-weight:750}.kpi strong{font-size:26px;color:var(--navy);display:block;line-height:1.35;margin:5px 0}.flex{display:flex;gap:15px;flex-wrap:wrap}.flex>*{flex:1;min-width:175px}label.cap{display:block;font-weight:750;color:#587183;font-size:12px;margin-bottom:5px}select,input[type=text],input[type=date],input[type=number]{border:1px solid #bed1dc;padding:9px 10px;border-radius:9px;color:var(--txt);max-width:100%;background:#fff}select{min-width:90px}.w100{width:100%}.scroller{overflow:auto;max-height:520px;border:1px solid #dbe5eb;border-radius:10px}table{border-collapse:collapse;width:100%;min-width:850px;font-size:12px}th{position:sticky;top:0;background:#edf3f7;color:#325069;z-index:1;text-align:left;padding:11px 10px;white-space:nowrap}td{border-top:1px solid #edf0f4;padding:9px 10px;vertical-align:middle}tr:hover td{background:#f9fcfc}td select{font-size:12px;padding:7px 8px}.check{width:18px;height:18px;accent-color:var(--teal);vertical-align:middle}.network-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.netcheck{display:flex;align-items:center;gap:9px;padding:13px;border:1px solid #d6e5eb;border-radius:10px;font-weight:700}.netcheck:has(input:checked){background:#eaf8f5;border-color:#80c7b5}.network-section{margin-bottom:13px}.auditrow{border-bottom:1px solid #e8eef2;padding:10px 0;display:flex;justify-content:space-between;align-items:center;gap:12px}.diagram{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;align-items:stretch;gap:8px}.node{border:1px solid #d6e5ea;background:#f7fafb;border-radius:11px;padding:15px}.node b{display:block;color:#1d465b;margin-bottom:7px}.arr{align-self:center;text-align:center;color:#7e9ba9;font-size:25px}.cardarea{display:grid;grid-template-columns:1fr 1fr;gap:12px}.note{padding:13px;border-radius:10px;background:#f3f7fa;color:#4c6575}.tip{color:#687d8b;font-size:12px;margin-top:12px} .divider{height:1px;background:#e5eef2;margin:16px 0}.muted{color:var(--muted)}.mini{font-size:11px}.error{color:var(--danger)}.footer{font-size:12px;color:#8397a4;margin-top:20px}@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.network-grid,.cardarea{grid-template-columns:1fr 1fr}.diagram{grid-template-columns:1fr}.arr{transform:rotate(90deg)}header{padding:20px}}@media(max-width:580px){.grid,.network-grid,.cardarea{grid-template-columns:1fr}header{align-items:start;flex-direction:column}h1{font-size:23px}.panel{padding:15px}.wrap{padding:14px 12px}.tab{padding:9px 11px}}
+</style></head><body>
+<header><div><h1>CARTEIRA <span style="color:#8fdbd1">REVERSA</span> <span style="font-size:13px;background:#fff2;color:#fff;padding:5px 8px;border-radius:7px">GERENCIAL V13</span></h1><p>Atendimento VD x CD · DPAR de lojas · Malha · CAD · Cobertura de pedidos</p></div><div style="text-align:right"><b id="dateLabel"></b><div style="font-size:12px;color:#d9edef">EG nas bases operacionais · SAP somente na Malha · grade CD sem DV · validação real pendente</div></div></header>
+<main class="wrap"><nav class="topnav"><button class="tab active" data-tab="bases">01 · Importar bases</button><button class="tab" data-tab="origens">02 · Rede e origem de atendimento</button><button class="tab" data-tab="analise">03 · Análise por pedido</button><button class="tab" data-tab="saida">04 · Exportação por rede</button></nav>
+<section class="view active" id="bases"><div class="panel"><h2>1. Bases e reconhecimento automático</h2><p class="lead">Clique em Importar bases direto do GitHub para buscar os arquivos públicos do repositório, ou carregue os arquivos Excel ou ZIP manualmente, com qualquer nome. O sistema identifica o papel de cada aba pelo conjunto de colunas e pela estrutura dos dados — pedido/pendente, CAD, Malha, Estoque Fábrica, Grade CD, DPAR e Produção. O nome da aba não define a função da base; nas grades, o título da aba é a referência para identificar o CDD. A leitura foi otimizada para bases grandes e as tabelas na tela são limitadas, sem limitar a exportação.</p><div class="upload"><b>Adicionar bases de pedidos, estoque e apoio — com qualquer nome</b><p class="small">Aceita planilhas .xlsx/.xls/.xlsm/.csv ou pastas .zip com essas planilhas, inclusive em subpastas. Leitura otimizada em segundo plano no próprio navegador quando suportada; é necessária internet para carregar os leitores Excel/ZIP nesta versão.</p><input type="file" id="files" accept=".xlsx,.xls,.xlsm,.csv,.zip" multiple></div><div class="barrow" style="margin:13px 0"><button id="loadGithub" class="btn primary">Importar bases direto do GitHub</button><button id="demo" class="btn">Abrir exemplo Shibata + outras redes</button><button id="reset" class="btn">Limpar e recomeçar</button><span class="pill orange" id="dataMode">Nenhuma base carregada</span></div><div id="loadStatus" class="notice">Carregue os arquivos com pedidos/pendente e com estoque. Excel ou ZIP são aceitos independentemente do nome. O sistema identifica os papéis pelas colunas; as redes são extraídas apenas dos pedidos.</div><div id="importAudit"></div><div id="sheetInfo"></div><p class="tip">Como o reconhecimento funciona: o nome do arquivo/aba não é uma condição. Os campos estruturais precisam ser encontrados; se faltar um campo ou duas estruturas forem semelhantes, a aba fica para revisão, sem criar números fictícios.</p><div id="recoverFields"></div><p class="tip"><b>Leitura v12:</b> CAD: Código EG em <code>Cod S4_2</code> (conforme coluna C informada), SAP em <code>Cod_SAP</code>, fator em <code>Quantidade_prod_pallet</code>. VD: SKU <b>EG</b> em <code>Sku S4</code>, origem <code>Orig. S4</code>, estoque-base <code>D0</code> em PLT. Somente a Malha é consultada por SKU <b>SAP</b>. Grade CD: <code>CodigoProduto</code> = SKU EG <b>sem o último dígito</b>, <code>SaldoDisponivel</code> em CX; centro identificado pelo nome da aba. Produção <code>COD_PROD</code> em EG e na <b>mesma origem</b> da Malha; sem data não comprova atendimento antes do vencimento.</p></div>
+<div class="panel"><h2>2. Redes identificadas</h2><p class="lead">As redes são identificadas na base de entrada/pendente pelo conteúdo e pelos cabeçalhos, não pelo nome do arquivo. Marque as redes que deseja analisar. Isso não altera a regra VD/CD das lojas.</p><div class="barrow" style="margin-bottom:12px"><button id="pickAll" class="btn">Selecionar todas</button><button id="pickNone" class="btn">Limpar seleção</button><span id="networkCount" class="pill gray">0 redes</span></div><div id="networks" class="network-grid"><div class="small">Carregue as bases ou abra o exemplo.</div></div><div class="barrow" style="margin-top:15px"><button class="btn primary" id="toChannels">Configurar atendimento VD/CD →</button></div></div>
+<div class="panel"><h2>Regra-base do projeto</h2><div class="diagram"><div class="node"><b>Pendente / Entrada</b>Rede + Loja/EG + Comercial + Pedido + SKU + Pendente + Validade</div><div class="arr">→</div><div class="node"><b>CAD + origem</b>EG → SAP apenas na Malha; conversão CAD; DPAR loja → CDD</div><div class="arr">→</div><div class="node"><b>Estoque elegível</b>VD: Malha por SAP, estoque/produção por EG na mesma fábrica. CD: CDD do DPAR e SKU EG sem dígito final</div></div></div></section>
+<section class="view" id="origens"><div class="panel"><div class="barrow"><div><h2>Configuração em lote: VD ou CD</h2><p class="lead">Selecione uma rede, marque todas as lojas e aplique uma origem de atendimento. Desmarque apenas as exceções e altere o canal. Ajuste o CDD de cada loja sem refazer toda a rede.</p></div><span class="pill" id="configCount">0 clientes</span></div><div class="flex"><div><label class="cap" for="configNetwork">Rede</label><select class="w100" id="configNetwork"></select></div><div><label class="cap" for="clientSearch">Pesquisar loja / cliente</label><input class="w100" id="clientSearch" type="text" placeholder="Código ou nome da loja"></div><div><label class="cap">Unidades marcadas</label><div class="barrow"><button id="selectVisible" class="btn">Marcar visíveis</button><button id="unselectVisible" class="btn">Desmarcar visíveis</button></div></div></div><div class="barrow" style="margin:17px 0"><button id="batchCD" class="btn primary">Aplicar CD às marcadas</button><button id="batchVD" class="btn dark">Aplicar VD às marcadas</button><label style="font-size:12px;color:var(--muted);margin-left:auto">Escolha só o que deseja mudar. As demais lojas permanecem com a classificação anterior.</label></div><div class="scroller"><table><thead><tr><th><input class="check" type="checkbox" id="allVisible"></th><th>Rede</th><th>Cliente / Loja</th><th>Canal</th><th>CDD para grade</th><th>De/para / DPAR</th><th>Validação</th></tr></thead><tbody id="clientRows"></tbody></table></div><div class="barrow" style="margin-top:15px"><button id="saveRules" class="btn">Salvar classificação neste navegador</button><button id="exportRules" class="btn">Exportar regras (.json)</button><label class="btn" style="font-size:14px;color:var(--navy);font-weight:bold">Importar regras (.json) <input type="file" id="importRules" accept=".json" style="display:none"></label></div><div class="notice">Prioridade de configuração: escolha manual da loja &gt; DPAR cadastrado &gt; padrão da rede. O nome da rede nunca substitui o código da loja. CDD inexistente ou ambíguo será sinalizado, não estimado.</div></div>
+<div class="panel"><h2>Origem VD ≠ Origem CD</h2><div class="cardarea"><div class="node"><b>VD — abastecimento via fábrica</b><div>Pedido → CAD (EG/SAP + fator) → Malha (SKU SAP + Destino Comercial) → fábrica autorizada → estoque em <b>pallets</b> → caixas equivalentes. Produção é informada separadamente.</div></div><div class="node"><b>CD — abastecimento via CDD</b><div>Pedido → Loja/EG → DPAR Shibata / cadastro → CDD responsável → grade do mesmo CDD em <b>caixas</b>. Não somar ou substituir por estoque de VD.</div></div></div></div></section>
+<section class="view" id="analise"><div class="panel"><div class="barrow"><div><h2>Gerencial de pedidos e estoque elegível</h2><p class="lead">Quantidade inicial pela chave única Pedido ERP + Cliente EG + SKU EG. Pendente oficial: Atualizada − Carro com remessa − Carro sem remessa − Faturado. Qualificação em pallets somente para VD; produção na mesma origem autorizada.</p></div><span id="analysisMode" class="pill orange">Sem processamento</span></div><div class="flex" style="margin-bottom:15px"><div><label class="cap">Rede</label><select id="analysisNetwork" class="w100"></select></div><div><label class="cap">Validade do pedido</label><select id="validityMode" class="w100"><option value="from" selected>Válido na data inicial e para frente (inclusive)</option><option value="all">Todas as validades</option><option value="expired">Já vencidos na data inicial</option></select></div><div><label class="cap">Data inicial do crivo</label><input type="date" id="referenceDate" class="w100"></div><div><label class="cap">Prioridade VD</label><select id="priorityMode" class="w100"><option value="max">Origem com maior estoque</option><option value="near26">Origem mais próxima de 26 PLT, se possível</option></select></div></div><div class="grid" id="kpis"></div><div class="notice" id="audit">Abra o exemplo ou faça o upload para iniciar os cruzamentos.</div><div class="scroller"><table><thead><tr><th>Rede / Loja</th><th>Pedido ERP / SKU</th><th>Canal</th><th>Original (PLT)</th><th>Inicial (CX)</th><th>Atualizada</th><th>Carro c/ remessa</th><th>Carro s/ remessa</th><th>Faturado</th><th>Pendente</th><th>Diferença</th><th>Fill rate</th><th>Validade</th><th>Origem prioritária</th><th>Estoque na origem (PLT)</th><th>Qualificação VD</th><th>Malhas alternativas (PLT)</th><th>Estoque elegível (CX)</th><th>Produção mesma origem (PLT)</th><th>Cobertura</th><th>Observações</th></tr></thead><tbody id="orderRows"></tbody></table></div><div class="panel" style="margin-top:18px"><h3>Visão gerencial por número de pedido ERP</h3><p class="small">Consolidação do pedido sem duplicar suas linhas por SKU/loja; o fill rate agregado é ponderado pela quantidade original.</p><div class="scroller"><table><thead><tr><th>Rede</th><th>Pedido ERP</th><th>Linhas únicas</th><th>Qtd. inicial</th><th>Faturado</th><th>Pendente</th><th>Fill rate</th><th>Linhas com estoque</th><th>Validade mais próxima</th></tr></thead><tbody id="managerRows"></tbody></table></div></div><div class="tip">Estoque elegível não é reserva nem alocação. O mesmo estoque pode aparecer para mais de um pedido: totais não representam capacidade efetiva agregada sem algoritmo de alocação e compromissos.</div></div></section>
+<section class="view" id="saida"><div class="panel"><h2>Materiais separados para cada rede</h2><p class="lead">Excel detalhado para anexo e imagem PNG de resumo no corpo do e-mail. O nome segue “Carteira reversa Rede DD-MM-AAAA”. Os dados exportados são os mesmos do recorte analisado.</p><div class="flex"><div><label class="cap">Rede de destino</label><select id="exportNetwork" class="w100"></select></div><div><label class="cap">Formato</label><div class="barrow"><button id="excel" class="btn primary">Baixar Excel desta rede</button><button id="png" class="btn">Baixar imagem PNG</button></div></div></div><div class="notice" id="exportNotice">Para gerar Excel .xlsx é necessário que o leitor de planilhas esteja disponível. O PNG é criado localmente sem bibliotecas externas.</div><div id="recipientPreview" style="margin-top:17px"></div><div class="divider"></div><div class="barrow"><button id="exportAll" class="btn dark">Baixar Excel das redes marcadas</button><span class="small">Cada rede vira um arquivo separado. Navegadores podem solicitar permissão para vários downloads.</span></div></div></section>
+<div class="footer">Regras incorporadas à v11: pendente = atualizada − com remessa − sem remessa − faturado; inicial por chave ERP/EG/SKU; Malha/VD por origem; produção na mesma origem; classificação de VD. Base real não homologada: conferir nomes e unidades reais das colunas antes de distribuir relatórios.</div>
+</main>
+<script>
+'use strict';const $=id=>document.getElementById(id);
+const CENTERS=[['BR19','185','VD','F. Rio Janeiro'],['BR16','260','VD','F. Jacarei'],['BRCH','324','VD','CDR Extrema'],['BRDF','424','VD','CDR LOUVEIRA'],['BR13','781','VD','F. CCL Pirai'],['BR27','803','VD','F. Nova Minas'],['BR15','892','VD','F. Jundiai'],['BR09','893','VD','F. Agudos'],['BR23','952','VD','F. Jaguariuna'],['BRCR','216','CD','CDD Diadema DC'],['BRCX','301','CD','CDD Maua DC'],['BRDF','475','CD','CDI Louveira DC'],['BRD0','543','CD','CDD Presidente Prudente DC'],['BRD7','578','CD','CDD Praia Grande DC'],['BRCN','763','CD','CDD Araraquara DC'],['BRCT','764','CD','CDD Guarulhos DC'],['BRCM','811','CD','CDD Aracatuba DC'],['BR09','902','CD','CDD Agudos Int DC'],['BRD1','956','CD','CDD Ribeirao Preto DC'],['BRCU','977','CD','CDD Jau'],['BRCQ','230','CD','CDD Campinas'],['BRD3','297','CD','CDD Suzano'],['BRD2','966','CD','CDD S J Campos'],['BRD5','968','CD','CDL Taubate']].map(([br,center,type,name])=>({br,center,type,name,list:`${center}-${type}`}));
+const S={analyticsCache:new Map(), unitsCache:null, indices:null, demo:false,sheets:[],data:{orders:[],cad:[],malha:[],vd:[],grade:[],dpar:[],production:[],originMap:[]},sourceCount:0,channels:{},selected:new Set(),checked:new Set(),rawFiles:[],problems:[],manualRoles:{},manualFields:{},chosen:{},fileCache:new Map(),importSummary:[],importWarnings:[]};
+const norm=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const text=x=>String(x??'').trim(), clean=x=>text(x).replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').slice(0,70), esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function amount(v){if(v==null||String(v).trim()==='')return null;if(typeof v==='number')return Number.isFinite(v)?v:null;let s=String(v).replace(/[^\d,.-]/g,'');if(!s)return null;if(s.includes(',')&&s.includes('.'))s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');else if(s.includes(','))s=s.replace(',','.');let n=Number(s);return Number.isFinite(n)?n:null}
+const fmt=x=>x==null?'N/D':Number(x).toLocaleString('pt-BR',{maximumFractionDigits:1});
+function iso(x){if(x instanceof Date&&!isNaN(x))return x.toISOString().slice(0,10);if(typeof x==='number'&&x>35000&&x<90000){return new Date(Date.UTC(1899,11,30)+Math.round(x)*864e5).toISOString().slice(0,10)}let s=text(x),a=s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/),b=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(a)return `${a[1]}-${a[2].padStart(2,'0')}-${a[3].padStart(2,'0')}`;if(b)return `${b[3]}-${b[2].padStart(2,'0')}-${b[1].padStart(2,'0')}`;return ''}
+const formatDate=x=>x?x.slice(8,10)+'/'+x.slice(5,7)+'/'+x.slice(0,4):'Não informada';const today=()=>new Date().toLocaleDateString('en-CA');
+$('referenceDate').value=today();$('dateLabel').textContent=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+function show(tab){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===tab));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab)); if(tab==='analise')setTimeout(renderOrders,0); if(tab==='saida')setTimeout(renderPreview,0)}document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+const id=o=>`${norm(o.network)}|${norm(o.clientId||o.client)}`;
+function defaultChannel(o){return norm(o.network).includes('shibata')?(norm(o.client).includes('cd shibata')?'VD':'CD'):'VD'}
+function fixtures(){S.demo=true;S.sheets=[];S.fileCache.clear();S.sourceCount=0;S.problems=[];S.data={orders:[
+{network:'Shibata',client:'Shibata Loja 01',clientId:'SH001',commercial:'COM-SH',order:'450001',eg:'1234567',initial:400,initialPlt:4,updated:380,carWith:10,carWithout:10,billed:70,served:70,pending:290,validity:'2026-11-19',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Shibata',client:'Shibata Loja 02',clientId:'SH002',commercial:'COM-SH',order:'450001',eg:'1234567',initial:150,initialPlt:1.5,updated:140,carWith:0,carWithout:0,billed:50,served:50,pending:90,validity:'2026-11-25',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Shibata',client:'Shibata Loja 03',clientId:'SH003',commercial:'COM-SH',order:'450003',eg:'2345678',initial:160,initialPlt:2,updated:160,carWith:10,carWithout:10,billed:30,served:30,pending:110,validity:'2026-11-28',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Shibata',client:'Shibata Loja 04',clientId:'SH004',commercial:'COM-SH',order:'450004',eg:'1234567',initial:60,initialPlt:0.6,updated:60,carWith:0,carWithout:0,billed:0,served:0,pending:60,validity:'2026-11-13',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Shibata',client:'CD Shibata',clientId:'SHCD',commercial:'COM-SH',order:'450005',eg:'1234567',initial:200,initialPlt:2,updated:200,carWith:0,carWithout:0,billed:20,served:20,pending:180,validity:'2026-11-24',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
+{network:'Rede Horizonte',client:'CD Horizonte',clientId:'HCD',commercial:'COM-HOR',order:'450006',eg:'2345678',initial:100,initialPlt:1.25,updated:100,carWith:0,carWithout:0,billed:20,served:20,pending:80,validity:'2026-11-30',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'}],
+cad:[{eg:'1234567',sap:'SAP80001',cxPlt:100},{eg:'2345678',sap:'SAP80002',cxPlt:80}],
+malha:[{commercial:'COM-SH',sap:'SAP80001',origin:'BR15'},{commercial:'COM-SH',sap:'SAP80001',origin:'BR23'},{commercial:'COM-SH',sap:'SAP80001',origin:'BR19'},{commercial:'COM-SH',sap:'SAP80002',origin:'BR16'},{commercial:'COM-HOR',sap:'SAP80002',origin:'BR16'}],
+vd:[{sap:'SAP80001',origin:'892-VD',pallets:26},{sap:'SAP80001',origin:'952-VD',pallets:75},{sap:'SAP80001',origin:'185-VD',pallets:12},{sap:'SAP80002',origin:'260-VD',pallets:18},{sap:'SAP80001',origin:'893-VD',pallets:120}],
+grade:[{eg:'1234567',center:'216-CD',boxes:110},{eg:'1234567',center:'301-CD',boxes:160},{eg:'2345678',center:'230-CD',boxes:50},{eg:'1234567',center:'764-CD',boxes:30}],
+dpar:[{clientId:'SH001',client:'Shibata Loja 01',center:'216-CD'},{clientId:'SH002',client:'Shibata Loja 02',center:'301-CD'},{clientId:'SH003',client:'Shibata Loja 03',center:'230-CD'},{clientId:'SH004',client:'Shibata Loja 04',center:'764-CD'}],
+production:[{sap:'SAP80001',origin:'892-VD',pallets:20,date:'2026-11-17'},{sap:'SAP80001',origin:'952-VD',pallets:10,date:'2026-11-21'},{sap:'SAP80002',origin:'260-VD',pallets:2,date:'2026-11-25'}]};for(const row of S.data.vd){row.eg=S.data.cad.find(x=>x.sap===row.sap)?.eg||'';delete row.sap;}
+for(const row of S.data.production){row.eg=S.data.cad.find(x=>x.sap===row.sap)?.eg||'';delete row.sap;}
+for(const row of S.data.grade){row.eg=gradeFromEG(row.eg);}
+for(const o of S.data.orders){o.diff=o.initial-o.billed-o.pending;o.fillRate=o.initial?100*o.billed/o.initial:null;o.duplicateCount=1;o.issuesInitial=[]}S.unitsCache=null;S.analyticsCache.clear();buildIndexes();initData(true)}
+  const ALIAS={
+ network:['rede','nome rede','nome da rede','rede cliente','rede do cliente','bandeira','nome rede acomp','nome rede acompanhamento','nome da rede acompanhamento','rede nome','rede varejo','rede comercial','rede de atendimento','descricao rede','desc rede','rede cliente nome','nome grupo cliente','grupo rede'],
+ client:['nome loja','nome cliente','cliente','loja','nome fantasia','razao social','cliente nome','descricao cliente','nome da loja','cliente loja','nome pdv','nome da unidade'],
+ clientId:['clienteg','client eg','codigo loja','cod loja','cod cliente','cliente eg','eg cliente','codigo cliente','pdv codigo','pdv_codigo','cod cliente eg','eg loja','codigo eg cliente','cod eg cliente','codigo pdv','cod pdv','codigo da loja','cod cliente eg','cod cliente sap','código da loja','cod pdv eg','codigo pdv eg','loja eg','cod filial','codigo filial','cod loja eg','cod cd loja','codigo cliente eg'],
+ commercial:['comercial','destino comercial','cod comercial','codigo comercial','comercial destino','comercial cliente','comercial do cliente','comercial destino malha','codigo comercial destino'],
+ order:['order','order number','order id','order no','pedido','numero pedido','numero do pedido','n pedido','nº pedido','pedido ambev','numero pedido ambev','n pedido ambev','pedido erp','n pedido erp','numero pedido erp','nº pedido erp','nro pedido','ordem de venda','numero ordem'],
+ eg:['cod s4 2','codigoproduto','codigo produto eg','sku eg','codigo eg','cod eg','eg produto','codigo produto','produto eg','sku','cod produto eg','codigo sku eg','codigo do produto eg','item eg','material eg','eg','codigo produto eg','cod produto','sku codigo eg','cod item eg','codigo de produto eg'],
+ sap:['cod sap','cod sap 2','cod prod','sku sap','codigo sap','cod sap','sap produto','codigo material','material sap','cod produto sap','codigo sku sap','material','produto sap','cod material','sap','material codigo sap','sku codigo sap','cod sap produto','cod material sap','sku s4','sku codigo','sku produto sap','codigo do sku sap'],
+ initial:['quantidade inicial','qtd inicial','qtd solicitada','quantidade solicitada','entrada de pedido','quantidade pedida','qtd entrada','quantidade entrada','volume original','qtd original','qtd. original','quantidade original','qtd pedido'],
+ initialPlt:['volume palete','volume pallet','volume palet','volume plt','plt original','volume paletes'],
+ updated:['quantidade atualizada','qtd atualizada','qtd. atualizada','quantidade atual','qtd atual','qtd. atual','qtd atualizada cx'],
+ carWith:['carro com remessa','carros com remessa','carro c remessa','com remessa','qtd carro com remessa'],
+ carWithout:['carro sem remessa','carros sem remessa','carro s remessa','sem remessa','qtd carro sem remessa'],
+ billed:['faturado','faturada','qtd faturado','qtd. faturado','quantidade faturada','volume faturado'],
+ served:['quantidade atendida','qtd atendida','qtd faturada','quantidade faturada','quantidade entregue','qtd entregue','qtd expedida','quantidade expedida'],
+ pending:['pendente','qtd pendente','quantidade pendente','saldo pendente','saldo em aberto','saldo pedido','qtd a atender','qtd em aberto','saldo','pendente atual','volume pendente','pendente pedido'],
+ validity:['validade','validade pedido','data validade','data vencimento','data de vencimento','dt validade','data validade pedido','data limite','data limite pedido','vencimento pedido'],
+ cxPlt:['quantidade prod pallet','quantidade_prod_pallet','caixas por pallet','caixas por palete','cx por pallet','cx pallet','caixas pallet','fator cx plt','cx plt','conversao caixas pallet','caixa pallet','cx/plt','caixas plt','cx por palete','qtd cx pallet','fator conversao pallet','caixas palletizacao','caixa por palete','cx por plt','caixas por plt','caixas por palet','cx plt conversao','quantidade caixa por pallet'],
+ origin:['orig s4','orig ecc','orig pca','origem alocada','origem','codigo origem','br origem','codigo br origem','fabrica de origem','cod origem','origem sap','codigo centro origem','fabrica','origem expedicao','cd origem','origem atendimento','codigo centro de origem','origem de abastecimento','fabrica origem','origem br','centro origem'],
+ originName:['nome origem','nome da origem','descricao origem','descricao da origem','nome fabrica','nome do centro'],
+ center:['cdd footptint','cdd footprint','footprint cdd','lista','codigo centro','centro','cdd','cd','centro cd','centro estoque','codigo cdd','cdd origem','cnd','centro distrib','codigo centro cd','centro de distribuicao','origem cd','cd atendimento','centro abastecimento','codigo origem cdd','cd responsavel','cdd responsavel','centro responsavel','centro destino','codigo cd','codigo do cdd','cdd loja','origem alocada cdd','cd atendimento loja','cod cd','cod centro','centro de destino','local de estoque','origem cdd','codigo cnd','cod cnd','cnd da loja','cnd destino'],
+ pallets:['d0','estoque pallet','estoque palete','saldo plt','qtd pallet','quantidade pallet','estoque plt','pallets','quantidade paletes','qtd plt','estoque pallets','saldo pallet','pallet','plts'],
+ boxes:['saldo disponivel','saldodisponivel','estoque caixa','quantidade caixa','qtd cx','estoque cx','saldo cx','caixas','grade estoque','qtd caixas','saldo caixas','estoque cdd','saldo cdd','grade','quantidade cx','disponivel cx','caixas disponiveis','saldo disponivel caixas','estoque disponivel cx','saldo em caixa'],
+ productionQty:['producao','produção','qtd producao','quantidade producao'],
+  productionStock:['estoque','estoque producao'],
+  attribute:['atributo'],
+  date:['data producao','data prevista','data de producao','data','data previsao','data disponibilidade','data prevista producao'],
+ type:['tipo origem','tipo','canal']};
+ const FIELD_KEYS=Symbol('field_keys');
+ const ALL_ALIASES=Object.fromEntries(Object.entries(ALIAS).map(([k,arr])=>[k,arr.map(norm)]));
+ const ALIAS_WORDS=new Set(Object.values(ALL_ALIASES).flat());
+ function matchingField(headers,key){
+   const aliases=ALL_ALIASES[key]||[];
+   let names=headers.map(norm);
+   for(const a of aliases){let i=names.indexOf(a);if(i>=0)return headers[i]}
+   const long=aliases.filter(x=>x.length>=8).sort((a,b)=>b.length-a.length);
+   for(const a of long){let i=names.findIndex(h=>h.startsWith(a+' ')||h.endsWith(' '+a));if(i>=0)return headers[i]}
+   return '';
+ }
+ function field(row,key){
+   if(Object.prototype.hasOwnProperty.call(row,'__'+key))return row['__'+key];
+   if(row[FIELD_KEYS]){
+      let col=row[FIELD_KEYS][key];return col?row[col]:null;
+   }
+   let col=matchingField(Object.keys(row),key);return col?row[col]:null;
+ }
+ function hasField(s,key){return Boolean(matchingField(s.fields,key))}
+ function fieldMapFor(s){
+   const r=Object.fromEntries(Object.keys(ALIAS).map(k=>[k,matchingField(s.fields,k)]));
+   // A Malha e o estoque VD podem chamar a coluna SAP simplesmente de SKU.
+    if(s.type==='malha'&&!r.sap)r.sap=r.eg||matchingField(s.fields,'eg');
+    if(s.type==='cad'){
+      // Regra informada: código EG na coluna C da CAD (Cod S4_2), SAP em Cod_SAP.
+      const egC=s.fields.find(h=>norm(h)==='cod s4 2');
+      const sapB=s.fields.find(h=>norm(h)==='cod sap');
+      if(egC)r.eg=egC;
+      if(sapB)r.sap=sapB;
+    }
+    if(s.type==='vd'){
+      const sk=s.fields.find(h=>norm(h)==='sku s4');
+      const org=s.fields.find(h=>norm(h)==='orig s4');
+      const day=s.fields.find(h=>norm(h)==='d0');
+      if(sk)r.eg=sk;r.sap='';if(org)r.origin=org;if(day)r.pallets=day;
+    }
+    if(s.type==='production'){
+      const prod=s.fields.find(h=>norm(h)==='cod prod');
+      const qty=s.fields.find(h=>norm(h)==='producao');
+      if(prod)r.eg=prod;r.sap='';if(qty)r.productionQty=qty;
+    }
+   if(s.type==='dpar'&&!r.center)r.center=r.origin||'';
+   if(s.type==='grade'){r.eg=s.fields.find(h=>norm(h)==='codigoproduto')||r.eg||matchingField(s.fields,'eg');r.sap='';}
+   let manual=S.manualFields[s.name+'|'+s.tab]||{};
+   for(const [k,v] of Object.entries(manual))if(v&&s.fields.includes(v))r[k]=v;
+   return r;
+ }
+ function prepRows(s){
+   if(!s.rows){
+      if(!s.ws){s.rows=[];return}
+      s.rows=XLSX.utils.sheet_to_json(s.ws,{header:s.fields,range:s.headerRow,defval:'',raw:false,blankrows:false});
+      s.ws=null;
+   }
+   const map=fieldMapFor(s);
+   for(const r of s.rows)r[FIELD_KEYS]=map;
+ }
+ const ROLE_DEFS={
+  orders:{label:'Pedidos / Pendente',must:['network','order'],optional:['pending','initial','initialPlt','updated','carWith','carWithout','billed','eg','client','clientId','commercial','validity'],minExtra:1},
+  originMap:{label:'De/para das origens (BR / centro / tipo)',must:['origin','center','type'],forbid:['order','commercial','pending','pallets','boxes','clientId','client','sap'],optional:['originName']},
+  dpar:{label:'DPAR de lojas',must:[],oneOf:['clientId','client'],forbid:['order','pending','boxes','pallets','sap','commercial'],optional:['clientId','client','center','origin','type']},
+  cad:{label:'CAD de produtos',must:['eg','sap'],forbid:['order','commercial','boxes','pallets'],optional:['cxPlt']},
+  malha:{label:'Malha autorizada',must:['commercial','origin'],oneOf:['sap','eg'],forbid:['order','pending','boxes','pallets'],optional:['sap','eg','center']},
+  vd:{label:'Estoque de fábrica (VD)',must:['origin','pallets'],oneOf:['sap','eg'],forbid:['order','commercial','pending'],optional:['sap','eg','center']},
+  grade:{label:'Grade de estoque (CD)',must:['boxes'],oneOf:['eg','sap'],forbid:['order','commercial','pending'],optional:['eg','sap']},
+  production:{label:'Produção prevista',must:['origin','productionQty'],oneOf:['sap','eg'],forbid:['order','commercial','pending'],optional:['productionStock','date']}
+ };
+ function headerProfile(s){let keys=Object.keys(ALIAS),hits=Object.fromEntries(keys.map(k=>[k,hasField(s,k)]));let normalized=s.fields.map(norm);let specificProduction=normalized.some(h=>/producao|fabricacao|prevista|programada|previsao|planejada/.test(h));return {hits,specificProduction};}
+ function classifyByColumns(s){
+  let p=headerProfile(s),hits=p.hits,ranking=[];
+  for(const [role,spec] of Object.entries(ROLE_DEFS)){
+   let required=(spec.must||[]), missing=required.filter(k=>!hits[k]);
+   if(missing.length)continue;
+   if(spec.oneOf&&!spec.oneOf.some(k=>hits[k]))continue;
+   if((spec.forbid||[]).some(k=>hits[k]))continue;
+   let extra=(spec.optional||[]).filter(k=>hits[k]);
+   if((spec.minExtra||0)>extra.length)continue;
+   // Production requires a production-related header, not merely a generic "Data".
+   if(role==='production'&&!p.specificProduction)continue;
+   if(role==='dpar'&&!(hits.center||hits.origin))continue;
+    if(role==='production'&&!(hits.sap||hits.eg))continue;
+   let score=required.length*5+extra.length*2+(spec.oneOf?2:0);
+   if(role==='production')score+=3;
+   ranking.push({role,score,fields:[...new Set([...required,...extra,...(spec.oneOf||[]).filter(k=>hits[k])])]});
+  }
+  ranking.sort((a,b)=>b.score-a.score||a.role.localeCompare(b.role));
+  if(!ranking.length)return {role:'',confidence:'Não reconhecida',matched:Object.keys(hits).filter(k=>hits[k]),reason:'Cabeçalhos insuficientes para distinguir a função da aba. Se esta for uma fonte necessária, use a classificação manual e mapeie os campos.'};
+  if(ranking.length>1&&ranking[0].score===ranking[1].score){return {role:'',confidence:'Ambígua',matched:ranking[0].fields,reason:'Estrutura compatível com '+ranking.filter(x=>x.score===ranking[0].score).map(x=>ROLE_DEFS[x.role].label).join(' / ')+'. Confirme o papel na lista suspensa.'};}
+  let first=ranking[0];
+  return {role:first.role,confidence:ranking.length>1?'Estrutura predominante':'Estrutura identificada',matched:first.fields,reason:'Campos-chave: '+first.fields.join(', ')};
+ }
+ function detectType(s){return classifyByColumns(s).role}
+
+ function parseWorkbook(file,wb){
+   for(const tab of wb.SheetNames){
+      const ws=wb.Sheets[tab];if(!ws||!ws['!ref'])continue;
+      const dim=XLSX.utils.decode_range(ws['!ref']);
+      const last=Math.min(dim.e.r,Math.max(89,dim.s.r+89));
+      const scan=XLSX.utils.sheet_to_json(ws,{header:1,range:XLSX.utils.encode_range({s:{r:dim.s.r,c:dim.s.c},e:{r:last,c:dim.e.c}}),defval:'',raw:false,blankrows:true});
+      let best=-1,score=-Infinity;
+      for(let i=0;i<scan.length&&i<90;i++){
+        const cols=(scan[i]||[]).map(text),filled=cols.filter(Boolean);
+        if(filled.length<2)continue;
+        let hits=0;
+        for(const col of filled)if(ALIAS_WORDS.has(norm(col)))hits++;
+        const unique=new Set(filled.map(norm)).size;
+        let numbers=filled.filter(x=>/^[-+]?\d+[.,\d]*$/.test(x)).length;
+        let quality=hits*14+Math.min(filled.length,30)*.2-numbers*3+(unique===filled.length?1:0);
+        if(hits===0)quality-=25;
+        if(quality>score){score=quality;best=i;}
+      }
+      if(best<0)continue;
+      let names=(scan[best]||[]).map((x,j)=>text(x)||`Campo ${j+1}`);
+      const seen={};names=names.map(n=>{let z=n;if(seen[n]!==undefined)z=n+'_'+(++seen[n]);else seen[n]=1;return z});
+      S.sheets.push({name:file.name,source:file.source||file.name,tab,ws,rows:null,fields:names,headerRow:dim.s.r+best+1,approxRows:Math.max(0,dim.e.r-dim.s.r-best)});
+   }
+ }
+ function readOrders(rows){
+  // Grain: ERP order + EG client + EG SKU. Never sum duplicated snapshots into initial quantity.
+  let byKey=new Map(), all=0, withNetwork=0,withOrder=0;
+  for(const [i,r] of rows.entries()){
+   const network=text(field(r,'network')), order=text(field(r,'order')),
+    clientId=text(field(r,'clientId'))||text(field(r,'client')), eg=text(field(r,'eg'));
+   const item={network,client:text(field(r,'client'))||clientId,clientId,commercial:text(field(r,'commercial')),
+    order,eg,sap:text(field(r,'sap')),initial:amount(field(r,'initial')),initialPlt:amount(field(r,'initialPlt')),
+    updated:amount(field(r,'updated')),carWith:amount(field(r,'carWith')),carWithout:amount(field(r,'carWithout')),
+    billed:amount(field(r,'billed')??field(r,'served')),validity:iso(field(r,'validity')),
+    raw:r,idx:i,duplicateCount:1,issuesInitial:[],pendingBasis:'Fórmula oficial da Order'};
+   if(network)withNetwork++;if(order)withOrder++;
+   item.served=item.billed;
+   item.pending=(item.updated!==null&&item.carWith!==null&&item.carWithout!==null&&item.billed!==null)
+    ?item.updated-item.carWith-item.carWithout-item.billed:null;
+   item.diff=(item.initial!==null&&item.billed!==null&&item.pending!==null)?item.initial-item.billed-item.pending:null;
+   item.fillRate=item.initial>0&&item.billed!==null?100*item.billed/item.initial:null;
+   if(!network||!order||!clientId||!eg)continue;
+   all++;
+   const k=[network,order,clientId,eg].map(norm).join('|');
+   if(!byKey.has(k)){byKey.set(k,item);continue}
+   let prev=byKey.get(k);prev.duplicateCount++;
+   for(let f of ['initial','initialPlt','updated','carWith','carWithout','billed','validity']){
+    if(prev[f]!=null && item[f]!=null && String(prev[f])!==String(item[f]))prev.issuesInitial.push('Valores diferentes em '+f+' para a mesma chave; foi usada a última ocorrência');
+   }
+   item.duplicateCount=prev.duplicateCount;item.issuesInitial=[...new Set(prev.issuesInitial)];
+   // For repeated records, take latest row of the file; never sum snapshots.
+   byKey.set(k,item);
+  }
+  S.orderReadStats={total:rows.length,withNetwork,withOrder,usable:all,unique:byKey.size};
+  return [...byKey.values()];
+ }
+  function renderFieldRecovery(){let out=$('recoverFields');if(S.demo){out.innerHTML='';return}let relevant=S.sheets.filter(s=>s.type&&(['orders','dpar','cad','originMap','vd','grade','production'].includes(s.type)||s.detection?.manual));if(!relevant.length){out.innerHTML='';return}const labels={network:'Rede',order:'Pedido',client:'Nome da loja/cliente',clientId:'Código EG da loja',commercial:'Comercial',eg:'SKU EG',pending:'Pendente',initial:'Qtd. Original',initialPlt:'Volume Palete',updated:'Quantidade Atualizada',carWith:'Carro com remessa',carWithout:'Carro sem remessa',billed:'Faturado',validity:'Validade',center:'Centro/CDD',originName:'Nome origem',sap:'Código SAP',cxPlt:'Caixas por pallet',origin:'Origem',pallets:'Estoque PLT',boxes:'Estoque CX',date:'Data de produção',productionQty:'Produção (PLT)',productionStock:'Estoque da aba produção',attribute:'Atributo'};const needs={orders:['network','order','client','clientId','commercial','eg','initial','initialPlt','updated','carWith','carWithout','billed','validity'],dpar:['client','clientId','center'],cad:['eg','sap','cxPlt'],malha:['commercial','sap','origin'],vd:['eg','origin','pallets'],grade:['eg','boxes'],production:['eg','origin','productionQty','productionStock','date'],originMap:['origin','center','type','originName']};out.innerHTML='<div class="panel" style="margin-top:12px;background:#f7fafb"><h3>Recuperação de colunas (opcional)</h3><p class="small">Utilize apenas se o reconhecimento automático não identificar os dados. As correspondências ficam internas após a importação, sem alterar o Excel original.</p>'+relevant.map(s=>{let k=s.name+'|'+s.tab,m=S.manualFields[k]||{};return `<div style="margin:10px 0 20px"><b>${esc(s.tab)}</b><div class="small">${esc(s.name)} — ${esc(s.type)}</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">${(needs[s.type]||[]).filter(f=>!hasField(s,f)||m[f]).map(f=>`<div><label class="cap">${labels[f]}</label><select class="w100" data-field="${esc(k)}" data-key="${f}"><option value="">Automático${hasField(s,f)?' ✓':' (não detectado)'}</option>${s.fields.map(h=>`<option value="${esc(h)}" ${m[f]===h?'selected':''}>${esc(h)}</option>`).join('')}</select></div>`).join('')}</div></div>`}).join('')+'<button class="btn primary" id="applyMappings">Reprocessar com essas correspondências</button></div>';document.querySelectorAll('[data-field]').forEach(el=>el.onchange=()=>{const k=el.dataset.field,f=el.dataset.key;S.manualFields[k]??={};if(el.value)S.manualFields[k][f]=el.value;else delete S.manualFields[k][f]});$('applyMappings').onclick=()=>{fromSheets();initData(false)}}
+
+ function fromSheets(){
+   S.problems=[];S.unitsCache=null;S.analyticsCache.clear();let chosen={};
+   for(const s of S.sheets){
+     let key=s.name+'|'+s.tab, auto=classifyByColumns(s),manual=S.manualRoles[key],type=manual||auto.role;
+     s.type=type||'';s.detection={...auto,manual:!!manual};
+     if(type){(chosen[type]??=[]).push(s);prepRows(s)}
+   }
+   S.chosen=chosen;
+   const maprows=t=>(chosen[t]||[]).flatMap(s=>s.rows||[]);
+   S.data.sourceOrders=maprows('orders');S.data.orders=readOrders(S.data.sourceOrders);
+   S.data.cad=maprows('cad').map(r=>({eg:text(field(r,'eg')),sap:text(field(r,'sap')),cxPlt:amount(field(r,'cxPlt'))})).filter(x=>x.eg||x.sap);
+   S.data.malha=maprows('malha').map(r=>({commercial:text(field(r,'commercial')),sap:text(field(r,'sap')||field(r,'eg')),origin:text(field(r,'origin'))})).filter(x=>x.sap&&x.commercial&&x.origin);
+   S.data.dpar=maprows('dpar').map(r=>({clientId:text(field(r,'clientId')),client:text(field(r,'client')),center:text(field(r,'center')||field(r,'origin'))})).filter(x=>x.clientId||x.client);
+   S.data.vd=maprows('vd').flatMap(r=>{
+      const attr=text(field(r,'attribute'));
+      const row={eg:text(field(r,'eg')),origin:text(field(r,'origin')||field(r,'center')),pallets:amount(field(r,'pallets')),attribute:attr};
+      return row.eg?[row]:[];
+    });
+   S.data.grade=(chosen.grade||[]).flatMap(sheet=>{
+      const inferred=inferGradeCenter(sheet.tab);
+      if(!matchingField(sheet.fields,'center')&&!inferred){
+        S.problems.push('Grade de '+sheet.tab+' sem coluna Centro e sem centro único identificável no título; não será atribuída a outro CDD');
+      }
+      return (sheet.rows||[]).map(r=>({eg:text(field(r,'eg')),center:inferred||text(field(r,'center')||field(r,'origin')),boxes:amount(field(r,'boxes')),source:sheet.tab})).filter(x=>x.eg&&x.center);
+    });
+   S.data.originMap=maprows('originMap').map(r=>({origin:text(field(r,'origin')),center:text(field(r,'center')),type:text(field(r,'type')),name:text(field(r,'originName'))})).filter(x=>x.origin&&x.center&&x.type);
+   for(const row of S.data.originMap){const type=row.type.toUpperCase(),raw=row.center;const centerNum=(raw.match(/\d+/)||[])[0]||'', list=raw.match(/^\d+-[A-Z]+$/i)?raw.toUpperCase():centerNum+'-'+type;if(!['VD','CD'].includes(type)||!centerNum)continue;if(!CENTERS.some(c=>c.list===list))CENTERS.push({br:row.origin.toUpperCase(),center:centerNum,type,name:row.name||row.origin,list});}
+   S.data.production=maprows('production').map(r=>({eg:text(field(r,'eg')),origin:text(field(r,'origin')||field(r,'center')),pallets:amount(field(r,'productionQty')),stockPallets:amount(field(r,'productionStock')),date:iso(field(r,'date'))})).filter(x=>x.eg);
+    if(S.data.production.length&&S.data.production.some(p=>p.pallets!=null&&!p.date))S.problems.push('Produção sem data identificável: volume informativo, não considerado como disponível antes do vencimento.');
+   buildIndexes();
+   if(!chosen.orders?.length)S.problems.unshift('PEDIDOS/PENDENTE não reconhecida pelos cabeçalhos. Selecione a função da aba e associe os campos em Recuperação.');
+   else if(!S.data.orders.length)S.problems.unshift(`A base de pedidos foi reconhecida, mas Rede / Pedido / SKU / Cliente não foram suficientes (${S.orderReadStats?.withNetwork||0} com Rede, ${S.orderReadStats?.withOrder||0} com Pedido).`);
+   if(!chosen.dpar?.length)S.problems.push('De/para LOJA → CDD não reconhecido (diferente do de/para BR → centro). Verifique se a aba de lojas está presente. É possível associar manualmente o papel e as colunas.');
+   else if(!S.data.dpar.length)S.problems.push('De/para de lojas reconhecido, mas sem pares loja–CDD aproveitáveis; confira colunas código de loja/centro.');
+   for(const t of ['cad','malha','vd','grade','production'])if(!(chosen[t]||[]).length)S.problems.push(`Fonte não reconhecida: ${({cad:'CAD',malha:'Malha',vd:'Estoque fábrica VD',grade:'Grade CD',production:'Produção'})[t]}. Associe manualmente apenas se ela estiver presente.`);
+ }
+ function indexMany(arr,fn){const m=new Map();for(const x of arr){let k=fn(x);if(!k)continue;if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
+ function buildIndexes(){
+   const key=(...parts)=>parts.map(norm).join('|');
+   S.indices={
+    cadEG:indexMany(S.data.cad,x=>norm(x.eg)), cadSAP:indexMany(S.data.cad,x=>norm(x.sap)),
+    malha:indexMany(S.data.malha,x=>key(x.commercial,x.sap)),
+    vd:indexMany(S.data.vd,x=>key(x.eg,stockCenter(x.origin,'VD'))),
+    gradeEG:indexMany(S.data.grade,x=>key(stockCenter(x.center,'CD'),gradeKey(x.eg))),
+    prod:indexMany(S.data.production,x=>key(x.eg,stockCenter(x.origin,'VD'))),
+    dparId:indexMany(S.data.dpar,x=>norm(x.clientId)),
+    dparName:indexMany(S.data.dpar,x=>norm(x.client)),
+    netCounts:new Map()
+   };
+   for(const o of S.data.orders)S.indices.netCounts.set(o.network,(S.indices.netCounts.get(o.network)||0)+1);
+ }
+ function getIndexed(name,key){return S.indices?.[name]?.get(key)||[]}
+ function keyOf(...parts){return parts.map(norm).join('|')}
+
+ const SPREADSHEET_EXT=/\.(xlsx|xlsm|xls|csv)$/i;
+// O leitor de Excel/ZIP roda em um Worker quando suportado, sem bloquear a interface.
+function makeImportWorker(){
+ const source='('+function(){
+   'use strict';
+   try{importScripts('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js','https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')}
+   catch(e){postMessage({error:'Bibliotecas do Worker indisponíveis: '+e.message});return}
+   function norm(x){return String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+   function tx(x){return String(x??'').trim()}
+   function spreadsheet(fileName,sourceName,data,aliasWords){
+      const wb=XLSX.read(data,{type:'array'}),sheets=[];
+      for(const tab of wb.SheetNames){
+        const ws=wb.Sheets[tab];if(!ws||!ws['!ref'])continue;
+        const range=XLSX.utils.decode_range(ws['!ref']);
+        const scan=XLSX.utils.sheet_to_json(ws,{header:1,range:XLSX.utils.encode_range({s:range.s,e:{r:Math.min(range.e.r,Math.max(89,range.s.r+89)),c:range.e.c}}),defval:'',raw:false,blankrows:true});
+        let best=-1,score=-Infinity;
+        for(let i=0;i<scan.length&&i<90;i++){
+          let cells=(scan[i]||[]).map(tx),filled=cells.filter(Boolean);if(filled.length<2)continue;
+          let hits=filled.filter(c=>aliasWords.has(norm(c))).length,numbers=filled.filter(c=>/^[-+]?\d+[.,\d]*$/.test(c)).length;
+          let points=hits*14+Math.min(filled.length,30)*.2-numbers*3+(new Set(filled.map(norm)).size===filled.length?1:0)-(hits?0:25);
+          if(points>score){best=i;score=points}
+        }
+        if(best<0)continue;
+        let seen={},names=(scan[best]||[]).map((v,j)=>tx(v)||'Campo '+(j+1)).map(n=>seen[n]!==undefined?n+'_'+(++seen[n]):(seen[n]=1,n));
+        postMessage({progress:'Lendo a aba '+tab+'…'});
+        let rows=XLSX.utils.sheet_to_json(ws,{header:names,range:range.s.r+best+1,defval:'',raw:false,blankrows:false});
+        sheets.push({name:fileName,source:sourceName,tab,rows,fields:names,headerRow:range.s.r+best+1,approxRows:rows.length});
+      }
+      return {sheets,entries:wb.SheetNames.length};
+   }
+   async function readArchive(data,root,prefix,depth,aliasWords,counter){
+     if(depth>3)throw Error('ZIP com muitos níveis');
+     const zip=await JSZip.loadAsync(data), entries=Object.values(zip.files).filter(x=>!x.dir&&!/(^|\/)(__MACOSX|\.DS_Store|~\$)/i.test(x.name));
+     if(entries.length>350)throw Error('ZIP excede 350 arquivos');
+     let result={sheets:[],added:0,used:0,ignored:0,errorCount:0,warnings:[]};
+     for(const entry of entries){
+       const nm=(prefix?prefix+' / ':'')+entry.name;
+       if(!/\.(xlsx|xlsm|xls|csv|zip)$/i.test(entry.name)){result.ignored++;continue}
+       try{
+         const uncompressedSize=Number(entry._data?.uncompressedSize)||0;
+         counter.total+=uncompressedSize;
+         if(uncompressedSize>100*1024*1024||counter.total>300*1024*1024)throw Error('Tamanho descompactado acima do limite');
+         let content=await entry.async('uint8array');
+         if(/\.zip$/i.test(entry.name)){
+           let nested=await readArchive(content,root,nm,depth+1,aliasWords,counter);
+           for(const key of ['added','used','ignored','errorCount'])result[key]+=nested[key];
+           result.sheets.push(...nested.sheets);result.warnings.push(...nested.warnings);
+         }else{
+           postMessage({progress:'Extraindo '+nm+'…'});
+           let parsed=spreadsheet(root+' / '+nm,root,content,aliasWords);
+           result.sheets.push(...parsed.sheets);result.added+=parsed.sheets.length;
+           if(parsed.sheets.length)result.used++;else result.warnings.push('Planilha sem aba tabular: '+nm);
+         }
+       }catch(e){result.errorCount++;result.warnings.push(nm+': '+e.message)}
+     }
+     return result;
+   }
+   onmessage=async event=>{
+     const {fileName,bytes,aliases}=event.data,aliasWords=new Set(aliases||[]);
+     try{
+       let result;
+       if(/\.zip$/i.test(fileName))result=await readArchive(bytes,fileName,'',0,aliasWords,{total:0});
+       else{let p=spreadsheet(fileName,fileName,bytes,aliasWords);result={sheets:p.sheets,added:p.sheets.length,used:p.sheets.length?1:0,ignored:0,errorCount:0,warnings:[]}}
+       postMessage({complete:true,...result});
+     }catch(e){postMessage({error:e.message||String(e)})}
+   };
+ }.toString()+')()';
+ const blob=new Blob([source],{type:'application/javascript'});
+ const url=URL.createObjectURL(blob);
+ try{return {worker:new Worker(url),url}}catch(e){URL.revokeObjectURL(url);throw e}
+}
+async function importWithWorker(f){
+ const {worker,url}=makeImportWorker();
+ try{
+   const bytes=await f.arrayBuffer();
+   return await new Promise((resolve,reject)=>{
+      const timeout=setTimeout(()=>{reject(Error('A leitura paralela excedeu o tempo limite.'))},180000);
+      worker.onmessage=e=>{
+       const o=e.data;
+       if(o.progress){$('loadStatus').textContent=o.progress;return}
+       clearTimeout(timeout);
+       if(o.error)reject(Error(o.error));else if(o.complete)resolve(o);
+      };
+      worker.onerror=e=>{clearTimeout(timeout);reject(Error(e.message||'Falha de importação paralela'))};
+      worker.postMessage({fileName:f.name,bytes,aliases:[...ALIAS_WORDS]},[bytes]);
+   });
+ }finally{worker.terminate();URL.revokeObjectURL(url)}
+}
+
+async function readSpreadsheetBytes(displayName, sourceName, bytes){
+ const wb=XLSX.read(bytes,{type:'array'});
+ const before=S.sheets.length;
+ parseWorkbook({name:displayName,source:sourceName},wb);
+ return {sheets:S.sheets.length-before, entries:wb.SheetNames.length};
+}
+async function readArchive(f, bytes, depth=0, namePrefix=''){
+ if(typeof JSZip==='undefined')throw new Error('Leitor ZIP indisponível. Conecte-se à internet e abra o painel novamente.');
+ const zip=await JSZip.loadAsync(bytes);
+ const entries=Object.values(zip.files).filter(e=>!e.dir && !/(^|\/)(__MACOSX|\.DS_Store|~\$)/i.test(e.name));
+ if(entries.length>350)throw new Error('ZIP excede 350 arquivos. Separe somente as planilhas necessárias.');
+ let added=0, used=0, ignored=0, errorCount=0, bytesTotal=0;
+ for(const entry of entries){
+  const entryName=(namePrefix?namePrefix+' / ':'')+entry.name;
+  if(!SPREADSHEET_EXT.test(entry.name) && !(depth===0&&/\.zip$/i.test(entry.name))){ignored++;continue}
+  try{
+   const uncompressedSize=Number(entry._data?.uncompressedSize)||0;
+   if(uncompressedSize>100*1024*1024)throw new Error('planilha superior a 100 MB');
+   bytesTotal+=uncompressedSize;
+   if(bytesTotal>300*1024*1024)throw new Error('ZIP excede 300 MB descompactados');
+   const content=await entry.async('uint8array');
+   if(/\.zip$/i.test(entry.name)){
+    const child=await readArchive(f,content,depth+1,entryName);
+    added+=child.added; used+=child.used;ignored+=child.ignored;errorCount+=child.errorCount;
+   } else {
+    const result=await readSpreadsheetBytes(f.name+' / '+entryName,f.name,content);
+    if(result.sheets){added+=result.sheets;used++}
+    else S.importWarnings.push('Planilha sem tabela reconhecível: '+entryName);
+   }
+  }catch(err){errorCount++;S.importWarnings.push('Erro na leitura de '+entryName+': '+(err?.message||err))}
+ }
+ return {added,used,ignored,errorCount};
+}
+async function loadFiles(files){
+ if(!files.length)return;
+ if(typeof XLSX==='undefined'){$('loadStatus').textContent='Leitor Excel indisponível. Abra o arquivo com conexão à internet para carregar o leitor.';return}
+ if(S.demo){S.sheets=[];S.fileCache.clear();S.channels={};S.selected.clear();S.importSummary=[]}
+ S.demo=false;S.importWarnings=[];
+ $('loadStatus').className='notice';$('loadStatus').textContent='Lendo '+files.length+' arquivo(s). ZIPs serão descompactados automaticamente no navegador...';
+ for(const f of files){
+  $('loadStatus').textContent='Importando '+f.name+' · leitura em andamento…'; await new Promise(r=>setTimeout(r,30));
+  try{
+   let data=null;
+   S.sheets=S.sheets.filter(s=>s.source!==f.name && s.name!==f.name && !s.name.startsWith(f.name+' / '));
+   let result, usedWorker=false;
+   if(typeof Worker!=='undefined'){
+     try{
+       const job=await importWithWorker(f);
+       S.sheets.push(...job.sheets);
+       S.importWarnings.push(...job.warnings);
+       result={added:job.added,used:job.used,ignored:job.ignored,errorCount:job.errorCount};
+       usedWorker=true;
+     }catch(err){
+       S.importWarnings.push('Leitura paralela indisponível para '+f.name+'; usando leitor de compatibilidade. '+(err?.message||err));
+     }
+   }
+   if(!usedWorker){
+     data=await f.arrayBuffer();
+     if(/\.zip$/i.test(f.name))result=await readArchive(f,data);
+     else if(SPREADSHEET_EXT.test(f.name)){
+       const r=await readSpreadsheetBytes(f.name,f.name,data);
+       result={added:r.sheets,used:r.sheets?1:0,ignored:0,errorCount:0};
+     }else throw Error('Formato não suportado; utilize ZIP, XLSX, XLS, XLSM ou CSV.');
+   }
+   S.fileCache.set(f.name,{type:/\.zip$/i.test(f.name)?'ZIP':'Planilha',...result});
+   S.importSummary=S.importSummary.filter(x=>x.name!==f.name);
+   S.importSummary.push({name:f.name,...result});
+   if(!result.added)S.importWarnings.push('Nenhuma aba tabular importada de '+f.name+'. Confira se o ZIP contém um Excel válido.');
+  }catch(e){S.importWarnings.push('Falha ao abrir '+f.name+': '+(e?.message||e))}
+ }
+ S.sourceCount=S.fileCache.size;
+ S.data={orders:[],cad:[],malha:[],vd:[],grade:[],dpar:[],production:[],originMap:[]};
+ fromSheets();initData(false);
+ $('files').value='';
+}
+
+$('files').addEventListener('change',e=>loadFiles([...e.target.files]));$('demo').onclick=fixtures;
+
+// Importa arquivos BINÁRIOS diretamente no navegador (GitHub público), sem servidor intermediário.
+const REPO_SOURCES=[
+ {name:'BASE_ESTOQUE.xlsx',url:'https://raw.githubusercontent.com/thatazrsss-alt/Carteira-reversa/main/BASE_ESTOQUE.xlsx'},
+ {name:'analise-carteira-reversa (15).zip',url:'https://raw.githubusercontent.com/thatazrsss-alt/Carteira-reversa/main/analise-carteira-reversa%20(15).zip'}
+];
+async function loadGithubSources(){
+ const button=$('loadGithub'), status=$('loadStatus');
+ button.disabled=true;button.textContent='Consultando GitHub…';
+ status.className='notice';
+ let files=[],failed=[];
+ try{
+  if(!navigator.onLine)throw Error('Navegador sem conexão com a internet');
+  for(let i=0;i<REPO_SOURCES.length;i++){
+   const src=REPO_SOURCES[i];
+   button.textContent=`Baixando ${i+1}/${REPO_SOURCES.length}…`;
+   status.textContent='GitHub: recebendo '+src.name+'…';
+   try{
+    const res=await fetch(src.url,{cache:'no-store',mode:'cors'});
+    if(!res.ok)throw Error('HTTP '+res.status);
+    const body=await res.blob();
+    if(body.size<100)throw Error('arquivo vazio ou resposta inesperada');
+    const file=new File([body],src.name,{type:/\.zip$/i.test(src.name)?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    files.push(file);
+   }catch(e){failed.push(src.name+': '+(e?.message||String(e)));}
+  }
+  if(files.length){
+   await loadFiles(files);
+   const kinds=Object.fromEntries(Object.entries(S.chosen).map(([k,v])=>[k,v.reduce((n,s)=>n+(s.rows?.length||0),0)]));
+   S.importWarnings.push('Origem dos dados: GitHub público. Arquivos importados: '+files.map(f=>f.name).join(' / ')+'.');
+   if(!S.data.orders.length)S.importWarnings.push('Nenhuma Order/Pendente reconhecida nos conteúdos encontrados no repositório. Confira o ZIP e o diagnóstico antes de concluir que a base está vazia.');
+   if(failed.length)S.importWarnings.push('Falha parcial: '+failed.join(' | '));
+   renderEverything();
+   const info='Arquivos: '+files.length+' · Abas: '+S.sheets.length+' · Order: '+(S.data.orders?.length||0)+' linhas únicas';
+   status.className='notice '+(S.data.orders.length?'good':'bad');
+   status.textContent='Importação GitHub concluída. '+info+(failed.length?' · Problemas: '+failed.join(' ; '):'');
+  }else{
+   status.className='notice bad';status.textContent='Não foi possível baixar os arquivos públicos do GitHub. '+failed.join(' ; ')+'. Use o upload manual dos arquivos.';
+  }
+ }catch(e){status.className='notice bad';status.textContent='Não foi possível importar do GitHub: '+(e?.message||e)}
+ finally{button.disabled=false;button.textContent='Importar bases direto do GitHub';}
+}
+$('loadGithub').onclick=loadGithubSources;
+
+function units(){if(S.unitsCache)return S.unitsCache;let m=new Map();for(const o of S.data.orders){let k=id(o);if(!m.has(k))m.set(k,{network:o.network,client:o.client,clientId:o.clientId,commercial:o.commercial,key:k,count:0});m.get(k).count++}return S.unitsCache=[...m.values()].sort((a,b)=>a.network.localeCompare(b.network,'pt-BR')||a.client.localeCompare(b.client,'pt-BR'))}
+function chosenNetworks(){return [...S.selected]}
+function getDpar(u){
+ const found=u.clientId?getIndexed('dparId',norm(u.clientId)):[];
+ const matches=found.length?found:getIndexed('dparName',norm(u.client));
+ const centers=[...new Set(matches.map(d=>resolveCenter(d.center,'CD')?.list||'').filter(Boolean))];
+ return {center:centers.length===1?centers[0]:'',status:centers.length>1?'DPAR ambíguo':centers.length===1?'DPAR identificado':'Sem DPAR'};
+}
+
+function resolveCenter(value,type=''){
+  let s=norm(value),compact=text(value).toUpperCase().replace(/\s/g,'');if(!s)return null;
+  let allowed=CENTERS.filter(c=>!type||c.type===type);
+  let exact=allowed.filter(c=>norm(c.list)===s||norm(c.center)===s||norm(c.br)===s||norm(c.name)===s||compact===c.list);
+  if(exact.length===1)return exact[0];if(exact.length>1)return null;
+  // Grade do CDD: o nome da aba pode ser "Estoque CDD Diadema" sem campo de centro.
+  let remove=x=>norm(x).replace(/\b(estoque|grade|cdd|cd|cdi|cdl|dc|int|de|do|da|origem|centro|loja)\b/g,' ').replace(/\s+/g,' ').trim();
+  let label=remove(s);if(!label||label.length<3)return null;
+  let fuzzy=allowed.filter(c=>{let nm=remove(c.name);return nm===label||nm.includes(label)||label.includes(nm)});
+  return fuzzy.length===1?fuzzy[0]:null;
+}
+function inferGradeCenter(tab){return resolveCenter(tab,'CD')?.list||'';}
+ function initData(isDemo){let prevSelected=new Set(S.selected),previous=S.channels,priorNetworks=new Set(Object.keys(previous).map(x=>x.split('|')[0]));S.selected=new Set([...new Set(S.data.orders.map(o=>o.network))].filter(n=>!priorNetworks.has(norm(n))||prevSelected.has(n)));S.checked=new Set();let saved={};try{saved=JSON.parse(localStorage.getItem('carteira_reversa_canais_v4')||'{}').channels||{}}catch(e){}for(const u of units()){let dc=getDpar(u),prior=previous[u.key]||saved[u.key],mode=['VD','CD'].includes(prior?.mode)?prior.mode:defaultChannel(u),center=prior?.center&&resolveCenter(prior.center,'CD')?.list||dc.center;S.channels[u.key]={mode,center,origin:prior?'Regra salva anteriormente':'Regra inicial (editável)',dpar:dc.status}}renderEverything();$('loadStatus').className='notice '+(isDemo?'good':S.data.orders.length?'good':'bad');$('loadStatus').textContent=isDemo?'EXEMPLO FICTÍCIO ativado: pedidos, DPAR, CAD, Malha, estoques e produção simulados. Os códigos são ilustrativos e não são as suas bases reais.':S.data.orders.length?`${S.sheets.length} abas importadas. ${S.data.orders.length.toLocaleString('pt-BR')} chaves únicas de pedido/SKU/cliente e ${new Set(S.data.orders.map(o=>o.network)).size} redes reconhecidas.`:`${S.sheets.length} abas importadas, mas sem pedidos reconhecidos. Verifique se a planilha de pedidos/pendente está carregada e se as colunas Rede e Pedido foram identificadas.`;$('dataMode').textContent=isDemo?'Demonstração fictícia':`${S.sourceCount} arquivo(s) importado(s)`}
+ function renderSources(){
+ const a=$('importAudit');
+ a.innerHTML=S.demo?'':S.importSummary.map(i=>`<div class="auditrow"><div><b>${esc(i.name)}</b><div class="small">${fmt(i.used)} planilha(s) reconhecida(s) · ${fmt(i.added)} aba(s) lida(s)${i.ignored?' · '+fmt(i.ignored)+' outros arquivos ignorados':''}${i.errorCount?' · '+fmt(i.errorCount)+' erros':''}</div></div><span class="pill ${i.used?'gray':'orange'}">${i.used?'Importado':'Sem planilha'}</span></div>`).join('')+(S.importWarnings.length?`<div class="notice bad"><b>Problemas na importação:</b> ${esc(S.importWarnings.join(' · '))}</div>`:'');
+ const labels={originMap:'De/para de origens',orders:'Order / Pendente',dpar:'DeParaCDD / DPAR',cad:'CAD',malha:'Malha',vd:'Estoque fábrica VD',grade:'Grade estoque CD',production:'Produção',originMap:'De/para de origens'};const opts=[['','Não classificada'],...Object.entries(labels)].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');$('sheetInfo').innerHTML=S.demo?'<div class="notice good">Conjunto fictício carregado. Para ver as abas reais, carregue os arquivos Excel.</div>':S.sheets.map((s,i)=>`<div class="auditrow"><div><b>${esc(s.name)} · ${esc(s.tab)}</b><div class="small">Cabeçalho na linha ${s.headerRow} · ${s.fields.length} colunas · ${fmt(s.rows?.length??s.approxRows??0)} linhas</div><div class="small">Colunas: ${esc(s.fields.slice(0,12).join(' · '))}${s.fields.length>12?' ...':''}</div><div class="small"><b>${esc(s.detection?.manual?'Definida manualmente':s.detection?.confidence||'Não reconhecida')}</b> · ${esc(s.detection?.reason||'Sem diagnóstico')}</div></div><select aria-label="Papel da aba" data-role="${i}" style="max-width:205px">${opts.replace('value="'+s.type+'"','value="'+s.type+'" selected')}</select></div>`).join('')+(S.problems.length?`<div class="notice bad"><b>Diagnóstico:</b> ${esc(S.problems.join(' · '))}</div>`:'<div class="notice good">Todas as fontes principais foram identificadas. Conferir valores e de/paras antes de enviar os relatórios.</div>');document.querySelectorAll('[data-role]').forEach(el=>el.onchange=()=>{let s=S.sheets[+el.dataset.role];if(el.value)S.manualRoles[s.name+'|'+s.tab]=el.value;else delete S.manualRoles[s.name+'|'+s.tab];fromSheets();initData(false)});renderFieldRecovery()}
+ function renderNetworks(){let ns=[...new Set(S.data.orders.map(o=>o.network))].sort();let empty=S.sheets.length&&!S.chosen.orders?.length?'As abas foram lidas, mas nenhuma foi identificada como base de pedidos/pendente pela estrutura. Verifique Rede + Pedido + campos de quantidade; os nomes de arquivo são livres.':S.sheets.length?'A base de pedidos foi identificada, mas as linhas não têm Rede/Pedido reconhecíveis. Verifique os cabeçalhos ou use o mapeamento opcional.':'Carregue a base de pedidos/pendente e a base de estoque, em Excel ou ZIP, com qualquer nome.';$('networks').innerHTML=ns.length?ns.map(n=>`<label class="netcheck"><input class="check" type="checkbox" data-net="${esc(n)}" ${S.selected.has(n)?'checked':''}><span>${esc(n)}</span><span class="small" style="margin-left:auto">${S.indices?.netCounts?.get(n)||0} linhas</span></label>`).join(''):`<div class="notice bad">${esc(empty)}</div>`;$('networkCount').textContent=`${S.selected.size} de ${ns.length} selecionadas`;document.querySelectorAll('[data-net]').forEach(el=>el.onchange=()=>{el.checked?S.selected.add(el.dataset.net):S.selected.delete(el.dataset.net);refreshDropdowns();renderNetworks();S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()})}
+$('pickAll').onclick=()=>{S.selected=new Set(S.data.orders.map(o=>o.network));renderEverything()};$('pickNone').onclick=()=>{S.selected.clear();renderEverything()};$('toChannels').onclick=()=>show('origens');
+function opt(id,arr,prompt='Todas as redes'){let el=$(id),before=el.value;el.innerHTML=(prompt?`<option value="">${esc(prompt)}</option>`:'')+arr.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(arr.includes(before))el.value=before;else el.value=prompt?'':arr[0]||''}
+function refreshDropdowns(){let ns=chosenNetworks().sort();opt('configNetwork',ns,'');opt('analysisNetwork',ns,'Todas as redes');opt('exportNetwork',ns,'');}
+function visibleUnits(){let net=$('configNetwork').value,q=norm($('clientSearch').value);return units().filter(u=>S.selected.has(u.network)&&(!net||u.network===net)&&(!q||norm([u.client,u.clientId].join(' ')).includes(q)))}
+function centerOptions(current){return '<option value="">Sem centro validado</option>'+CENTERS.filter(c=>c.type==='CD').map(c=>`<option value="${esc(c.list)}" ${current===c.list?'selected':''}>${esc(c.list+' · '+c.name)}</option>`).join('')}
+function renderClients(){const u=visibleUnits(), visible=u.slice(0,120);$('clientRows').innerHTML=u.length?visible.map(x=>{let ch=S.channels[x.key]||{},hasDPAR=getDpar(x);let valid=ch.mode==='VD'?'Malha / fábrica':ch.center?'CDD definido':'CDD não identificado';return `<tr><td><input class="check" type="checkbox" data-unitcheck="${esc(x.key)}" ${S.checked.has(x.key)?'checked':''}></td><td>${esc(x.network)}</td><td><b>${esc(x.client)}</b><div class="small">EG: ${esc(x.clientId)} · ${x.count} linhas</div></td><td><select data-mode="${esc(x.key)}"><option value="VD" ${ch.mode==='VD'?'selected':''}>VD — fábrica</option><option value="CD" ${ch.mode==='CD'?'selected':''}>CD — CDD</option></select></td><td><select data-center="${esc(x.key)}" ${ch.mode==='VD'?'disabled':''}>${centerOptions(ch.center)}</select></td><td><span class="pill ${hasDPAR.center?'':'orange'}">${esc(hasDPAR.status)}</span></td><td><span class="pill ${ch.mode==='CD'&&!ch.center?'red':''}">${esc(valid)}</span></td></tr>`}).join(''):'<tr><td colspan="7">Nenhuma unidade disponível no filtro.</td></tr>';$('configCount').textContent=`${u.length} unidades encontradas · ${Math.min(u.length,120)} exibidas · ${S.checked.size} marcadas`;$('allVisible').checked=!!u.length&&u.every(x=>S.checked.has(x.key));document.querySelectorAll('[data-unitcheck]').forEach(el=>el.onchange=()=>{el.checked?S.checked.add(el.dataset.unitcheck):S.checked.delete(el.dataset.unitcheck);renderClients()});document.querySelectorAll('[data-mode]').forEach(el=>el.onchange=()=>{S.channels[el.dataset.mode].mode=el.value;S.channels[el.dataset.mode].origin='Ajuste manual';S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()});document.querySelectorAll('[data-center]').forEach(el=>el.onchange=()=>{S.channels[el.dataset.center].center=el.value;S.channels[el.dataset.center].origin='Centro ajustado manualmente';S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()})}
+$('configNetwork').onchange=()=>{S.checked.clear();renderClients()};$('clientSearch').oninput=renderClients;$('allVisible').onchange=e=>{for(const x of visibleUnits())e.target.checked?S.checked.add(x.key):S.checked.delete(x.key);renderClients()};$('selectVisible').onclick=()=>{for(const x of visibleUnits())S.checked.add(x.key);renderClients()};$('unselectVisible').onclick=()=>{for(const x of visibleUnits())S.checked.delete(x.key);renderClients()};
+function applyBatch(mode){for(const k of S.checked)if(S.channels[k]){S.channels[k].mode=mode;S.channels[k].origin='Edição em lote'}S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()}$('batchCD').onclick=()=>applyBatch('CD');$('batchVD').onclick=()=>applyBatch('VD');
+function saveRules(){try{localStorage.setItem('carteira_reversa_canais_v4',JSON.stringify({channels:S.channels,updated:new Date().toISOString()}));alert('Regras salvas neste navegador. Use Exportar regras para manter uma cópia compartilhável.')}catch(e){alert('Não foi possível salvar localmente: '+e.message)}}$('saveRules').onclick=saveRules;
+function saveBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
+$('exportRules').onclick=()=>saveBlob(new Blob([JSON.stringify({version:4,channels:S.channels,centers:CENTERS,generated:new Date().toISOString()},null,2)],{type:'application/json'}),'Regras_de_atendimento_VD_CD.json');$('importRules').onchange=async e=>{try{let j=JSON.parse(await e.target.files[0].text());if(!j.channels||typeof j.channels!=='object')throw Error('Arquivo sem canais');for(const [k,v] of Object.entries(j.channels))if(S.channels[k]&&['VD','CD'].includes(v.mode)){S.channels[k].mode=v.mode;let center=resolveCenter(v.center,'CD');S.channels[k].center=center?.list||'';S.channels[k].origin='Regras importadas'}S.analyticsCache.clear();renderClients();if($('analise').classList.contains('active'))renderOrders();if($('saida').classList.contains('active'))renderPreview()}catch(err){alert(err.message)}};
+function stockCenter(raw,type){let center=resolveCenter(raw,type);return center?.list||''}
+// A grade tem codigo EG SEM o ultimo digito verificador; nunca converta o codigo para Number.
+function gradeKey(v){const t=text(v).trim();return /^\d[\d .-]*$/.test(t)?t.replace(/[ .-]/g,''):'';}
+function gradeFromEG(v){const k=gradeKey(v);return k.length>1?k.slice(0,-1):'';}
+function getCad(o){
+ const byEg=getIndexed('cadEG',norm(o.eg)),bySap=o.sap?getIndexed('cadSAP',norm(o.sap)):[];
+ const found=byEg.length?byEg:bySap,keys=[...new Set(found.map(c=>norm(c.sap)))];
+ return keys.length===1?found.find(c=>c.cxPlt>0)||found[0]:null;
+}
+
+function stockLabel(p){if(p==null)return 'Não identificado';if(p<=0)return 'Sem estoque';if(p<20)return 'Muito crítico';if(p<50)return 'Crítico';if(p<=100)return 'Intermediário';return 'OK'}
+function analyze(o){
+ let ch=S.channels[id(o)]||{},cad=getCad(o),sap=cad?.sap||o.sap,ratio=cad?.cxPlt||null;
+ let problems=[...(o.issuesInitial||[])],stock=null,stockPlt=null,prod=null,prodPlt=null,which='',primary='',qual='Não se aplica (CD)',originDetails=[];
+ let date=$('referenceDate').value||today(),valid=o.validity?o.validity>=date:null;
+ if(o.pending==null)problems.push('Componentes incompletos: atualizada, com remessa, sem remessa ou faturado');
+ if(o.initial==null)problems.push('Qtd. Original ausente');
+ if(o.pending!=null&&o.pending<0)problems.push('Pendente negativo: verificar movimentos');
+ if(o.fillRate!=null&&o.fillRate>100)problems.push('Fill rate superior a 100%');
+ if(!o.validity)problems.push('Validade ausente');
+ if(ch.mode==='VD'&&!sap)problems.push('CAD sem conversão EG → SAP para consultar a Malha');
+ if(ch.mode==='CD'){
+  which=ch.center?`${ch.center} · CDD`:'CDD não identificado';primary=ch.center||'';
+  qual='Não se aplica (CD)';
+  if(!ch.center)problems.push('Sem CDD/DPAR');
+  else if(!S.data.grade.length)problems.push('Grade CD ausente');
+  else{
+   const skuGrade=gradeFromEG(o.eg);
+   if(!skuGrade){problems.push('SKU EG da Order inválido para retirar o último dígito; sem cruzamento de grade');}
+   else{
+    const hits=getIndexed('gradeEG',keyOf(ch.center,skuGrade));
+    if(!hits.length){problems.push('Produto EG sem dígito final ('+skuGrade+') não encontrado na grade '+ch.center);}
+    else{stock=hits.some(g=>g.boxes==null)?null:hits.reduce((s,g)=>s+g.boxes,0);}
+   }
+  }
+ }else if(ch.mode==='VD'){
+  if(!sap)problems.push('SKU SAP não encontrado na CAD: Malha não consultada');
+  if(!ratio)problems.push('Sem fator CAD (CX/PLT)');
+  if(!o.commercial)problems.push('Sem Comercial');
+  if(!S.data.malha.length)problems.push('Malha ausente');
+  if(sap&&o.commercial&&S.data.malha.length){
+   let allowed=new Map();
+   for(let m of getIndexed('malha',keyOf(o.commercial,sap))){
+    let c=resolveCenter(m.origin,'VD');if(c)allowed.set(c.list,c);
+   }
+   which=allowed.size?[...allowed.keys()].join(' · '):'Nenhuma fábrica autorizada';
+   if(!allowed.size)problems.push('Malha sem origem autorizada');
+   else if(!S.data.vd.length)problems.push('Estoque VD ausente');
+   else{
+    originDetails=[...allowed.values()].map(c=>{
+      const rows=getIndexed('vd',keyOf(o.eg,c.list));
+      if(!rows.length)problems.push('SKU EG '+o.eg+' não encontrado no estoque da origem '+c.list);
+      let stockRows=rows;
+       if(rows.some(v=>/estoque|disponivel/i.test(v.attribute||'')))stockRows=rows.filter(v=>/estoque|disponivel/i.test(v.attribute||''));
+       const multipleAttributes=new Set(stockRows.map(v=>norm(v.attribute)).filter(Boolean)).size>1;
+       const pallets=!stockRows.length?0:multipleAttributes||stockRows.some(v=>v.pallets==null)?null:stockRows.reduce((v,r)=>v+r.pallets,0);
+      const allprod=getIndexed('prod',keyOf(o.eg,c.list));
+       const validProd=allprod.filter(v=>v.date&&v.date>=date&&o.validity&&v.date<=o.validity);
+       const datedProduction=validProd.some(v=>v.pallets==null)?null:validProd.reduce((v,r)=>v+r.pallets,0);
+       const undated=allprod.filter(v=>!v.date),undatedProduction=undated.some(v=>v.pallets==null)?null:undated.reduce((v,r)=>v+r.pallets,0);
+       return {center:c.list,name:c.name,pallets,production:datedProduction,undatedProduction,grade:stockLabel(pallets)};
+    });
+    const known=originDetails.filter(r=>r.pallets!==null);
+    if(known.length!==originDetails.length)problems.push('Estoque indefinido em origem autorizada');
+    if(known.length){
+      const needed=o.pending!=null&&ratio?Math.max(0,o.pending)/ratio:null;
+      const eligible=needed===null?known:known.filter(r=>r.pallets>=needed);
+      const candidates=eligible.length?eligible:known;
+      const mode=$('priorityMode').value;
+      candidates.sort((a,b)=>mode==='near26'?Math.abs(a.pallets-26)-Math.abs(b.pallets-26)||b.pallets-a.pallets:b.pallets-a.pallets);
+      const chosen=candidates[0];
+       primary=chosen.center;stockPlt=chosen.pallets;qual=chosen.grade;
+       // Only date-qualified production can contribute to the coverage status.
+       prodPlt=(chosen.production||0)+(chosen.undatedProduction||0);
+       prod=ratio&&chosen.production!=null?chosen.production*ratio:null;
+       if(chosen.undatedProduction>0)problems.push('Produção '+fmt(chosen.undatedProduction)+' PLT sem data: informativa, fora da cobertura no prazo');
+      stock=ratio?known.reduce((s,r)=>s+r.pallets,0)*ratio:null;
+      if(!eligible.length&&needed!=null)problems.push('Nenhuma origem cobre individualmente o pendente; cobertura total depende de múltiplas origens');
+    }
+   }
+  }
+ }else problems.push('Canal VD/CD não identificado');
+ let status='';
+ if(valid===false)status='Vencido';
+ else if(valid===null)status='Validade não identificada';
+ else if(o.pending==null)status='Pendente não calculado';
+ else if(stock==null)status='Validar estoque / cruzamento';
+ else if(stock>=o.pending)status='Tem estoque para o pedido';
+ else if(ch.mode==='VD'&&prod!=null&&stock+prod>=o.pending)status='Potencial com produção (origem prioritária)';
+ else status='Estoque insuficiente';
+ // Negative order balances cannot represent positive stock coverage.
+ if(o.pending!=null&&o.pending<0)status='Saldo negativo — validar';
+ return {...o,channel:ch.mode||'',center:ch.center||'',sap,ratio,stock,stockPlt,production:prod,productionPlt:prodPlt,where:which,primary,originDetails,qualification:qual,valid,issues:[...new Set(problems)].join(' · '),status};
+}
+function passesDate(o){
+ const mode=$('validityMode').value,dt=$('referenceDate').value||today();
+ if(mode==='all')return true;if(!o.validity)return false;
+ if(mode==='expired')return o.validity<dt;
+ return o.validity>=dt; // inclusive: expires tomorrow => valid today
+}
+function analysisRows(net=''){const k=[net,$('validityMode').value,$('referenceDate').value,$('priorityMode').value,[...S.selected].sort().join('|')].join('§');if(S.analyticsCache.has(k))return S.analyticsCache.get(k);let r=S.data.orders.filter(o=>S.selected.has(o.network)&&(!net||o.network===net)&&passesDate(o)).map(analyze);S.analyticsCache.set(k,r);if(S.analyticsCache.size>12)S.analyticsCache.delete(S.analyticsCache.keys().next().value);return r}
+function managerOrders(rs){
+ const groups=new Map();
+ for(const r of rs){const k=norm(r.network)+'|'+norm(r.order);
+ if(!groups.has(k))groups.set(k,{network:r.network,order:r.order,lines:0,initial:0,billed:0,pending:0,originalKnown:true,billedKnown:true,pendingKnown:true,covered:0,expiry:''});
+ const g=groups.get(k);g.lines++;g.originalKnown&&=r.initial!=null;g.billedKnown&&=r.billed!=null;g.pendingKnown&&=r.pending!=null;
+ g.initial+=r.initial||0;g.billed+=r.billed||0;g.pending+=r.pending||0;
+ if(r.status==='Tem estoque para o pedido')g.covered++;
+ if(r.validity&&(!g.expiry||r.validity<g.expiry))g.expiry=r.validity;
+ }
+ return [...groups.values()].map(g=>({...g,initial:g.originalKnown?g.initial:null,billed:g.billedKnown?g.billed:null,pending:g.pendingKnown?g.pending:null,fillRate:g.originalKnown&&g.billedKnown&&g.initial>0?100*g.billed/g.initial:null}));
+}
+function cellStatus(s){let cls=/Vencido|insuficiente|negativo/.test(s)?'red':/Validar|Potencial|não identificado/.test(s)?'orange':'';return `<span class="pill ${cls}">${esc(s)}</span>`}
+function renderOrders(){
+ const rs=analysisRows($('analysisNetwork').value),mg=managerOrders(rs);
+ const sum=k=>rs.every(x=>x[k]!=null)?rs.reduce((a,r)=>a+r[k],0):null;
+ const totalInit=sum('initial'),totalBill=sum('billed'),totalPend=sum('pending');
+ const fill=totalInit>0&&totalBill!==null?100*totalBill/totalInit:null;
+ $('kpis').innerHTML=[['Pedidos distintos',`${mg.length}`],['Linhas únicas',`${rs.length}`],['Entrada inicial (CX)',fmt(totalInit)],['Faturado (CX)',fmt(totalBill)],['Pendente (CX)',fmt(totalPend)],['Fill rate faturado',fill==null?'N/D':fmt(fill)+'%'],['Linhas com estoque',fmt(rs.filter(x=>x.status==='Tem estoque para o pedido').length)],['VD muito crítico',fmt(rs.filter(x=>x.channel==='VD'&&x.qualification==='Muito crítico').length)]].map(([title,value])=>`<div class="kpi"><span>${title}</span><strong>${value}</strong></div>`).join('');
+ $('audit').innerHTML=`${rs.length} linhas únicas (até 150 exibidas para manter a tela rápida; Excel exporta todas) · ${rs.filter(r=>r.duplicateCount>1).length} com linhas duplicadas consolidadas · ${rs.filter(r=>r.issues).length} alertas · ${rs.filter(r=>r.channel==='CD').length} linhas CD sem qualificação de pallets. <b>Importante:</b> cobertura é apenas indicativa e não reserva estoque. A diferença Inicial − Faturado − Pendente reflete também as alterações na quantidade atualizada e demais movimentos.`;
+ $('analysisMode').textContent=S.demo?'EXEMPLO FICTÍCIO':'BASE IMPORTADA — A VALIDAR';
+ $('orderRows').innerHTML=rs.length?rs.slice(0,150).map(r=>`<tr><td><b>${esc(r.network)}</b><div class="small">${esc(r.client)} · EG ${esc(r.clientId)}</div></td><td><b>${esc(r.order)}</b><div class="small">EG ${esc(r.eg)} / SAP Malha ${esc(r.sap||'N/D')}${r.channel==='CD'?' / Grade '+esc(gradeFromEG(r.eg)||'N/D'):''}</div></td><td>${esc(r.channel)}</td><td>${fmt(r.initialPlt)}</td><td><b>${fmt(r.initial)}</b></td><td>${fmt(r.updated)}</td><td>${fmt(r.carWith)}</td><td>${fmt(r.carWithout)}</td><td>${fmt(r.billed)}</td><td><b>${fmt(r.pending)}</b></td><td>${fmt(r.diff)}</td><td>${r.fillRate==null?'N/D':fmt(r.fillRate)+'%'}</td><td>${formatDate(r.validity)}</td><td><b>${esc(r.primary||'—')}</b></td><td>${r.channel==='VD'?fmt(r.stockPlt):'—'}</td><td>${r.channel==='VD'?`<span class="pill ${r.qualification==='Muito crítico'?'red':r.qualification==='Crítico'?'orange':''}">${esc(r.qualification)}</span>`:'Não se aplica'}</td><td>${r.channel==='VD'?r.originDetails.map(x=>`${esc(x.center)}: ${fmt(x.pallets)} PLT (${esc(x.grade)})${x.center===r.primary?' ★':''}`).join('<div class="small">'):'CDD '+esc(r.center)}</td><td>${fmt(r.stock)}</td><td>${r.channel==='VD'?fmt(r.productionPlt):'—'}</td><td>${cellStatus(r.status)}</td><td class="small">${esc(r.issues)}${r.duplicateCount>1?`<div>Chave repetida ${r.duplicateCount} vezes: não somada</div>`:''}</td></tr>`).join(''):'<tr><td colspan="21">Sem pedidos válidos no recorte.</td></tr>';
+ $('managerRows').innerHTML=mg.length?mg.slice(0,150).map(r=>`<tr><td>${esc(r.network)}</td><td><b>${esc(r.order)}</b></td><td>${r.lines}</td><td>${fmt(r.initial)}</td><td>${fmt(r.billed)}</td><td>${fmt(r.pending)}</td><td>${r.fillRate==null?'N/D':fmt(r.fillRate)+'%'}</td><td>${r.covered}/${r.lines}</td><td>${formatDate(r.expiry)}</td></tr>`).join(''):'<tr><td colspan="9">Sem pedidos neste recorte.</td></tr>';
+}
+$('analysisNetwork').onchange=renderOrders;$('validityMode').onchange=()=>{S.analyticsCache.clear();renderOrders();renderPreview()};$('referenceDate').onchange=()=>{S.analyticsCache.clear();renderOrders();renderPreview()};$('priorityMode').onchange=()=>{S.analyticsCache.clear();renderOrders();renderPreview()};
+function recipientHTML(net){
+ const rs=analysisRows(net),mg=managerOrders(rs),ini=rs.every(r=>r.initial!=null)?rs.reduce((a,r)=>a+r.initial,0):null,
+ bill=rs.every(r=>r.billed!=null)?rs.reduce((a,r)=>a+r.billed,0):null,
+ pend=rs.every(r=>r.pending!=null)?rs.reduce((a,r)=>a+r.pending,0):null,
+ fill=ini>0&&bill!==null?100*bill/ini:null;
+ return `<div style="border:1px solid #d7e4ea;border-radius:15px;overflow:hidden;max-width:920px"><div style="background:linear-gradient(105deg,#17314c,#087f7e);color:#fff;padding:22px"><div style="letter-spacing:1px;font-size:11px">CARTEIRA REVERSA · ATENDIMENTO POR PEDIDO</div><h2 style="font-size:24px;color:white;margin:5px 0">${esc(net)}</h2><div>${formatDate(today())} · ${S.demo?'DADOS FICTÍCIOS':'DADOS NÃO HOMOLOGADOS'}</div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:20px"><div class="kpi"><span>Entrada inicial (CX)</span><strong>${fmt(ini)}</strong></div><div class="kpi"><span>Faturado (CX)</span><strong>${fmt(bill)}</strong></div><div class="kpi"><span>Pendente (CX)</span><strong>${fmt(pend)}</strong></div><div class="kpi"><span>Fill rate</span><strong>${fill===null?'N/D':fmt(fill)+'%'}</strong></div></div><div style="padding:0 20px 20px"><b>Pedidos com maior pendente</b>${mg.sort((a,b)=>(b.pending||0)-(a.pending||0)).slice(0,5).map(x=>`<div class="auditrow"><span>Pedido ERP ${esc(x.order)} · ${x.lines} itens</span><b>${fmt(x.pending)} CX · Fill ${x.fillRate===null?'N/D':fmt(x.fillRate)+'%'}</b></div>`).join('')}<p class="small">Estoque qualificado somente para VD. Produção da origem autorizada, condicionada à validade. Não representa reserva de estoque.</p></div></div>`
+}
+function renderPreview(){let net=$('exportNetwork').value;$('recipientPreview').innerHTML=net?recipientHTML(net):'<p>Marque uma rede e selecione-a acima para visualizar o resumo de e-mail.</p>'}
+$('exportNetwork').onchange=renderPreview;
+function filename(net,ext){return `Carteira reversa ${clean(net)} ${formatDate(today()).replaceAll('/','-')}.${ext}`}
+function excel(net){
+ const data=analysisRows(net);if(!data.length)return alert('Sem pedidos para exportar.');
+ if(typeof XLSX==='undefined')return alert('Leitor XLSX indisponível. Conecte-se à internet para exportar Excel.');
+ const wb=XLSX.utils.book_new(),manager=managerOrders(data),sum=k=>data.every(x=>x[k]!=null)?data.reduce((a,r)=>a+r[k],0):null;
+ const ini=sum('initial'),bill=sum('billed'),pend=sum('pending');
+ const overview=[['CARTEIRA REVERSA — '+net],['Emissão',formatDate(today())],['Fonte',S.demo?'EXEMPLO FICTÍCIO':'BASE IMPORTADA — NÃO HOMOLOGADA'],['Validade',$('validityMode').selectedOptions[0].textContent],['Origem VD prioritária',$('priorityMode').selectedOptions[0].textContent],['Pedidos ERP distintos',manager.length],['Linhas únicas',data.length],['Entrada inicial CX',ini],['Faturado CX',bill],['Pendente CX',pend],['Fill rate',ini>0&&bill!==null?bill/ini:null],['Observação','Qualificação somente VD; estoque e produção não são reservas']];
+ function append(name,head,rows){
+  let ws=XLSX.utils.aoa_to_sheet([head,...rows]);
+  ws['!autofilter']={ref:`A1:${XLSX.utils.encode_col(head.length-1)}${rows.length+1}`};
+  ws['!cols']=head.map((x,i)=>({wch:Math.max(17,Math.min(i===0?27:34,x.length+6))}));
+  for(let j=0;j<head.length;j++){let c=ws[XLSX.utils.encode_cell({r:0,c:j})];if(c)c.s={font:{name:'Aptos',bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'17314C'}},alignment:{wrapText:true},border:{bottom:{style:'thin',color:{rgb:'12948D'}}}}}
+  for(let i=1;i<=rows.length;i++)for(let j=0;j<head.length;j++){let c=ws[XLSX.utils.encode_cell({r:i,c:j})];if(c)c.s={font:{name:'Aptos',color:{rgb:'253E52'}},fill:{fgColor:{rgb:i%2?'EDF5F7':'FFFFFF'}},alignment:{vertical:'center'}}}
+  XLSX.utils.book_append_sheet(wb,ws,name);
+ }
+ let ws=XLSX.utils.aoa_to_sheet(overview);ws['!cols']=[{wch:33},{wch:78}];for(let i=0;i<overview.length;i++)for(let j=0;j<2;j++){let c=ws[XLSX.utils.encode_cell({r:i,c:j})];if(c)c.s={font:{name:'Aptos',sz:i===0?17:11,bold:j===0||i===0,color:{rgb:i===0?'FFFFFF':'244459'}},fill:{fgColor:{rgb:i===0?'17314C':i%2?'EDF5F8':'FFFFFF'}},alignment:{wrapText:true}}}XLSX.utils.book_append_sheet(wb,ws,'Resumo');
+ append('Gerencial por Pedido',['Rede','Pedido ERP','Linhas únicas','Qtd original CX','Faturado CX','Pendente CX','Fill rate %','Linhas com estoque','Validade mais próxima'],manager.map(g=>[g.network,g.order,g.lines,g.initial,g.billed,g.pending,g.fillRate,g.covered,g.expiry]));
+ const heads=['Rede','Cliente','Código EG cliente','Pedido ERP','SKU EG','SKU Grade CD (EG sem último dígito)','SKU SAP (somente Malha)','Comercial','VD/CD','Volume Palete inicial','Qtd. Original CX','Qtd. Atualizada','Carro com Remessa','Carro sem Remessa','Faturado','Pendente calculado','Diferença','Fill rate %','Validade','CDD','Origem VD prioritária','Estoque prioritário PLT','Qualificação estoque VD','Malhas autorizadas (cada origem)','Estoque elegível total CX','Produção origem prioritária PLT (incl. sem data)','Cobertura','Alertas','Duplicidade da chave'];
+ append('Pedidos e Qualificação',heads,data.map(r=>[r.network,r.client,r.clientId,r.order,r.eg,gradeFromEG(r.eg),r.sap,r.commercial,r.channel,r.initialPlt,r.initial,r.updated,r.carWith,r.carWithout,r.billed,r.pending,r.diff,r.fillRate,r.validity,r.center,r.primary,r.stockPlt,r.qualification,r.originDetails.map(x=>`${x.center}: ${fmt(x.pallets)} PLT / ${x.grade} / produção datada ${fmt(x.production)} PLT; sem data ${fmt(x.undatedProduction)} PLT`).join(' ; '),r.stock,r.productionPlt,r.status,r.issues,r.duplicateCount]));
+ const originals=S.demo?data.flatMap(r=>Object.keys(r.raw||{}).length?[{...r.raw,'__Chave Pedido/Cliente/SKU':`${r.order}|${r.clientId}|${r.eg}`}]:[]):(S.data.sourceOrders||[]).filter(r=>norm(field(r,'network'))===norm(net)).map(r=>({...r,'__Chave Pedido/Cliente/SKU':`${text(field(r,'order'))}|${text(field(r,'clientId'))}|${text(field(r,'eg'))}`}));
+ if(originals.length){const cols=[...new Set(originals.flatMap(x=>Object.keys(x)))];append('Linhas fonte Order',cols,originals.map(r=>cols.map(k=>r[k]??'')))}
+ XLSX.writeFile(wb,filename(net,'xlsx'),{compression:true});
+}
+$('excel').onclick=()=>excel($('exportNetwork').value);$('exportAll').onclick=()=>{let ns=chosenNetworks();if(!ns.length)return alert('Nenhuma rede selecionada.');for(const n of ns)excel(n)};
+function png(net){
+ let data=analysisRows(net);if(!data.length)return alert('Sem dados para imagem.');
+ const mg=managerOrders(data).sort((a,b)=>(b.pending||0)-(a.pending||0));let w=1200,h=Math.max(700,430+Math.min(6,mg.length)*52),can=document.createElement('canvas');can.width=w*2;can.height=h*2;
+ let c=can.getContext('2d');c.scale(2,2);c.fillStyle='#f4f8fa';c.fillRect(0,0,w,h);
+ let grad=c.createLinearGradient(0,0,w,0);grad.addColorStop(0,'#172e49');grad.addColorStop(1,'#087f7e');c.fillStyle=grad;c.fillRect(0,0,w,180);
+ c.fillStyle='#b9e8e0';c.font='bold 17px Arial';c.fillText('CARTEIRA REVERSA · ATENDIMENTO GERENCIAL',45,48);c.fillStyle='white';c.font='bold 35px Arial';c.fillText(net.slice(0,54),45,100);
+ c.font='16px Arial';c.fillText(formatDate(today())+'  ·  '+(S.demo?'EXEMPLO FICTÍCIO':'NÃO HOMOLOGADO'),45,142);
+ let initial=data.every(x=>x.initial!=null)?data.reduce((a,x)=>a+x.initial,0):null,bill=data.every(x=>x.billed!=null)?data.reduce((a,x)=>a+x.billed,0):null,pend=data.every(x=>x.pending!=null)?data.reduce((a,x)=>a+x.pending,0):null,fill=initial>0&&bill!==null?fmt(100*bill/initial)+'%':'N/D';
+ [['ENTRADA INICIAL',fmt(initial)+' CX'],['FATURADO',fmt(bill)+' CX'],['PENDENTE',fmt(pend)+' CX'],['FILL RATE',fill]].forEach(([a,b],i)=>{let x=45+i*287;c.fillStyle='#fff';c.fillRect(x,215,272,112);c.fillStyle='#647b8b';c.font='bold 14px Arial';c.fillText(a,x+15,248);c.fillStyle='#172e49';c.font='bold 27px Arial';c.fillText(b,x+15,295)});
+ c.fillStyle='#223b53';c.font='bold 23px Arial';c.fillText('PEDIDOS COM MAIOR PENDÊNCIA',45,384);
+ mg.slice(0,6).forEach((r,i)=>{let y=408+i*52;c.fillStyle=i%2?'#e9f0f4':'#fff';c.fillRect(45,y,w-90,46);c.fillStyle='#283d52';c.font='15px Arial';c.fillText(`ERP ${r.order} · ${r.lines} linhas`,60,y+30);c.textAlign='right';c.fillText(`${fmt(r.pending)} CX  ·  Fill rate ${r.fillRate==null?'N/D':fmt(r.fillRate)+'%'}`,w-62,y+30);c.textAlign='left'});
+ c.fillStyle='#748999';c.font='13px Arial';c.fillText('Cobertura e qualificação são indicativas. Produção não equivale a estoque físico. CD não recebe faixa de PLT.',45,h-25);
+ can.toBlob(b=>saveBlob(b,filename(net,'png')),'image/png');
+}
+$('png').onclick=()=>png($('exportNetwork').value);
+function renderEverything(){renderSources();renderNetworks();refreshDropdowns();renderClients();$('kpis').innerHTML='<div class="kpi">Análise sob demanda — abra a aba 03</div>'; $('orderRows').innerHTML='';$('managerRows').innerHTML='';$('recipientPreview').innerHTML='<p>Abra a aba de exportação para gerar o resumo.</p>'}
+$('reset').onclick=()=>{S.demo=false;S.sheets=[];S.data={orders:[],cad:[],malha:[],vd:[],grade:[],dpar:[],production:[],originMap:[]};S.channels={};S.problems=[];S.manualRoles={};S.manualFields={};S.chosen={};S.fileCache.clear();S.importSummary=[];S.importWarnings=[];S.selected.clear();S.checked.clear();$('files').value='';$('loadStatus').textContent='Carregue a base de pedidos/pendente e a base de estoque, com qualquer nome, em Excel ou ZIP.';$('dataMode').textContent='Nenhuma base carregada';renderEverything()};
+
+// Relatório diagnóstico mínimo: nomes de abas, colunas, função e linhas; sem registros de clientes.
+const diagBtn=document.createElement('button');diagBtn.className='btn';diagBtn.textContent='Baixar diagnóstico de leitura';
+$('importAudit').before(diagBtn);
+diagBtn.onclick=()=>{const d={version:'12',generated:new Date().toISOString(),sources:S.importSummary,problems:S.problems,
+ sheets:S.sheets.map(s=>({arquivo:s.name,aba:s.tab,headerRow:s.headerRow,colunas:s.fields,funcao:s.type,detect:s.detection,linhas:s.rows?.length??s.approxRows}))};saveBlob(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}),'Diagnostico_Carteira_Reversa.json')};
+renderEverything();
+</script></body></html>
