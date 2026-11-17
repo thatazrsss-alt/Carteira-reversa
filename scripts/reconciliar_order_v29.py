@@ -161,8 +161,10 @@ with zipfile.ZipFile(SRC_ORDER) as z:
                             "billed":0.0,"confirmed":0.0,"noCar":0.0,"raw_negative":0,
                             "overlaps":0,"mov_incomplete":0,"notCX":0,
                             "mixed_commercial":False,"mixed_network":False,
-                            "status_cancel_rows":0,"validity":"","first_creation":""}
+                            "status_cancel_rows":0,"type_status":C.Counter(),"active_types":set(),"type_movement_pending":C.Counter(),"validity":"","first_creation":""}
             g["count"]+=1;g["type"][typ]+=1;g["status"][status]+=1;g["units"][unit]+=1
+            g["type_status"][(typ,status)]+=1
+            if norm(status) not in ('cancelada','aguardando cancelamento') and typ:g["active_types"].add(typ)
             if norm(status)=="cancelada":g["status_cancel_rows"]+=1
             if g["commercial"]!=idkey(r.get("Cód. Comercial")):g["mixed_commercial"]=True
             if g["network"]!=idkey(r.get("Nome Rede")):g["mixed_network"]=True
@@ -183,6 +185,7 @@ with zipfile.ZipFile(SRC_ORDER) as z:
             g["carWith"]+=values["Qtd. Carro com remessa"]
             g["carWithout"]+=values["Qtd. Carro sem remessa"]
             g["billed"]+=values["Qtd. Faturada"]
+            g["type_movement_pending"][typ]+=values["Qtd. Atualizada"]-values["Qtd. Carro com remessa"]-values["Qtd. Carro sem remessa"]-values["Qtd. Faturada"]
             g["confirmed"]+=values["Qtd. Confirmada"] or 0
             g["noCar"]+=values["Qtd. Sem carro"] or 0
             if values["Qtd. Carro com remessa"]+values["Qtd. Faturada"]>values["Qtd. Atualizada"]+1e-8:g["overlaps"]+=1
@@ -241,6 +244,15 @@ for k,g in groups.items():
     if pending is not None and pending<0:reason.append("PENDENTE_NEGATIVO")
     if g["overlaps"]:reason.append("POSSIVEL_SOBREPOSICAO_REMESSA_FATURADO")
     if filled is not None and filled>100:reason.append("FATURADO_MAIOR_QUE_ORIGINAL")
+    if typ=='MISTO':
+        counter['mixed_groups']+=1
+        active={t for t in g['active_types'] if t in ('ASCD','ASVD')}
+        if len(active)==1:counter['mixed_keys_with_one_non_cancel_type']+=1
+        elif len(active)>1:counter['mixed_keys_with_both_non_cancel_types']+=1
+        else:counter['mixed_keys_with_no_non_cancel_type']+=1
+        for t in ('ASCD','ASVD'):
+            counter['mixed_pending_segment_'+t+'_CX']+=g['type_movement_pending'][t]
+        if complete and pending is not None and pending>0:counter['mixed_positive_pending_groups']+=1
     if g["count"]>1:counter["repeat_groups"]+=1
     if g["overlaps"]:counter["overlap_groups"]+=1;counter["overlap_rows"]+=g["overlaps"]
     if g["raw_negative"]:counter["raw_negative_rows"]+=g["raw_negative"]
