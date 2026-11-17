@@ -87,6 +87,37 @@ jobs:
           print(json.dumps(out,ensure_ascii=False))
           print('ORDER_ESTRUTURA_FIM')
           PY
+      - name: Identificar colunas e tamanho real do CSV da Order
+        run: |
+          python - <<'PY'
+          import zipfile,io,csv,json,collections,pathlib
+          csv.field_size_limit(10000000)
+          with zipfile.ZipFile('Order.zip') as z:
+            name=next(n for n in z.namelist() if n.lower().endswith('.csv'))
+            with z.open(name) as b:
+              sample=b.read(20000)
+            encoding='utf-8-sig'
+            try: sample.decode(encoding)
+            except UnicodeDecodeError:encoding='cp1252'
+            snippet=sample.decode(encoding,errors='replace')
+            try:delimiter=csv.Sniffer().sniff(snippet,delimiters=';,\t|').delimiter
+            except:delimiter=';'
+            with z.open(name) as b:
+              f=io.TextIOWrapper(b,encoding=encoding,errors='replace',newline='')
+              reader=csv.reader(f,delimiter=delimiter)
+              heads=next(reader)
+              count=0;lengths=collections.Counter();errors=0
+              for row in reader:
+                count+=1
+                if count<1000:lengths[len(row)]+=1
+              out={'file':name,'encoding':encoding,'delimiter':delimiter,'columns':len(heads),'rows':count,
+                   'headings':heads,'first_1000_row_lengths':dict(lengths)}
+          pathlib.Path('auditoria-order').mkdir(exist_ok=True)
+          pathlib.Path('auditoria-order/estrutura_csv_order.json').write_text(json.dumps(out,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('ORDER_CSV_INICIO')
+          print(json.dumps(out,ensure_ascii=False))
+          print('ORDER_CSV_FIM')
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
