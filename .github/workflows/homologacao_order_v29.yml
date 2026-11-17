@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/homologacao_order_v29.yml'
+      - 'scripts/reconciliar_order_v29.py'
 permissions:
   contents: read
 jobs:
@@ -169,9 +170,11 @@ jobs:
           print(json.dumps(out,ensure_ascii=False))
           print('PERFIL_ORDER_FIM')
           PY
+      - name: Reconciliar movimentos, pedidos, Malha e Estoque
+        run: python scripts/reconciliar_order_v29.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: estrutura-order-v29
+          name: homologacao-order-completa-v29
           path: auditoria-order/
           if-no-files-found: warn
