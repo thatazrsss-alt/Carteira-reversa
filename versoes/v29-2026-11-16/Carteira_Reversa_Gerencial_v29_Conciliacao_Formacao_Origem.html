@@ -137,7 +137,7 @@ for(const row of S.data.grade){row.eg=gradeFromEG(row.eg);}
 for(const o of S.data.orders){o.captured=({'SH001':'2026-11-10','SH002':'2026-11-12','SH003':'2026-11-15','SH004':'2026-11-09','SHCD':'2026-11-13','HCD':'2026-11-14'})[o.clientId]||'';o.created=o.captured;o.diff=o.initial-o.billed-o.pending;o.fillRate=o.initial?Math.max(0,Math.min(100,100*o.billed/o.initial)):null;o.duplicateCount=1;o.issuesInitial=[]}S.unitsCache=null;S.analyticsCache.clear();buildIndexes();initData(true)}
   const ALIAS={
  network:['rede','nome da rede do cliente','razao da rede','rede de lojas','rede','nome rede','nome da rede','rede cliente','rede do cliente','bandeira','nome rede acomp','nome rede acompanhamento','nome da rede acompanhamento','rede nome','rede varejo','rede comercial','rede de atendimento','descricao rede','desc rede','rede cliente nome','nome grupo cliente','grupo rede'],
- client:['nome loja','nome cliente','cliente','loja','nome fantasia','razao social','cliente nome','descricao cliente','nome da loja','cliente loja','nome pdv','nome da unidade'],
+ client:['nome loja','nome cliente','nome cliente sap','cliente','loja','nome fantasia','razao social','cliente nome','descricao cliente','nome da loja','cliente loja','nome pdv','nome da unidade'],
  clientId:['codigo cliente eg','codigo do cliente eg','eg cliente','cliente eg','codigo eg cliente','cod eg cliente','codigo cliente e g','clienteg','client eg','codigo loja','cod loja','cod cliente','cliente eg','eg cliente','codigo cliente','pdv codigo','pdv_codigo','cod cliente eg','eg loja','codigo eg cliente','cod eg cliente','codigo pdv','cod pdv','codigo da loja','cod cliente eg','cod cliente sap','código da loja','cod pdv eg','codigo pdv eg','loja eg','cod filial','codigo filial','cod loja eg','cod cd loja','codigo cliente eg'],
  commercial:['comercial','destino comercial','cod comercial','codigo comercial','comercial destino','comercial cliente','comercial do cliente','comercial destino malha','codigo comercial destino'],
  order:['n pedido erp','nr pedido erp','numero do pedido erp','pedido erp','n pedido ambev','numero pedido ambev','pedido ambev','pedido de venda erp','order','order number','order id','order no','pedido','numero pedido','numero do pedido','n pedido','nº pedido','pedido ambev','numero pedido ambev','n pedido ambev','pedido erp','n pedido erp','numero pedido erp','nº pedido erp','nro pedido','ordem de venda','numero ordem'],
@@ -149,7 +149,7 @@ for(const o of S.data.orders){o.captured=({'SH001':'2026-11-10','SH002':'2026-11
  updated:['quantidade atualizada cx','qtd atualizada cx','qtd atualizada em caixas','quantidade atualizada em caixas','quantidade atualizada','qtd atualizada','qtd. atualizada','quantidade atual','qtd atual','qtd. atual','qtd atualizada cx'],
  carWith:['marcado','qtd marcado','quantidade marcada','volume marcado','marcado cx','carro marcado','carro com remessa cx','carros com remessa cx','carro com remessa','carros com remessa','carro c remessa','com remessa','qtd carro com remessa'],
  carWithout:['carro sem remessa cx','carros sem remessa cx','carro sem remessa','carros sem remessa','carro s remessa','sem remessa','qtd carro sem remessa'],
- billed:['qtd faturada cx','qtd faturado cx','quantidade faturada cx','faturamento em caixas','faturado','faturada','qtd faturado','qtd. faturado','quantidade faturada','volume faturado'],
+ billed:['qtd faturada','qtd faturada cx','qtd faturado cx','quantidade faturada cx','faturamento em caixas','faturado','faturada','qtd faturado','qtd. faturado','quantidade faturada','volume faturado'],
  served:['quantidade atendida','qtd atendida','qtd faturada','quantidade faturada','quantidade entregue','qtd entregue','qtd expedida','quantidade expedida'],
  pending:['pendente','qtd pendente','quantidade pendente','saldo pendente','saldo em aberto','saldo pedido','qtd a atender','qtd em aberto','saldo','pendente atual','volume pendente','pendente pedido'],
     captured:['data captacao ecc','data de captacao ecc','captacao ecc','data captação ecc'],
@@ -346,7 +346,7 @@ validity:['validade','validade pedido','data validade','data vencimento','data d
  // Official grains are EG Cliente + SKU EG + Pedido ERP. Original columns U/V/W
  // describe ONE selected original entry; movements are SUMMED across ALL order lines.
  const grouped=new Map();let withNetwork=0,withOrder=0,usable=0,withoutNetwork=0,withoutSku=0,withoutClient=0;
- const unitOf=r=>{const names=Object.keys(r).filter(x=>!x.startsWith('__'));const match=names.find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida)$/i.test(norm(k)));const u=norm(match?r[match]:'');return /palet|pallet|plt/.test(u)?'PLT':/caix|cx/.test(u)?'CX':'CX (padrão Order)'};
+ const unitOf=r=>{const names=Object.keys(r).filter(x=>!x.startsWith('__'));const match=names.find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida|unidade)$/i.test(norm(k)));const u=norm(match?r[match]:'');return /palet|pallet|plt/.test(u)?'PLT':/caix|cx/.test(u)?'CX':'CX (padrão Order)'};
  for(const [i,r] of rows.entries()){
   const network=text(field(r,'network')),order=text(field(r,'order')),
         clientId=text(field(r,'clientId'))||text(field(r,'client')),eg=codeEG(field(r,'eg'));
@@ -416,7 +416,7 @@ function convertOrderBalances(){
   const source=o.rawMovements||[o.raw];
   let totals={updated:0,carWith:0,carWithout:0,billed:0,pending:0},complete=true,converted=0,aliasConflicts=0,overlapSuspects=0,reportedPending=0,reportedKnown=true;
   for(const r of source){
-   const unitKey=Object.keys(r).find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida)$/i.test(norm(k)));
+   const unitKey=Object.keys(r).find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida|unidade)$/i.test(norm(k)));
    const v=norm(unitKey?r[unitKey]:'');const factor=/palet|pallet|plt/.test(v)?ratio:1;
     // Marcado e Carro com Remessa representam o mesmo evento; nunca somar cabeçalhos equivalentes.
     const hm=Object.keys(r).find(k=>/^(?:qtd |quantidade |volume )?marcado(?: cx)?$/.test(norm(k)));
