@@ -290,5 +290,5 @@ jobs:
         if: always()
         with:
           name: evidencia-estoque-v29
-          path: auditoria/inventario_base_estoque.json
+          path: auditoria/
           if-no-files-found: warn
