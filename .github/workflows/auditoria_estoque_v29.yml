@@ -169,6 +169,33 @@ jobs:
           print('CROSSCHECK_REAL_V29_INICIO')
           print(json.dumps(detail,ensure_ascii=False))
           print('CROSSCHECK_REAL_V29_FIM')
+          # Diagnóstico de chaves alternativas antes de definir o de/para oficial.
+          candidates=['Cod S4','Cod_SAP','Cód_Prod','cod_prod_sku_s_dv','cod_dv_prod_sku','cod_prod_unit']
+          malha_skus=[norm(x.get('SKU SAP')) for x in malha if norm(x.get('SKU SAP'))]
+          malha_set=set(malha_skus)
+          matches={}
+          for colname in candidates:
+            values={norm(x.get(colname)) for x in cad if norm(x.get(colname))}
+            inter=values & malha_set
+            matches[colname]={'cad_distinct':len(values),'malha_sku_distinct_matched':len(inter),
+                 'malha_rows_matched':sum(x in values for x in malha_skus)}
+          cad_eg={norm(x.get('Cód_Prod')) for x in cad if norm(x.get('Cód_Prod'))}
+          stock_to_cad={}
+          for name in ['Sku S4','Sku ECC','Sku PCA']:
+            values={norm(x.get(name)) for x in factory if norm(x.get(name))}
+            stock_to_cad[name]={'stock_distinct':len(values),'stock_codes_present_in_CAD_Cod_Prod':len(values & cad_eg)}
+          # Checar diferenças puramente de preenchimento com zeros à esquerda.
+          def unpad(v):return v.lstrip('0') if v.isdigit() else v
+          malha_unpad={unpad(x) for x in malha_set}
+          for colname in candidates:
+            values={unpad(norm(x.get(colname))) for x in cad if norm(x.get(colname))}
+            matches[colname]['unique_matched_without_leading_zero']=len(values&malha_unpad)
+          detail2={'malha_sku_distinct':len(malha_set),'malha_sku_nonempty_rows':len(malha_skus),
+                   'cad_column_candidates':matches,'stock_vs_cad_eg_candidates':stock_to_cad}
+          Path('auditoria/diagnostico_chaves_v29.json').write_text(json.dumps(detail2,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('DIAGNOSTICO_CHAVES_V29_INICIO')
+          print(json.dumps(detail2,ensure_ascii=False))
+          print('DIAGNOSTICO_CHAVES_V29_FIM')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
