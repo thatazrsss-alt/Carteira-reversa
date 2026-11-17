@@ -1,0 +1,129 @@
+name: Auditoria Real BASE_ESTOQUE - Carteira Reversa v29
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/auditoria_estoque_v29.yml'
+permissions:
+  contents: read
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conferir as abas e cruzamentos reais da base de estoque
+        run: |
+          python - <<'PY'
+          import zipfile, xml.etree.ElementTree as ET, posixpath, re, json, collections, unicodedata
+          from pathlib import Path
+          N='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
+          R='{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'
+          P='{http://schemas.openxmlformats.org/package/2006/relationships}'
+          def norm(s):
+            return re.sub(r'[^a-z0-9]+',' ',''.join(x for x in unicodedata.normalize('NFD',str(s or '').lower()) if unicodedata.category(x)!='Mn')).strip()
+          def num(v):
+            try:
+              s=str(v).strip()
+              if ',' in s:s=s.replace('.','').replace(',','.')
+              return float(s)
+            except:return None
+          def col(s):
+            n=0
+            for x in re.match(r'[A-Z]+',s).group(0):n=n*26+ord(x)-64
+            return n-1
+          def it(z,path,strings):
+            with z.open(path) as f:
+              for _,r in ET.iterparse(f,events=('end',)):
+                if r.tag!=N+'row':continue
+                row={}
+                for c in r.findall(N+'c'):
+                  v=c.find(N+'v')
+                  if c.get('t')=='inlineStr':value=''.join(x.text or '' for x in c.iter(N+'t'))
+                  elif v is None:value=''
+                  elif c.get('t')=='s':
+                    try:value=strings[int(v.text)]
+                    except:value=''
+                  else:value=v.text or ''
+                  if value:row[col(c.get('r'))]=value
+                yield row
+                r.clear()
+          aliases={'eg':['sku eg','eg','codigo produto eg','codigoproduto','cod prod','codigo produto','codigo produto pca'],
+            'sap':['sap','codigo sap','cod sap','sku sap','material sap'],
+            'factor':['quantidade prod pallet','caixas por pallet','cx por pallet','cx por plt','fator cx plt'],
+            'factory':['origem','orig s4','orig ecc','orig pca','fabrica','origem sap'],
+            'commercial':['comercial','codigo comercial'],
+            'stock_plt':['d1','estoque plt','saldo plt','estoque pallet','estoque em pallet'],
+            'stock_cx':['saldodisponivel','saldo disponivel','saldo cx','estoque cx'],
+            'center':['centro','cdd','lista'],
+            'production_date':['producao','data producao']}
+          source=Path('BASE_ESTOQUE 16.11.xlsx')
+          with zipfile.ZipFile(source) as z:
+            strs=[]
+            if 'xl/sharedStrings.xml' in z.namelist():
+              with z.open('xl/sharedStrings.xml') as fd:
+                for _,x in ET.iterparse(fd,events=('end',)):
+                  if x.tag==N+'si':strs.append(''.join(v.text or '' for v in x.iter(N+'t')));x.clear()
+            wb=ET.fromstring(z.read('xl/workbook.xml'))
+            rels=ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))
+            mapping={x.get('Id'):x.get('Target') for x in rels.findall(P+'Relationship')}
+            report={'file':source.name,'size_bytes':source.stat().st_size,'sheets':[]}
+            for sheet in wb.findall('.//'+N+'sheet'):
+              title=sheet.get('name');target=mapping.get(sheet.get(R+'id'))
+              if not target:continue
+              target=target.lstrip('/') if target.startswith('/') else posixpath.normpath(posixpath.join('xl',target))
+              if target not in z.namelist():continue
+              gen=it(z,target,strs);first=[]
+              for _,x in zip(range(50),gen):first.append(x)
+              best=(-999,0,{})
+              for index,row in enumerate(first):
+                vs=[norm(v) for v in row.values()]
+                hits=sum(any(a in v for ls in aliases.values() for a in ls) for v in vs)
+                score=hits*10+len(vs)*.01-sum(num(v)is not None for v in vs)*2
+                if hits and score>best[0]:best=(score,index,row)
+              _,hi,head=best
+              fields={}
+              for k,options in aliases.items():
+                for name in options:
+                  found=next((idx for idx,v in head.items() if norm(v)==name),None)
+                  if found is not None:fields[k]=found;break
+              ctr=collections.Counter();seen={};rows=0
+              for line in first[hi+1:]:
+                if line:
+                  rows+=1
+                  for f in ('factor','stock_plt','stock_cx'):
+                    v=num(line.get(fields[f])) if f in fields else None
+                    if v is not None:
+                      ctr[f+'_numeric']+=1
+                      if v<0:ctr[f+'_negative']+=1
+                  if 'eg' in fields:
+                    key=norm(line.get(fields['eg']))
+                    if key:
+                      if key in seen:ctr['eg_repetido']+=1
+                      else:seen[key]=1
+              for line in gen:
+                if line:
+                  rows+=1
+                  for f in ('factor','stock_plt','stock_cx'):
+                    v=num(line.get(fields[f])) if f in fields else None
+                    if v is not None:
+                      ctr[f+'_numeric']+=1
+                      if v<0:ctr[f+'_negative']+=1
+                  if 'eg' in fields:
+                    key=norm(line.get(fields['eg']))
+                    if key:
+                      if key in seen:ctr['eg_repetido']+=1
+                      else:seen[key]=1
+              report['sheets'].append({'sheet':title,'header_row':hi+1,'rows':rows,'columns':[str(head[k]) for k in sorted(head)][:55],'matched_fields':{k:head[v] for k,v in fields.items()},'stats':dict(ctr),'distinct_EG':len(seen)})
+          Path('auditoria').mkdir(exist_ok=True)
+          Path('auditoria/inventario_base_estoque.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('AUDITORIA_V29_INICIO')
+          print(json.dumps(report,ensure_ascii=False))
+          print('AUDITORIA_V29_FIM')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencia-estoque-v29
+          path: auditoria/inventario_base_estoque.json
+          if-no-files-found: warn
