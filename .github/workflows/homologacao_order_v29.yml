@@ -1,0 +1,95 @@
+name: Homologacao Real Order v29 - Inventario
+on:
+  push:
+    paths:
+      - '.github/workflows/homologacao_order_v29.yml'
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventario seguro dos nomes e cabecalhos da Order
+        run: |
+          python - <<'PY'
+          import zipfile, io, xml.etree.ElementTree as ET, posixpath, json, re, pathlib
+          S='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
+          R='{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'
+          PK='{http://schemas.openxmlformats.org/package/2006/relationships}'
+          def column(label):
+            n=0
+            for ch in re.match('[A-Z]+',label).group(0):n=n*26+ord(ch)-64
+            return n
+          def sample_xlsx(data, limit=30):
+            with zipfile.ZipFile(io.BytesIO(data)) as z:
+              strings=[]
+              if 'xl/sharedStrings.xml' in z.namelist():
+                with z.open('xl/sharedStrings.xml') as f:
+                  for _,el in ET.iterparse(f,events=('end',)):
+                    if el.tag==S+'si':
+                      strings.append(''.join(n.text or '' for n in el.iter(S+'t')))
+                      el.clear()
+              wb=ET.fromstring(z.read('xl/workbook.xml'))
+              links={x.get('Id'):x.get('Target') for x in ET.fromstring(z.read('xl/_rels/workbook.xml.rels')).findall(PK+'Relationship')}
+              sheets=[]
+              for sh in wb.findall('.//'+S+'sheet'):
+                loc=links.get(sh.get(R+'id'))
+                if not loc:continue
+                p=loc.lstrip('/') if loc.startswith('/') else posixpath.normpath('xl/'+loc)
+                if p not in z.namelist():continue
+                head=[];rows=0;dims=''
+                with z.open(p) as f:
+                  for event,el in ET.iterparse(f,events=('end',)):
+                    if el.tag==S+'dimension':dims=el.get('ref','')
+                    if el.tag!=S+'row':continue
+                    rows+=1
+                    if rows<=limit:
+                      values={}
+                      for c in el.findall(S+'c'):
+                        v=c.find(S+'v')
+                        if c.get('t')=='inlineStr':val=''.join(t.text or '' for t in c.iter(S+'t'))
+                        elif v is None:val=''
+                        elif c.get('t')=='s':
+                          try:val=strings[int(v.text)]
+                          except:val=''
+                        else:val=v.text or ''
+                        if val!='':values[column(c.get('r'))]=val
+                      head.append(values)
+                    el.clear()
+                # Exibir apenas possiveis cabecalhos, nunca valores de clientes
+                ranked=[]
+                for i,row in enumerate(head):
+                  names=[str(v) for v in row.values()]
+                  pats=['pedido','sku','cliente','quantidade','carro','fatur','atualiz','vencimento','remessa','marcado','codigo','data']
+                  points=sum(any(q in n.lower() for q in pats) for n in names)
+                  ranked.append((points,i,row))
+                ranked.sort(key=lambda x:(-x[0],x[1]))
+                hi=ranked[0][1] if ranked else 0
+                sheet={'sheet':sh.get('name'),'xml_rows':rows,'dimension':dims,'header_row':hi+1,'columns':[
+                   {'index':int(k),'name':str(v)[:120]} for k,v in sorted(head[hi].items())
+                 ] if head else []}
+                sheets.append(sheet)
+              return sheets
+          order=pathlib.Path('Order.zip')
+          out={'zip':order.name,'size_bytes':order.stat().st_size,'entries':[]}
+          with zipfile.ZipFile(order) as z:
+            for n in z.infolist():
+              x={'file':n.filename,'size_bytes':n.file_size}
+              if n.filename.lower().endswith('.xlsx'):
+                try:x['sheets']=sample_xlsx(z.read(n.filename))
+                except Exception as e:x['inspection_error']=type(e).__name__+': '+str(e)[:250]
+              out['entries'].append(x)
+          pathlib.Path('auditoria-order').mkdir(exist_ok=True)
+          pathlib.Path('auditoria-order/estrutura_order.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          print('ORDER_ESTRUTURA_INICIO')
+          print(json.dumps(out,ensure_ascii=False))
+          print('ORDER_ESTRUTURA_FIM')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: estrutura-order-v29
+          path: auditoria-order/
+          if-no-files-found: warn
