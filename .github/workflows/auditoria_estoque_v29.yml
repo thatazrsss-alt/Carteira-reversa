@@ -214,6 +214,42 @@ jobs:
           print('DEPARA_ORIGENS_V29_INICIO')
           print(json.dumps(centers_report,ensure_ascii=False))
           print('DEPARA_ORIGENS_V29_FIM')
+          # Cruzamento por produto EG e BR de fábrica (presença de origem ≠ disponibilidade D1).
+          eg_from_s4=collections.defaultdict(set)
+          for x in cad:
+            s4=norm(x.get('Cod S4'));eg=norm(x.get('Cód_Prod'))
+            if s4 and eg:eg_from_s4[s4].add(eg)
+          stock_pairs=set();positive_pairs=set();stock_attr=collections.Counter()
+          for x in factory:
+            eg=norm(x.get('Sku PCA'));br=norm(x.get('Orig. S4'));attr=norm(x.get('Atributo'));d=num(x.get('D1'))
+            if eg and br:
+              stock_pairs.add((eg,br))
+              if d is not None and d>0 and 'estoque' in attr:positive_pairs.add((eg,br))
+            if attr:stock_attr[attr]+=1
+          by_origin_matched=0;by_origin_positive=0
+          for x in malha:
+            sku=norm(x.get('SKU SAP'));br=norm(x.get('Fábrica Origem SAP'))
+            candidates=eg_from_s4.get(sku,set())
+            if any((eg,br) in stock_pairs for eg in candidates):by_origin_matched+=1
+            if any((eg,br) in positive_pairs for eg in candidates):by_origin_positive+=1
+          prod=list(raw_records(wb,'Produção',strs)) if False else []
+          # Voltar a abrir workbook apenas para conferir Produção / DeParaCDD.
+          with zipfile.ZipFile(source) as z:
+            prod=list(raw_records(wb,'Produção',strs))
+            dpar=list(raw_records(wb,'DeParaCDD',strs))
+          prod_codes={norm(x.get('COD_PROD')) for x in prod if norm(x.get('COD_PROD'))}
+          prod_origins=collections.Counter(norm(x.get('ORIGEM')) for x in prod if norm(x.get('ORIGEM')))
+          dpar_centers=collections.Counter(norm(x.get('CDD Footptint')) for x in dpar if norm(x.get('CDD Footptint')))
+          audit3={'malha_rows':len(malha),'malha_rows_with_factory_sku_pair':by_origin_matched,
+                  'malha_rows_with_positive_D1_stock_pair':by_origin_positive,
+                  'stock_distinct_sku_factory_pairs':len(stock_pairs),'stock_positive_D1_sku_factory_pairs':len(positive_pairs),
+                  'stock_attribute_counts':dict(stock_attr),
+                  'production_unique_skus':len(prod_codes),'production_skus_found_in_CAD_EG':len(prod_codes&cad_eg),
+                  'production_origins':dict(prod_origins.most_common(50)),'dpar_cdd_values':dict(dpar_centers)}
+          Path('auditoria/conferencia_elegibilidade_v29.json').write_text(json.dumps(audit3,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('ELEGIBILIDADE_V29_INICIO')
+          print(json.dumps(audit3,ensure_ascii=False))
+          print('ELEGIBILIDADE_V29_FIM')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
