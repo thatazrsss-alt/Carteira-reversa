@@ -201,7 +201,7 @@ summary={"sources":{"order_zip":SRC_ORDER,"order_csv":name,"estoque":SRC_STOCK},
 counter=C.Counter();stats=C.defaultdict(C.Counter);formation=C.defaultdict(lambda:{"pending":0.0,"qualified":0.0,"skus":0,"unknown":0,"alt":0})
 originSku=C.defaultdict(float);altsets=C.defaultdict(set);originStock={}
 cdSku=C.defaultdict(float)
-rows=[];exceptions=[];weekly=(DT.date(2026,11,16),DT.date(2026,11,22))
+rows=[];exceptions=[];mixed_rows=[];weekly=(DT.date(2026,11,16),DT.date(2026,11,22))
 for k,g in groups.items():
     typvals={t for t in g["type"] if t}
     typ=next(iter(typvals)) if len(typvals)==1 else ("MISTO" if typvals else "")
@@ -247,9 +247,20 @@ for k,g in groups.items():
     if typ=='MISTO':
         counter['mixed_groups']+=1
         active={t for t in g['active_types'] if t in ('ASCD','ASVD')}
-        if len(active)==1:counter['mixed_keys_with_one_non_cancel_type']+=1
-        elif len(active)>1:counter['mixed_keys_with_both_non_cancel_types']+=1
-        else:counter['mixed_keys_with_no_non_cancel_type']+=1
+        if len(active)==1:
+            counter['mixed_keys_with_one_non_cancel_type']+=1
+            counter['mixed_keys_with_one_non_cancel_type_pending_CX']+=pending if pending is not None else 0
+            counter['mixed_keys_only_active_'+next(iter(active))]+=1
+        elif len(active)>1:
+            counter['mixed_keys_with_both_non_cancel_types']+=1
+            counter['mixed_keys_with_both_non_cancel_types_pending_CX']+=pending if pending is not None else 0
+        else:
+            counter['mixed_keys_with_no_non_cancel_type']+=1
+            counter['mixed_keys_with_no_non_cancel_type_pending_CX']+=pending if pending is not None else 0
+        mixed_rows.append([*k,g['network'],g['commercial'],g['validity'],g['count'],
+             '|'.join(sorted(active)),g['type'].get('ASCD',0),g['type'].get('ASVD',0),
+             round(g['type_movement_pending']['ASCD'],2),round(g['type_movement_pending']['ASVD'],2),
+             pending,g['status_cancel_rows'],len(g['orig_variants'])])
         for t in ('ASCD','ASVD'):
             counter['mixed_pending_segment_'+t+'_CX']+=g['type_movement_pending'][t]
         if complete and pending is not None and pending>0:counter['mixed_positive_pending_groups']+=1
@@ -260,6 +271,13 @@ for k,g in groups.items():
     if g["mixed_commercial"]:counter["commercial_divergent_groups"]+=1
     if g["mixed_network"]:counter["network_divergent_groups"]+=1
     if complete:
+        if pending==0 and g['updated']>0 and g['carWithout']==0 and g['carWith']+g['billed']>=g['updated']-1e-7 and g['overlaps']==0:
+            counter['attended_item_keys_by_movements']+=1
+        elif pending==0:
+            counter['zero_pending_but_not_attended']+=1
+        elif pending>0 and (g['carWith']>0 or g['billed']>0):
+            counter['partially_attended_item_keys']+=1
+        elif pending>0:counter['pending_without_any_remessa_or_billing']+=1
         counter["complete_groups"]+=1
         counter["volume_updated_CX"]+=g["updated"]
         counter["volume_remessa_CX"]+=g["carWith"]
@@ -335,6 +353,9 @@ headers=["Pedido ERP","Cliente EG","SKU EG","Rede","Cliente","Comercial","Tipo P
          "Origens D1 positivo","CDD","Grade CD em CX","Variantes Original","Linhas sobreposição","Diagnóstico"]
 csvout("conciliacao_por_pedido_cliente_sku.csv",headers,rows)
 csvout("divergencias_e_pendencias.csv",headers,exceptions)
+csvout("chaves_tipo_pedido_misto.csv",['Pedido ERP','Cliente EG','SKU EG','Rede','Comercial','Validade','Linhas',
+       'Tipo não cancelado','Linhas ASCD','Linhas ASVD','Pendente movimentos ASCD CX','Pendente movimentos ASVD CX',
+       'Pendente da chave CX','Linhas canceladas','Variantes de Original'],mixed_rows)
 csvout("formacao_por_fabrica.csv",
        ["Fábrica BR","Código PCA","Pendente PLT (oportunidades)","Qualificado PLT","Carros 24 PLT (potenciais)",
         "PLT faltantes próximo carro","SKUs","SKUs com origens alternativas","SKUs sem D1"],
