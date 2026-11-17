@@ -411,7 +411,7 @@ function convertOrderBalances(){
  // Normalise individual movement rows to boxes. The Order's default movement unit is CX;
  // explicit PLT unit requires the CAD quantity-per-pallet. No guessed conversion.
  for(const o of S.data.orders){
-  const candidates=getIndexed('cadEG',norm(o.eg)).filter(c=>c.cxPlt>0);
+  const candidates=productIndexed(S.data.cad,'eg',o.eg,'cadEG').filter(c=>c.cxPlt>0);
   const ratios=[...new Set(candidates.map(x=>x.cxPlt))];const ratio=ratios.length===1?ratios[0]:null;
   const source=o.rawMovements||[o.raw];
   let totals={updated:0,carWith:0,carWithout:0,billed:0,pending:0},complete=true,converted=0,aliasConflicts=0,overlapSuspects=0;
