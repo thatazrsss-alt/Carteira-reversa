@@ -196,6 +196,24 @@ jobs:
           print('DIAGNOSTICO_CHAVES_V29_INICIO')
           print(json.dumps(detail2,ensure_ascii=False))
           print('DIAGNOSTICO_CHAVES_V29_FIM')
+          links=collections.defaultdict(lambda:collections.Counter())
+          nameByPair=collections.defaultdict(lambda:collections.Counter())
+          for r in factory:
+            br=norm(r.get('Orig. S4')).upper();pca=norm(r.get('Orig. PCA'))
+            name=str(r.get('Fábrica') or '').strip()
+            if br and pca:
+              links[br][pca]+=1
+              if name:nameByPair[(br,pca)][name]+=1
+          centers_report={
+            'br_count':len(links),
+            'ambiguous_br_to_pca':{br:dict(counts) for br,counts in links.items() if len(counts)>1},
+            'centers':[{ 'br':br,'pca':next(iter(pcas)), 'rows':sum(pcas.values()),
+                         'factory_name':nameByPair[(br,next(iter(pcas)))].most_common(1)[0][0] if nameByPair[(br,next(iter(pcas)))] else None}
+                       for br,pcas in sorted(links.items()) if len(pcas)==1]}
+          Path('auditoria/depara_origens_v29.json').write_text(json.dumps(centers_report,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('DEPARA_ORIGENS_V29_INICIO')
+          print(json.dumps(centers_report,ensure_ascii=False))
+          print('DEPARA_ORIGENS_V29_FIM')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
