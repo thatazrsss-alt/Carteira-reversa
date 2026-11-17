@@ -1,5 +1,8 @@
 # Carteira Reversa v29 — reconciliação e conferência das fontes (17/11/2026)
 
+> **ATUALIZAÇÃO POSTERIOR EM 17/11/2026:** a Order.zip foi localizada no repositório e reconciliada com a BASE_ESTOQUE. Este documento é histórico e suas referências à ausência da Order estão superadas. Consulte o [parecer de homologação real mais recente](HOMOLOGACAO_REAL_ORDER_ESTOQUE_2026-11-17.md). O status permanece **parcial**, com exceções documentadas.
+
+
 **Parecer: reconciliação operacional bloqueada por indisponibilidade dos registros tabulares reais neste acesso. NÃO HOMOLOGADO.**
 
 ## Fontes efetivamente verificadas
