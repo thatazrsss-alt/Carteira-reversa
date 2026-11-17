@@ -120,6 +120,55 @@ jobs:
           print('AUDITORIA_V29_INICIO')
           print(json.dumps(report,ensure_ascii=False))
           print('AUDITORIA_V29_FIM')
+          # Conferência cruzada específica aos cabeçalhos observados no arquivo real.
+          def raw_records(book, sheet_name, ss):
+            x=next(k for k in book.findall('.//'+N+'sheet') if k.get('name')==sheet_name)
+            t=mapping[x.get(R+'id')]
+            t=t.lstrip('/') if t.startswith('/') else posixpath.normpath(posixpath.join('xl',t))
+            rows=it(z,t,ss);head=next(rows);labels={str(v):k for k,v in head.items()}
+            for row in rows:yield {name:row.get(i) for name,i in labels.items()}
+          from collections import defaultdict
+          with zipfile.ZipFile(source) as z:
+            cad=list(raw_records(wb,'CAD',strs))
+            malha=list(raw_records(wb,'Malha',strs))
+            factory=list(raw_records(wb,'Estoque Fabricas',strs))
+          eg_to_ratios=defaultdict(set);sap_to_egs=defaultdict(set);stock_eg=set();stock_orig_s4=collections.Counter();stock_orig_pca=collections.Counter()
+          negatives_by_attribute=collections.Counter();malha_origins=collections.Counter();malha_commercial=collections.Counter()
+          for x in cad:
+            eg=norm(x.get('Cód_Prod'));sap=norm(x.get('Cod_SAP'));ratio=num(x.get('Quantidade_prod_pallet'))
+            if eg:
+              eg_to_ratios[eg].add(ratio)
+              if sap:sap_to_egs[sap].add(eg)
+          for x in factory:
+            eg=norm(x.get('Sku PCA'));s4=norm(x.get('Orig. S4'));pca=norm(x.get('Orig. PCA'))
+            if eg:stock_eg.add(eg)
+            if s4:stock_orig_s4[s4]+=1
+            if pca:stock_orig_pca[pca]+=1
+            d1=num(x.get('D1'))
+            if d1 is not None and d1<0:negatives_by_attribute[norm(x.get('Atributo'))]+=1
+          malha_linked=0;malha_missed=0;malha_stock_eg=0
+          for x in malha:
+            sap=norm(x.get('SKU SAP'));orig=norm(x.get('Fábrica Origem SAP'));commercial=norm(x.get('Destino Comercial'))
+            if orig:malha_origins[orig]+=1
+            if commercial:malha_commercial[commercial]+=1
+            egs=sap_to_egs.get(sap,set())
+            if egs:
+              malha_linked+=1
+              if any(e in stock_eg for e in egs):malha_stock_eg+=1
+            else:malha_missed+=1
+          detail={'cad_unique_eg':len(eg_to_ratios),'cad_eg_conflicting_factors':sum(len(v)>1 for v in eg_to_ratios.values()),
+            'cad_eg_missing_stock_factory':sum(e not in stock_eg for e in eg_to_ratios),
+            'malha_rows':len(malha),'malha_sap_with_cad':malha_linked,'malha_sap_without_cad':malha_missed,
+            'malha_sap_cad_eg_with_factory_stock_any_origin':malha_stock_eg,
+            'factory_unique_eg':len(stock_eg),
+            'malha_origin_codes':dict(malha_origins.most_common(25)),
+            'factory_orig_s4_codes':dict(stock_orig_s4.most_common(25)),
+            'factory_orig_pca_codes':dict(stock_orig_pca.most_common(25)),
+            'negative_d1_by_attribute':dict(negatives_by_attribute)}
+          Path('auditoria/crosscheck_estoque.json').write_text(json.dumps(detail,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('CROSSCHECK_REAL_V29_INICIO')
+          print(json.dumps(detail,ensure_ascii=False))
+          print('CROSSCHECK_REAL_V29_FIM')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
