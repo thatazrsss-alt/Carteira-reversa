@@ -250,6 +250,41 @@ jobs:
           print('ELEGIBILIDADE_V29_INICIO')
           print(json.dumps(audit3,ensure_ascii=False))
           print('ELEGIBILIDADE_V29_FIM')
+          # Compatibilidade real Grade CD: SKU EG sem dígito verificador versus CodigoProduto.
+          def digits(v):
+            x=re.sub(r'[ .-]','',str(v or '').strip())
+            return x if x.isdigit() else ''
+          eg_minus_digit={x[:-1] for r in cad if len(x:=digits(r.get('Cód_Prod')))>1}
+          grades={}
+          with zipfile.ZipFile(source) as z:
+            for sh in wb.findall('.//'+N+'sheet'):
+              name=sh.get('name')
+              if not name.startswith('Estoque CDD '):continue
+              rec=list(raw_records(wb,name,strs))
+              codes=[digits(x.get('CodigoProduto')) for x in rec]
+              matched=sum(code in eg_minus_digit for code in codes if code)
+              grade_stats={'rows':len(rec),'unique_products':len(set(codes)),
+                'sku_matched_cad_without_digit':matched,
+                'sku_not_matched':sum(bool(code) and code not in eg_minus_digit for code in codes),
+                'negative_balance':sum((num(x.get('SaldoDisponivel')) or 0)<0 for x in rec)}
+              grades[name]=grade_stats
+          grade_report={'cad_without_digit_unique':len(eg_minus_digit),'grades':grades,'total_rows':sum(x['rows'] for x in grades.values()),
+                 'total_matched':sum(x['sku_matched_cad_without_digit'] for x in grades.values())}
+          Path('auditoria/grade_cd_v29.json').write_text(json.dumps(grade_report,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('GRADE_CD_V29_INICIO')
+          print(json.dumps(grade_report,ensure_ascii=False))
+          print('GRADE_CD_V29_FIM')
+          # Divergências de Malha ficam num artefato de auditoria, não em logs abertos.
+          exceptions=[]
+          for x in malha:
+            sku=norm(x.get('SKU SAP'));br=norm(x.get('Fábrica Origem SAP'))
+            candidates=eg_from_s4.get(sku,set())
+            if not candidates:reason='SAP_SEM_CAD_COD_S4'
+            elif not any((eg,br) in stock_pairs for eg in candidates):reason='SEM_PAR_SKU_FABRICA_D1'
+            else:continue
+            exceptions.append({'sku_sap':str(x.get('SKU SAP') or ''),'origem_br':str(x.get('Fábrica Origem SAP') or ''),'motivo':reason})
+          Path('auditoria/excecoes_malha_v29.json').write_text(json.dumps(exceptions,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('Excecoes Malha sem par SKU/fabrica:',len(exceptions),'(lista apenas no artefato de auditoria).')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
