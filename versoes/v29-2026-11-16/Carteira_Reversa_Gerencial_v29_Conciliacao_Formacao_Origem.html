@@ -479,7 +479,11 @@ function convertOrderBalances(){
    S.chosen=chosen;
    const maprows=t=>(chosen[t]||[]).flatMap(s=>s.rows||[]);
    S.data.sourceOrders=maprows('orders');S.data.orders=readOrders(S.data.sourceOrders);
-   S.data.cad=maprows('cad').map(r=>({eg:codeEG(field(r,'eg')),sap:text(field(r,'sap')),cxPlt:amount(field(r,'cxPlt')),name:text(field(r,'productName'))})).filter(x=>x.eg||x.sap);
+   // Campo observado na base 16.11: Malha.SKU SAP corresponde a CAD.Cod S4,
+   // não a CAD.Cod_SAP (6.472/6.484 linhas vs. 13/6.484).
+   // A exceção por aba evita alterar outras fontes que usam SKU SAP literalmente.
+   const sapFromCAD=r=>{const col=Object.keys(r).find(k=>norm(k)==='cod s4');return text(col?r[col]:field(r,'sap'));};
+   S.data.cad=maprows('cad').map(r=>({eg:codeEG(field(r,'eg')),sap:sapFromCAD(r),cxPlt:amount(field(r,'cxPlt')),name:text(field(r,'productName'))})).filter(x=>x.eg||x.sap);
    S.data.malha=maprows('malha').map(r=>({commercial:text(field(r,'commercial')),sap:text(field(r,'sap')),origin:text(field(r,'origin'))})).filter(x=>x.sap&&x.commercial&&x.origin);
    S.data.dpar=maprows('dpar').map(r=>({clientId:text(field(r,'clientId')),client:text(field(r,'client')),center:text(field(r,'center')||field(r,'origin'))})).filter(x=>x.clientId||x.client);
    // VD: distinguish independent source copies from independent stock.
