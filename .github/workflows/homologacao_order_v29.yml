@@ -97,11 +97,15 @@ jobs:
             with z.open(name) as b:
               sample=b.read(20000)
             encoding='utf-8-sig'
-            try: sample.decode(encoding)
-            except UnicodeDecodeError:encoding='cp1252'
+            if sample.startswith(b'\\xff\\xfe') or sample.startswith(b'\\xfe\\xff'):encoding='utf-16'
+            else:
+              try: sample.decode(encoding)
+              except UnicodeDecodeError:encoding='cp1252'
             snippet=sample.decode(encoding,errors='replace')
-            try:delimiter=csv.Sniffer().sniff(snippet,delimiters=';,\t|').delimiter
-            except:delimiter=';'
+            rawfirst=snippet.splitlines()[0] if snippet.splitlines() else ''
+            print('CSV_RAW_DIAGNOSTICO',json.dumps({'encoding':encoding,'first200':rawfirst[:200],'firstline_chars':len(rawfirst),'newlines_first20k':snippet.count('\\n'),'cr_first20k':snippet.count('\\r'),'delimiter_counts':{ch:rawfirst.count(ch) for ch in [';',',','\\t','|']}},ensure_ascii=False))
+            delimiter=max([';',',','\\t','|'],key=lambda x:rawfirst.count(x))
+            csv.field_size_limit(1000000000)
             with z.open(name) as b:
               f=io.TextIOWrapper(b,encoding=encoding,errors='replace',newline='')
               reader=csv.reader(f,delimiter=delimiter)
