@@ -1,5 +1,8 @@
 # Carteira Reversa — Gerencial v29 (16/11/2026)
 
+**Homologação com estoque real:** [conferir parecer da BASE_ESTOQUE 16.11 (17/11/2026)](HOMOLOGACAO_ESTOQUE_REAL_2026-11-17.md) e [evidências da execução no GitHub Actions](https://github.com/thatazrsss-alt/Carteira-reversa/actions/runs/44083836035). Malha/CAD, SKU/fábrica, de-para e grades CD conferidos com dados reais; Order operacional não encontrada no repositório, portanto indicadores por pedido ainda não homologados.
+
+
 **Parecer de homologação 17/11/2026:** [abrir relatório de testes e bloqueios](HOMOLOGACAO_2026-11-17.md) — homologação funcional parcial; bases reais ainda não reconciliadas.
 
 **[Parecer de homologação técnica v29](HOMOLOGACAO_v29_2026-11-16.md)** — cenários controlados aprovados; homologação operacional com Order e estoque reais ainda pendente.
