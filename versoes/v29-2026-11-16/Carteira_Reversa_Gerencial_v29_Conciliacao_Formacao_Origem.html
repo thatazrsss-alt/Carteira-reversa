@@ -118,7 +118,7 @@ const formatDate=x=>x?x.slice(8,10)+'/'+x.slice(5,7)+'/'+x.slice(0,4):'Não info
 $('referenceDate').value=today();$('dateLabel').textContent=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
 function show(tab){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===tab));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab)); if(tab==='analise')setTimeout(renderOrders,0); if(tab==='saida')setTimeout(renderPreview,0)}document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
 const id=o=>`${norm(o.network)}|${norm(o.clientId||o.client)}`;
-function defaultChannel(o){return norm(o.network).includes('shibata')?(norm(o.client).includes('cd shibata')?'VD':'CD'):'VD'}
+function defaultChannel(o){if(o.typeCounts?.ASCD&&!o.typeCounts.ASVD&&!o.typeCounts.MISTO)return 'CD';if(o.typeCounts?.ASVD&&!o.typeCounts.ASCD&&!o.typeCounts.MISTO)return 'VD';return norm(o.network).includes('shibata')?(norm(o.client).includes('cd shibata')?'VD':'CD'):'VD'}
 function fixtures(){S.demo=true;S.sheets=[];S.fileCache.clear();S.sourceCount=0;S.problems=[];S.data={orders:[
 {network:'Shibata',client:'Shibata Loja 01',clientId:'SH001',commercial:'COM-SH',order:'450001',eg:'1234567',initial:400,initialPlt:4,updated:380,carWith:10,carWithout:10,billed:70,served:70,pending:290,validity:'2026-11-19',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
 {network:'Shibata',client:'Shibata Loja 02',clientId:'SH002',commercial:'COM-SH',order:'450001',eg:'1234567',initial:150,initialPlt:1.5,updated:140,carWith:0,carWithout:0,billed:50,served:50,pending:90,validity:'2026-11-25',pendingBasis:'Atualizada − com remessa − sem remessa − faturado'},
@@ -346,7 +346,7 @@ validity:['validade','validade pedido','data validade','data vencimento','data d
  // Official grains are EG Cliente + SKU EG + Pedido ERP. Original columns U/V/W
  // describe ONE selected original entry; movements are SUMMED across ALL order lines.
  const grouped=new Map();let withNetwork=0,withOrder=0,usable=0,withoutNetwork=0,withoutSku=0,withoutClient=0;
- const unitOf=r=>{const names=Object.keys(r).filter(x=>!x.startsWith('__'));const match=names.find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida|unidade)$/i.test(norm(k)));const u=norm(match?r[match]:'');return /palet|pallet|plt/.test(u)?'PLT':/caix|cx/.test(u)?'CX':'CX (padrão Order)'};
+ const unitOf=r=>{const names=Object.keys(r).filter(x=>!x.startsWith('__'));const match=names.find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida|unidade)$/i.test(norm(k)));const u=norm(match?r[match]:'');return /palet|pallet|plt/.test(u)?'PLT':/^(cx|caixa|caixas)$/.test(u)?'CX':u?'SEM CONVERSÃO ('+u.toUpperCase()+')':'UNIDADE AUSENTE'};
  for(const [i,r] of rows.entries()){
   const network=text(field(r,'network')),order=text(field(r,'order')),
         clientId=text(field(r,'clientId'))||text(field(r,'client')),eg=codeEG(field(r,'eg'));
@@ -363,7 +363,7 @@ validity:['validade','validade pedido','data validade','data vencimento','data d
   const rec={network:network||'REDE NÃO IDENTIFICADA',client:text(field(r,'client'))||clientId,clientId,commercial:text(field(r,'commercial')),order,eg,originalU:field(r,'initialHL'),originalV:field(r,'initialPlt'),originalW:field(r,'initial'),
      skuName:text(field(r,'productName')),sap:text(field(r,'sap')),initial:originalCX,initialPlt:originalPlt,initialHL:originalHL,
      updated:movementValue(r,'updated'),carWith:movementValue(r,'carWith'),carWithout:movementValue(r,'carWithout'),
-     billed:movementValue(r,'billed'),validity:iso(field(r,'validity')),created:iso(field(r,'created')),captured:iso(field(r,'captured')),originalValidity:iso(field(r,'originalValidity')),
+     billed:movementValue(r,'billed'),orderType:text(Object.keys(r).find(k=>norm(k)==='tipo pedido')?.length? r[Object.keys(r).find(k=>norm(k)==='tipo pedido')]:'' ).toUpperCase(),validity:iso(field(r,'validity')),created:iso(field(r,'created')),captured:iso(field(r,'captured')),originalValidity:iso(field(r,'originalValidity')),
      unit:unitOf(r),raw:r,idx:i};
   const k=[clientId,eg,order].map(norm).join('|');
   if(!grouped.has(k))grouped.set(k,[]);
@@ -380,6 +380,8 @@ validity:['validade','validade pedido','data validade','data vencimento','data d
       (a.created||'9999-99-99').localeCompare(b.created||'9999-99-99')||
       (a.originalValidity||a.validity||'9999-99-99').localeCompare(b.originalValidity||b.validity||'9999-99-99')||a.idx-b.idx);
   const original=sorted[0],issues=[];
+  const orderTypes=[...new Set(rs.map(x=>x.orderType).filter(Boolean))];
+  if(orderTypes.length>1)issues.push('Tipo Pedido ASCD/ASVD misto na mesma chave: não atribuir todo o pendente a um único canal');
   if(!earliestCreation)issues.push('Data de criação ausente: captação não identificada; Data Captação ECC, se existir, permanece somente informativa');
   if(rs.length>1){
    const variants=new Set(rs.map(v=>JSON.stringify([v.initial,v.initialPlt,v.initialHL])));
@@ -400,7 +402,7 @@ validity:['validade','validade pedido','data validade','data vencimento','data d
   if(rs.some(x=>x.initial==null&&x.initialPlt!=null))issues.push('Original CX não identificado: conversão por CAD somente se houver fator');
   out.push({...original,captured:earliestCreation,created:earliestCreation,skuName:sorted.map(x=>x.skuName).find(Boolean)||'',updated:sumField('updated'),carWith:sumField('carWith'),carWithout:sumField('carWithout'),
    billed:sumField('billed'),served:sumField('billed'),pending:rowPending,pendingRaw:rowPending,
-   movementRows:movements.length,duplicateCount:rs.length,issuesInitial:issues,unit:movementUnit.size===1?[...movementUnit][0]:'MISTO',
+   movementRows:movements.length,duplicateCount:rs.length,orderType:orderTypes.length===1?orderTypes[0]:'MISTO',issuesInitial:issues,unit:movementUnit.size===1?[...movementUnit][0]:'MISTO',
    pendingBasis:'Σ por linha (Atualizada − Carro com remessa − Carro sem remessa − Faturado)',
    raw:original.raw,rawMovements:rs.map(x=>x.raw)});
  }
@@ -417,7 +419,9 @@ function convertOrderBalances(){
   let totals={updated:0,carWith:0,carWithout:0,billed:0,pending:0},complete=true,converted=0,aliasConflicts=0,overlapSuspects=0,reportedPending=0,reportedKnown=true;
   for(const r of source){
    const unitKey=Object.keys(r).find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida|unidade)$/i.test(norm(k)));
-   const v=norm(unitKey?r[unitKey]:'');const factor=/palet|pallet|plt/.test(v)?ratio:1;
+   const v=norm(unitKey?r[unitKey]:'');
+   // A Order real contém CX, DZ, UN e PC. Somente CX ou PLT com CAD validada são conversíveis.
+   const factor=/^(cx|caixa|caixas)$/.test(v)?1:/^(plt|palet|palete|pallet|paletes|pallets)$/.test(v)?ratio:null;
     // Marcado e Carro com Remessa representam o mesmo evento; nunca somar cabeçalhos equivalentes.
     const hm=Object.keys(r).find(k=>/^(?:qtd |quantidade |volume )?marcado(?: cx)?$/.test(norm(k)));
     const hr=Object.keys(r).find(k=>/^(?:qtd |quantidade |volume )?carro(?:s)? (?:com|c) remessa(?: cx)?$/.test(norm(k)));
@@ -825,7 +829,7 @@ async function loadGithubSources(){
 }
 $('loadGithub').onclick=loadGithubSources;
 
-function units(){if(S.unitsCache)return S.unitsCache;let m=new Map();for(const o of S.data.orders){let k=id(o);if(!m.has(k))m.set(k,{network:o.network,client:o.client,clientId:o.clientId,commercial:o.commercial,key:k,count:0});m.get(k).count++}return S.unitsCache=[...m.values()].sort((a,b)=>a.network.localeCompare(b.network,'pt-BR')||a.client.localeCompare(b.client,'pt-BR'))}
+function units(){if(S.unitsCache)return S.unitsCache;let m=new Map();for(const o of S.data.orders){let k=id(o);if(!m.has(k))m.set(k,{network:o.network,client:o.client,clientId:o.clientId,commercial:o.commercial,key:k,count:0,typeCounts:{ASCD:0,ASVD:0,MISTO:0}});const u=m.get(k);u.count++;if(o.orderType in u.typeCounts)u.typeCounts[o.orderType]++}return S.unitsCache=[...m.values()].sort((a,b)=>a.network.localeCompare(b.network,'pt-BR')||a.client.localeCompare(b.client,'pt-BR'))}
 function chosenNetworks(){return [...S.selected]}
 function getDpar(u){
  const found=u.clientId?getIndexed('dparId',norm(u.clientId)):[];
@@ -935,7 +939,13 @@ function skuDescription(o){
 }
 function stockLabel(p){if(p==null)return 'Não localizado';if(p<=0)return 'Sem estoque';return 'Estoque identificado'}
 function analyze(o){
- let ch=S.channels[id(o)]||{},cad=getCad(o),sap=cad?.sap||'',ratio=cad?.cxPlt||null;
+ let ch={...(S.channels[id(o)]||{})},cad=getCad(o),sap=cad?.sap||'',ratio=cad?.cxPlt||null;
+ // Tipo Pedido oficial determina canal por chave quando inequívoco.
+ // A mesma chave com ASCD e ASVD não pode ser qualificada usando um canal arbitrário.
+ const declared=o.orderType==='ASCD'?'CD':o.orderType==='ASVD'?'VD':o.orderType==='MISTO'?'MISTO':'';
+ const manual=/ajuste manual|edicao em lote/.test(norm(ch.origin));
+ if(declared&&!manual)ch.mode=declared;
+ if(declared==='MISTO')ch.mode='MISTO';
  let problems=[...(o.issuesInitial||[])],stock=null,stockPlt=null,prod=null,prodPlt=null,which='',primary='',qual='Não localizado',originDetails=[],cdDate='',cdStatus='';
   if(cad?.cadConflict)problems.push('CAD com fatores CX/PLT conflitantes: conversão não homologada');
  let date=$('referenceDate').value||today(),valid=o.validity?o.validity>=date:null;
