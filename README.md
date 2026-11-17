@@ -2,6 +2,13 @@
 
 Gerencial de atendimento por pedido/EG Cliente/SKU com canais VD e CD, consolidação de original e pendente, consulta CAD/Malha, estoques e produção.
 
+## Versão atual — v30 (17/11/2026)
+
+- **[Painel HTML v30 corrigido e testado com a Order real](versoes/v30-2026-11-17/Carteira_Reversa_Gerencial_v30_Logica_Conciliada.html)**
+- [Relatório de correções e conferência no navegador](versoes/v30-2026-11-17/RELATORIO_CORRECOES_CARTEIRA_REVERSA_V30.md) · [Instruções de uso](versoes/v30-2026-11-17/README.md)
+
+O motor da v30 reproduziu 95.548 chaves únicas e **13.203.479,70 CX de Pendente calculado** no recorte completo, de acordo com a auditoria independente. A formação potencial VD voltou a funcionar. A homologação permanece parcial para os casos ASCD/ASVD mistos, unidades não convertíveis e comerciais contraditórios.
+
 ## Versões e arquivos
 
 - **[Homologação real Order.zip + BASE_ESTOQUE 16.11 — 17/11/2026](versoes/v29-2026-11-16/HOMOLOGACAO_REAL_ORDER_ESTOQUE_2026-11-17.md)**: 127.057 registros, 95.548 chaves, saldo derivado de 13.203.479,70 CX no universo completo e 5.799 chaves ASCD/ASVD mistas. [Executar/consultar auditoria e baixar CSVs](https://github.com/thatazrsss-alt/Carteira-reversa/actions/runs/44090608561). **Homologação parcial; pendências documentadas.**
@@ -21,7 +28,7 @@ Gerencial de atendimento por pedido/EG Cliente/SKU com canais VD e CD, consolida
 
 Entrada original: uma linha por chave EG Cliente + SKU EG + Pedido ERP (U/V/W). Saldo pendente: soma dos valores calculados individualmente em todas as linhas da chave, em caixas. VD: SAP somente na Malha, estoque fábrica D1 por EG/VD; CD: DPAR loja/centro e grade em caixas; produção somente como data/informação, sem somar ao saldo; visão por pedido separada por cliente e canal. A análise não reserva estoque.
 
-**Status:** Order.zip e BASE_ESTOQUE 16.11 foram processados em conjunto; conciliação executada, v29 corrigida e parecer publicado. Homologação **parcial**, não aprovação irrestrita: 5.799 chaves mistas, 944 incompletas/não convertíveis e ausência de Pendente oficial independente na fonte.
+**Status:** versão recomendada **v30**, com importação completa e reconciliação de movimentos confirmadas no navegador; exceções operacionais permanecem sinalizadas.
 
 ## Próximas versões
 
