@@ -122,6 +122,52 @@ jobs:
           print(json.dumps(out,ensure_ascii=False))
           print('ORDER_CSV_FIM')
           PY
+      - name: Perfil quantitativo dos campos de Order
+        run: |
+          python - <<'PY'
+          import io,csv,zipfile,collections,json,pathlib
+          from datetime import datetime
+          with zipfile.ZipFile('Order.zip') as z:
+            name=next(n for n in z.namelist() if n.lower().endswith('.csv'))
+            with z.open(name) as b:
+              it=csv.DictReader(io.TextIOWrapper(b,encoding='utf-8-sig',errors='replace',newline=''),delimiter=';')
+              fields=it.fieldnames
+              cats={c:collections.Counter() for c in ('Modo','Unidade','Status','Tipo Pedido','Cód. Geo','Origem')}
+              numeric={c:collections.Counter() for c in ('Qtd. Original','Qtd. Atualizada','Qtd. Confirmada','Qtd. Sem carro','Qtd. Carro sem remessa','Qtd. Carro com remessa','Qtd. Faturada','Qtd. Recusada')}
+              unique={c:set() for c in ('Nº Pedido ERP','Cliente EG','SKU EG','Nome Rede','Cód. Comercial')}
+              keycounts=collections.Counter();counts=collections.Counter();dateval=collections.Counter()
+              for row in it:
+                counts['rows']+=1
+                for c,ct in cats.items():ct[(row.get(c) or '').strip()]+=1
+                for c,ct in numeric.items():
+                  val=(row.get(c) or '').strip()
+                  if not val:ct['missing']+=1
+                  elif ',' in val:ct['comma']+=1
+                  elif '.' in val:ct['dot']+=1
+                  else:ct['plain']+=1
+                for c,values in unique.items():
+                  v=(row.get(c) or '').strip()
+                  if v:values.add(v)
+                  else:counts['missing_'+c]+=1
+                k=tuple((row.get(c) or '').strip() for c in ('Nº Pedido ERP','Cliente EG','SKU EG'))
+                if all(k):keycounts[k]+=1
+                else:counts['invalid_key']+=1
+                for col in ('Data de Criação','Data de Vencimento'):
+                  v=(row.get(col) or '').strip()
+                  if not v:dateval[col+'_missing']+=1
+              out={'rows':counts['rows'],'distinct':{k:len(v) for k,v in unique.items()},
+                   'missing':{k:v for k,v in counts.items() if k.startswith('missing_')},
+                   'invalid_key_rows':counts['invalid_key'],'distinct_keys':len(keycounts),
+                   'repeated_keys':sum(v>1 for v in keycounts.values()),'repeated_key_rows':sum(v-1 for v in keycounts.values()),
+                   'max_rows_per_key':max(keycounts.values()) if keycounts else 0,
+                   'categories':{k:dict(v.most_common(30)) if k in ('Modo','Unidade','Status','Tipo Pedido') else {'distinct':len(v),'top10':dict(v.most_common(10))} for k,v in cats.items()},
+                   'numeric_shapes':{k:dict(v) for k,v in numeric.items()},'dates':dict(dateval)}
+          pathlib.Path('auditoria-order').mkdir(exist_ok=True)
+          pathlib.Path('auditoria-order/perfil_order.json').write_text(json.dumps(out,indent=2,ensure_ascii=False),encoding='utf-8')
+          print('PERFIL_ORDER_INICIO')
+          print(json.dumps(out,ensure_ascii=False))
+          print('PERFIL_ORDER_FIM')
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
