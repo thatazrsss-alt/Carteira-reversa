@@ -1,11 +1,14 @@
 # Carteira Reversa — Gerencial v29 (16/11/2026)
 
-**Homologação com estoque real:** [conferir parecer da BASE_ESTOQUE 16.11 (17/11/2026)](HOMOLOGACAO_ESTOQUE_REAL_2026-11-17.md) e [evidências da execução no GitHub Actions](https://github.com/thatazrsss-alt/Carteira-reversa/actions/runs/44083836035). Malha/CAD, SKU/fábrica, de-para e grades CD conferidos com dados reais; Order operacional não encontrada no repositório, portanto indicadores por pedido ainda não homologados.
+**SITUAÇÃO MAIS RECENTE — 17/11/2026:** [Homologação real com Order.zip + BASE_ESTOQUE 16.11](HOMOLOGACAO_REAL_ORDER_ESTOQUE_2026-11-17.md) — 95.548 chaves, 94.604 completas em CX, 5.799 com ASCD/ASVD misto; **parecer parcial com exceções**. [Artefatos CSV/JSON do GitHub Actions](https://github.com/thatazrsss-alt/Carteira-reversa/actions/runs/44090608561). Versão v29 corrigida para `Qtd. Faturada`, `Nome Cliente SAP`, `Unidade` e canal por `Tipo Pedido`.
 
 
-**Parecer de homologação 17/11/2026:** [abrir relatório de testes e bloqueios](HOMOLOGACAO_2026-11-17.md) — homologação funcional parcial; bases reais ainda não reconciliadas.
+**Homologação com estoque real:** [conferir parecer da BASE_ESTOQUE 16.11 (17/11/2026)](HOMOLOGACAO_ESTOQUE_REAL_2026-11-17.md) e [evidências da execução no GitHub Actions](https://github.com/thatazrsss-alt/Carteira-reversa/actions/runs/44083836035). Malha/CAD, SKU/fábrica, de-para e grades CD conferidos com dados reais; **Observação histórica, superada pela localização posterior da Order.zip**; veja o parecer mais recente acima.
 
-**[Parecer de homologação técnica v29](HOMOLOGACAO_v29_2026-11-16.md)** — cenários controlados aprovados; homologação operacional com Order e estoque reais ainda pendente.
+
+**Parecer de homologação 17/11/2026:** [abrir relatório de testes e bloqueios](HOMOLOGACAO_2026-11-17.md) — **registro anterior à localização da Order.zip**; veja o parecer atualizado acima.
+
+**[Parecer de homologação técnica v29](HOMOLOGACAO_v29_2026-11-16.md)** — cenários controlados aprovados; **registro anterior à reconciliação com fontes reais**; veja o parecer atualizado acima.
 
 **Versão base:** v28 preservada. **Painel:** [Abrir HTML v29](Carteira_Reversa_Gerencial_v29_Conciliacao_Formacao_Origem.html).
 
@@ -17,13 +20,15 @@
 | Movimentos | Atualizada, Marcado (= Carro com Remessa), Carro sem Remessa, Faturado, somados por movimento; **não somar Marcado com outro cabeçalho de Carro com Remessa** |
 | Pendente CX | Soma por linha de Atualizada − Marcado − Carro sem Remessa − Faturado; ausências/erros de coluna permanecem não calculados |
 | Fill rate | Faturado CX / Original CX, 0–100% na visualização, com alerta para excesso bruto; Marcado não equivale a Faturado |
-| CAD | EG → SAP exclusivamente no cruzamento de Malha; caixas por pallet por SKU, sem conversão fictícia; fatores conflitantes bloqueados |
+| CAD | SKU EG = `Cód_Prod` → SAP usado na Malha = `Cod S4` (não `Cod_SAP` nesta base); fator `Quantidade_prod_pallet` CX/PLT; conflitos bloqueados |
 | Malha | Destino Comercial + SKU SAP → origens VD autorizadas |
 | Estoque VD | SKU EG + mesma origem/fábrica; D1 em PLT, comparado a Pendente CX / CAD |
 | CDD | Loja/EG → DeParaCDD; SKU EG sem último dígito → Grade desse CDD; estoque em CX, sem confundir com VD |
 | Produção | Origem + SKU EG + data prevista; NÃO soma ao estoque disponível nem constitui volume faturável |
 | Formação VD | Soma apenas SKUs qualificados **na mesma origem**, limitada ao D1 de cada SKU inclusive entre vários pedidos; 1 carro potencial = 24 PLT; origens alternativas explicitadas |
 | Atendimento | SKU considerado atendido apenas com pendente zerado **e** movimento positivo em Marcado/Faturado; parciais separados; cobertura calculada somente para pendentes |
+| Tipo Pedido | `ASCD` → CD, `ASVD` → VD; mesma chave com tipos mistos → canal `MISTO`, sem qualificação automática |
+| Unidade | `CX` direto, `PLT` apenas com fator CAD único; `DZ/UN/PC` não convertidos sem regra oficial |
 | Exportações | Cliente: recorte por rede sem saldos internos; interno: Conciliação, Origens VD, Formação VD, com código/nome de origem e Pendente PLT |
 
 ## Conciliação e alertas novos
@@ -43,6 +48,6 @@
 
 ## Limites e homologação
 
-Os testes acima usam cenários controlados. A **Order real e o BASE_ESTOQUE real completos não foram homologados** nesta execução. A formação é potencial (não reserva, não despacho, não garantia). Estoque pode estar comprometido em pedidos fora do filtro; as alternativas de origem não podem ser somadas para afirmar atendimento. Posições e unidades não identificadas devem bloquear estimativas, não gerar zeros fictícios.
+Os testes acima são cenários controlados originais da v29. **Posteriormente, a Order.zip e a BASE_ESTOQUE 16.11 foram realmente processadas em conjunto**, e o parecer completo está no início deste documento. A homologação permanece **parcial**, porque as chaves mistas, unidades não convertíveis, originais divergentes e a inexistência de Pendente independente na Order impedem aprovação irrestrita. A formação é potencial (não reserva, não despacho, não garantia). Estoque pode estar comprometido em pedidos fora do filtro; as alternativas de origem não podem ser somadas para afirmar atendimento. Posições e unidades não identificadas devem bloquear estimativas, não gerar zeros fictícios.
 
 Valide especialmente: cabeçalhos reais de Marcado / Carro com Remessa / Faturado, sobreposição temporal entre movimentos, alternativas de origem e fatores CAD por SKU.
