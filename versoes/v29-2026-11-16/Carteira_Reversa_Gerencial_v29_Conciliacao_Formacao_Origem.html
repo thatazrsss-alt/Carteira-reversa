@@ -871,8 +871,9 @@ function cadOriginName(value,type){
  return hit?.name||text(value)||'Não identificada';
 }
 function getCad(o){
- const byEg=productIndexed(S.data.cad,'eg',o.eg,'cadEG'),bySap=o.sap?getIndexed('cadSAP',norm(o.sap)):[];
- const found=byEg.length?byEg:bySap,keys=[...new Set(found.map(c=>norm(c.sap)))];
+ // SKU EG da Order precisa encontrar SKU EG na CAD antes de consultar Malha.
+ const found=productIndexed(S.data.cad,'eg',o.eg,'cadEG');
+ const keys=[...new Set(found.map(c=>norm(c.sap)).filter(Boolean))];
  if(keys.length!==1||!found.length)return null;
    const ratios=[...new Set(found.map(c=>c.cxPlt).filter(x=>x>0))];
    if(ratios.length>1)return {...found[0],cxPlt:null,cadConflict:true};
