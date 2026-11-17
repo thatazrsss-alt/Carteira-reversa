@@ -1,0 +1,31 @@
+name: QA HTML v29 insumos reais
+on:
+  push:
+    paths:
+      - '.github/workflows/insumos_qa_html_v29.yml'
+permissions:
+  contents: read
+jobs:
+  test-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conferir integridade dos dois insumos
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+          for name in ('Order.zip','BASE_ESTOQUE 16.11.xlsx'):
+            file=Path(name)
+            if not file.exists():raise ValueError('Missing '+name)
+            with zipfile.ZipFile(file) as z:
+              if z.testzip() is not None: raise ValueError('Bad ZIP: '+name)
+            print('OK input:',name,file.stat().st_size,'bytes')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: insumos-qa-order-e-estoque
+          path: |
+            Order.zip
+            BASE_ESTOQUE 16.11.xlsx
+          retention-days: 1
