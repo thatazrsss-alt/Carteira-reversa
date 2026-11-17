@@ -1,4 +1,7 @@
 # Homologação real das fontes de estoque — Carteira Reversa v29
+
+> **ATUALIZAÇÃO POSTERIOR EM 17/11/2026:** a Order.zip foi localizada no repositório e reconciliada com a BASE_ESTOQUE. Este documento é histórico e suas referências à ausência da Order estão superadas. Consulte o [parecer de homologação real mais recente](HOMOLOGACAO_REAL_ORDER_ESTOQUE_2026-11-17.md). O status permanece **parcial**, com exceções documentadas.
+
 **Data da execução:** 17/11/2026
 **Escopo:** BASE_ESTOQUE 16.11.xlsx lida diretamente no repositório pelo GitHub Actions, com cruzamentos de dados efetivos entre CAD, Malha, Estoque Fábricas, grades CD, DeParaCDD e Produção.
 
