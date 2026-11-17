@@ -1095,33 +1095,36 @@ function managerOrders(rs){
  });
 }
 function originFormation(rows){
- // Network-wide scenario per origin and SKU, capped by each SKU's available D1.
- // This is NOT stock reservation and does not add distinct origins together.
- const skuAtOrigin=new Map();
+ // Cenários potenciais independentes por fábrica. Centros diferentes não são somados.
+ // O D1 de um SKU na mesma origem não pode ser duplicado em pedidos diferentes.
+ const items=new Map(), alternatives=new Map();
  for(const r of rows){
   if(r.channel!=='VD'||!(r.pending>0)||!r.originDetails.length)continue;
-  for(const o of r.originDetails){
-   const k=o.center+'|'+norm(r.eg);
-   if(!skuAtOrigin.has(k))skuAtOrigin.set(k,{code:o.center,name:o.name,sku:r.eg,pending:0,stock:o.pallets});
-   const entry=skuAtOrigin.get(k);
-   if(r.pendingPlt!=null)entry.pending+=r.pendingPlt;else entry.unknown=true;
-   if(o.pallets==null)entry.stock=null;
-   else if(entry.stock!=null)entry.stock=Math.min(entry.stock,o.pallets);
+  for(const x of r.originDetails){
+   const sku=norm(r.eg),key=x.center+'|'+sku;
+   if(!alternatives.has(sku))alternatives.set(sku,new Set());
+   alternatives.get(sku).add(x.center);
+   if(!items.has(key))items.set(key,{code:x.center,name:x.name,sku:r.eg,pending:0,stock:x.pallets,unknown:false});
+   const v=items.get(key);
+   if(r.pendingPlt==null)v.unknown=true;else v.pending+=r.pendingPlt;
+   if(x.pallets==null)v.stock=null;else if(v.stock!=null)v.stock=Math.min(v.stock,x.pallets);
   }
  }
- const byCenter=new Map();
- for(const e of skuAtOrigin.values()){
-  if(!byCenter.has(e.code))byCenter.set(e.code,{code:e.code,name:e.name,pendingPlt:0,qualifiedPlt:0,known:true,skus:0});
-  const g=byCenter.get(e.code);g.skus++;
-  if(e.unknown)g.known=false;else g.pendingPlt+=e.pending;
-  if(e.stock!=null&&!e.unknown)g.qualifiedPlt+=Math.min(Math.max(0,e.stock),e.pending);
+ const centers=new Map();
+ for(const v of items.values()){
+  if(!centers.has(v.code))centers.set(v.code,{code:v.code,name:v.name,pendingPlt:0,qualifiedPlt:0,known:true,skus:0,alternativeSKUs:0,invalidSKUs:0});
+  const g=centers.get(v.code);g.skus++;
+  if(alternatives.get(norm(v.sku)).size>1)g.alternativeSKUs++;
+  if(v.unknown||v.stock==null){g.known=false;g.invalidSKUs++;}
+  if(!v.unknown)g.pendingPlt+=v.pending;
+  if(v.stock!=null&&!v.unknown)g.qualifiedPlt+=Math.min(Math.max(0,v.stock),v.pending);
  }
- return [...byCenter.values()].map(g=>({...g,fullCars:Math.floor(g.qualifiedPlt/24),missingPlt:g.qualifiedPlt>=24?0:24-g.qualifiedPlt})).sort((a,b)=>b.qualifiedPlt-a.qualifiedPlt);
+ return [...centers.values()].map(g=>({...g,fullCars:Math.floor(g.qualifiedPlt/24),missingPlt:24-(g.qualifiedPlt%24)})).sort((a,b)=>b.qualifiedPlt-a.qualifiedPlt);
 }
 function renderOriginFormation(rows){
  const dest=$('originFormation');if(!dest)return;
  const list=originFormation(rows);
- dest.innerHTML=list.length?`<div class="visual-section-title"><div><span class="overline">MALHA VD</span><h3>Potencial de formação por origem</h3></div><span class="visual-section-mark">1 CARRO = 24 PLT</span></div><div class="scroller"><table style="min-width:770px"><thead><tr><th>Origem</th><th>SKUs</th><th>Pendente PLT</th><th>Qualificado PLT</th><th>Carros potenciais</th><th>Faltam p/ 24 PLT</th><th>Situação</th></tr></thead><tbody>${list.map(o=>`<tr><td><b>${esc(o.name)}</b><div class="small">${esc(o.code)}</div></td><td>${o.skus}</td><td>${o.known?fmt(o.pendingPlt):'Validar CAD'}</td><td><b>${fmt(o.qualifiedPlt)}</b></td><td>${o.fullCars}</td><td>${fmt(o.missingPlt)}</td><td>${o.fullCars?'<span class="pill">Potencial ≥ 24 PLT</span>':'<span class="pill orange">Abaixo de 24 PLT</span>'}</td></tr>`).join('')}</tbody></table></div><div class="small" style="margin:9px 0 17px">Volume indicativo por fábrica, SKU e pedidos filtrados, limitado ao D1 por SKU. Não é reserva nem soma entre fábricas distintas.</div>`:'<div class="small">Nenhuma origem VD autorizada identificada no filtro.</div>';
+ dest.innerHTML=list.length?`<div class="visual-section-title"><div><span class="overline">MALHA VD</span><h3>Potencial de formação por origem</h3></div><span class="visual-section-mark">1 CARRO = 24 PLT</span></div><div class="scroller"><table style="min-width:770px"><thead><tr><th>Origem</th><th>SKUs</th><th>Pendente PLT</th><th>Qualificado PLT</th><th>Carros potenciais</th><th>Faltam p/ próximo carro</th><th>SKUs alternativos</th><th>Situação</th></tr></thead><tbody>${list.map(o=>`<tr><td><b>${esc(o.name)}</b><div class="small">${esc(o.code)}</div></td><td>${o.skus}</td><td>${o.known?fmt(o.pendingPlt):'Validar CAD'}</td><td><b>${fmt(o.qualifiedPlt)}</b></td><td>${o.fullCars}</td><td>${fmt(o.missingPlt)}</td><td>${o.alternativeSKUs}</td><td>${o.fullCars?'<span class="pill">Potencial ≥ 24 PLT</span>':'<span class="pill orange">Abaixo de 24 PLT</span>'}</td></tr>`).join('')}</tbody></table></div><div class="small" style="margin:9px 0 17px">Volume potencial por fábrica, SKU e pedidos filtrados, limitado ao D1 por SKU. SKU em múltiplas fábricas representa alternativa, não soma. CAD/estoque faltante reduz a confiabilidade. Não é reserva nem promessa de atendimento.</div>`:'<div class="small">Nenhuma origem VD autorizada identificada no filtro.</div>';
 }
 
 function shibataSegment(r){
@@ -1442,9 +1445,9 @@ function buildExcel(net,internal=false){
  });
  // Technical reconciliation is INTERNAL only; never disclose stock or production source data in customer exports.
  if(internal){
- const reconHeaders=['Pedido ERP','Cliente EG','SKU EG','Canal','Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Marcado CX (Carro c/ remessa)','Carro s/ remessa CX','Faturado CX','Pendente CX','Diferença CX','Linhas movimento','Alertas'];
- tab('Conciliação',reconHeaders,data.map(r=>[r.order,r.clientId,r.eg,r.channel,r.initialHL,r.initialPlt,r.initial,r.updated,r.carWith,r.carWithout,r.billed,r.pending,r.diff,r.movementRows||1,r.issues]),{
-   numbers:['Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Marcado CX (Carro c/ remessa)','Carro s/ remessa CX','Faturado CX','Pendente CX','Diferença CX','Linhas movimento'],
+ const reconHeaders=['Pedido ERP','Cliente EG','SKU EG','Canal','Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Marcado CX (Carro c/ remessa)','Carro s/ remessa CX','Faturado CX','Pendente CX','Fechamento dos movimentos CX','Inicial - faturado - pendente (informativo) CX','Conflitos Marcado/Remessa','Possível sobreposição','Linhas movimento','Alertas'];
+ tab('Conciliação',reconHeaders,data.map(r=>[r.order,r.clientId,r.eg,r.channel,r.initialHL,r.initialPlt,r.initial,r.updated,r.carWith,r.carWithout,r.billed,r.pending,r.movementDelta,r.diff,r.aliasConflictCount||0,r.overlapSuspectCount||0,r.movementRows||1,r.issues]),{
+   numbers:['Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Marcado CX (Carro c/ remessa)','Carro s/ remessa CX','Faturado CX','Pendente CX','Fechamento dos movimentos CX','Inicial - faturado - pendente (informativo) CX','Conflitos Marcado/Remessa','Possível sobreposição','Linhas movimento'],
    emphasis:['Pedido ERP','Pendente CX'],widths:{'Cliente EG':16,'SKU EG':14,'Alertas':30}
  });
  const origins=data.flatMap(r=>r.channel!=='VD'?[]:r.originDetails.map(x=>[r.order,r.clientId,r.eg,r.commercial,x.center,x.name,x.pallets,x.pendingPlt,x.qualifiedPlt,x.qualification,x.productionDate,x.productionStatus,x.center===r.primary?'Sim':'',r.pending]));
@@ -1452,7 +1455,7 @@ function buildExcel(net,internal=false){
    numbers:['Estoque D1 PLT','Pendente PLT','Potencial qualificado PLT','Pendente CX'],dates:['Data produção'],emphasis:['Pedido ERP'],widths:{'Fábrica':25,'Qualificação VD':19,'Origem':14,'Comercial':18}
  });
  const formation=originFormation(data);
- if(formation.length)tab('Formação VD', ['Origem','Nome origem','SKUs','Pendente PLT','Potencial qualificado PLT','Carros 24 PLT','Faltam p/ 24 PLT','Qualificação'],formation.map(x=>[x.code,x.name,x.skus,x.known?x.pendingPlt:null,x.qualifiedPlt,x.fullCars,x.missingPlt,x.fullCars?'Potencial de carro':'Abaixo de 24 PLT']),{numbers:['SKUs','Pendente PLT','Potencial qualificado PLT','Carros 24 PLT','Faltam p/ 24 PLT'],widths:{'Nome origem':25,'Qualificação':27}});
+ if(formation.length)tab('Formação VD', ['Origem','Nome origem','SKUs','Pendente PLT','Potencial qualificado PLT','Carros 24 PLT','Faltam p/ próximo carro','SKUs alternativos','Qualificação'],formation.map(x=>[x.code,x.name,x.skus,x.known?x.pendingPlt:null,x.qualifiedPlt,x.fullCars,x.missingPlt,x.alternativeSKUs,x.fullCars?'Potencial de carro':'Abaixo de 24 PLT']),{numbers:['SKUs','Pendente PLT','Potencial qualificado PLT','Carros 24 PLT','Faltam p/ próximo carro','SKUs alternativos'],widths:{'Nome origem':25,'Qualificação':27}});
  } // end internal technical sheets
  // Preserve Order original only in explicit INTERNAL export.
  const originals=(!internal||!$('includeRawOrder').checked)?[]:(S.demo?data.flatMap(r=>r.raw&&Object.keys(r.raw).length?[r.raw]:[]):(S.data.sourceOrders||[]).filter(r=>norm(field(r,'network'))===norm(net)));
