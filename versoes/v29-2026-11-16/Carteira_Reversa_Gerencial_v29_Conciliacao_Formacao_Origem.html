@@ -414,7 +414,7 @@ function convertOrderBalances(){
   const candidates=productIndexed(S.data.cad,'eg',o.eg,'cadEG').filter(c=>c.cxPlt>0);
   const ratios=[...new Set(candidates.map(x=>x.cxPlt))];const ratio=ratios.length===1?ratios[0]:null;
   const source=o.rawMovements||[o.raw];
-  let totals={updated:0,carWith:0,carWithout:0,billed:0,pending:0},complete=true,converted=0,aliasConflicts=0,overlapSuspects=0;
+  let totals={updated:0,carWith:0,carWithout:0,billed:0,pending:0},complete=true,converted=0,aliasConflicts=0,overlapSuspects=0,reportedPending=0,reportedKnown=true;
   for(const r of source){
    const unitKey=Object.keys(r).find(k=>/^(unidade (da )?(quantidade|movimento)|unidade qtd|unid(ade)? (pedido|saldo)|unidade medida)$/i.test(norm(k)));
    const v=norm(unitKey?r[unitKey]:'');const factor=/palet|pallet|plt/.test(v)?ratio:1;
@@ -424,7 +424,10 @@ function convertOrderBalances(){
     if(hm&&hr){const a=amount(r[hm]),b=amount(r[hr]);if(a!=null&&b!=null&&Math.abs(a-b)>0.000001)aliasConflicts++;}
    const names={updated:'updated',carWith:'carWith',carWithout:'carWithout',billed:'billed'};
    const raw=Object.fromEntries(Object.keys(names).map(k=>[k,movementValue(r,k)]));
-   if(Object.values(raw).some(x=>x===null)||!factor){complete=false;continue;}
+   const fromSource=movementValue(r,'pending');
+   if(fromSource===null)reportedKnown=false;
+   if(Object.values(raw).some(x=>x===null)||!factor){complete=false;reportedKnown=false;continue;}
+   if(fromSource!==null)reportedPending+=fromSource*factor;
    converted+=(factor!==1?1:0);
    for(const k of Object.keys(names))totals[k]+=raw[k]*factor;
    totals.pending+=(raw.updated-raw.carWith-raw.carWithout-raw.billed)*factor;
@@ -438,6 +441,10 @@ function convertOrderBalances(){
    if(overlapSuspects)o.issuesInitial.push(overlapSuspects+' movimento(s): Marcado + Faturado superior a Atualizada; verificar sobreposição');
    o.aliasConflictCount=aliasConflicts;o.overlapSuspectCount=overlapSuspects;
    o.movementDelta=complete?totals.updated-totals.carWith-totals.carWithout-totals.billed-totals.pending:null;
+   o.pendingReported=complete&&reportedKnown?reportedPending:null;
+   o.pendingVsSourceDelta=o.pendingReported==null?null:totals.pending-o.pendingReported;
+   if(o.pendingVsSourceDelta!=null&&Math.abs(o.pendingVsSourceDelta)>0.000001)
+     o.issuesInitial.push('Pendente calculado diverge do Pendente informado na Order em '+fmt(o.pendingVsSourceDelta)+' CX');
   if(o.initial==null&&o.initialPlt!=null){if(ratio){o.initial=o.initialPlt*ratio;o.issuesInitial.push('Original em CX derivado de PLT × CAD, pois W não foi identificado');}
    else o.issuesInitial.push('Original W ausente e fator CAD indisponível');}
   o.fillRate=o.initial>0&&o.billed!=null?Math.max(0,Math.min(100,100*o.billed/o.initial)):null;
@@ -1004,6 +1011,7 @@ function serviceStatus(r){
  if(r.pending<0)return 'Saldo negativo — validar';
  const movement=(r.carWith||0)+(r.billed||0);
  if(r.pending===0){
+   if((r.aliasConflictCount||0)>0||(r.overlapSuspectCount||0)>0)return 'Atendimento a validar — movimentos divergentes';
    if(!(r.updated>0)||!(movement>0))return 'Sem saldo, atendimento não comprovado';
    if((r.carWithout||0)>0)return 'Sem saldo, contém carro sem remessa';
    if(movement+0.000001<r.updated)return 'Sem saldo, atendimento parcial';
@@ -1452,9 +1460,9 @@ function buildExcel(net,internal=false){
  });
  // Technical reconciliation is INTERNAL only; never disclose stock or production source data in customer exports.
  if(internal){
- const reconHeaders=['Pedido ERP','Cliente EG','SKU EG','Canal','Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Marcado CX (Carro c/ remessa)','Carro s/ remessa CX','Faturado CX','Pendente CX','Fechamento dos movimentos CX','Inicial - faturado - pendente (informativo) CX','Conflitos Marcado/Remessa','Possível sobreposição','Linhas movimento','Alertas'];
- tab('Conciliação',reconHeaders,data.map(r=>[r.order,r.clientId,r.eg,r.channel,r.initialHL,r.initialPlt,r.initial,r.updated,r.carWith,r.carWithout,r.billed,r.pending,r.movementDelta,r.diff,r.aliasConflictCount||0,r.overlapSuspectCount||0,r.movementRows||1,r.issues]),{
-   numbers:['Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Marcado CX (Carro c/ remessa)','Carro s/ remessa CX','Faturado CX','Pendente CX','Fechamento dos movimentos CX','Inicial - faturado - pendente (informativo) CX','Conflitos Marcado/Remessa','Possível sobreposição','Linhas movimento'],
+ const reconHeaders=['Pedido ERP','Cliente EG','SKU EG','Canal','Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Marcado CX (Carro c/ remessa)','Carro s/ remessa CX','Faturado CX','Pendente CX','Conferência algébrica CX (não prova fonte)','Pendente informado Order CX','Diferença cálculo vs Order CX','Inicial - faturado - pendente (informativo) CX','Conflitos Marcado/Remessa','Possível sobreposição','Linhas movimento','Alertas'];
+ tab('Conciliação',reconHeaders,data.map(r=>[r.order,r.clientId,r.eg,r.channel,r.initialHL,r.initialPlt,r.initial,r.updated,r.carWith,r.carWithout,r.billed,r.pending,r.movementDelta,r.pendingReported,r.pendingVsSourceDelta,r.diff,r.aliasConflictCount||0,r.overlapSuspectCount||0,r.movementRows||1,r.issues]),{
+   numbers:['Original HL (U)','Original PLT (V)','Original CX (W)','Qtd. Atualizada CX','Marcado CX (Carro c/ remessa)','Carro s/ remessa CX','Faturado CX','Pendente CX','Conferência algébrica CX (não prova fonte)','Pendente informado Order CX','Diferença cálculo vs Order CX','Inicial - faturado - pendente (informativo) CX','Conflitos Marcado/Remessa','Possível sobreposição','Linhas movimento'],
    emphasis:['Pedido ERP','Pendente CX'],widths:{'Cliente EG':16,'SKU EG':14,'Alertas':30}
  });
  const origins=data.flatMap(r=>r.channel!=='VD'?[]:r.originDetails.map(x=>[r.order,r.clientId,r.eg,r.commercial,x.center,x.name,x.pallets,x.pendingPlt,x.qualifiedPlt,x.qualification,x.productionDate,x.productionStatus,x.center===r.primary?'Sim':'',r.pending]));
