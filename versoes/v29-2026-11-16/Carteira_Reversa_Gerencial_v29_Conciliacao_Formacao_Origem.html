@@ -889,7 +889,7 @@ function skuDescription(o){
 }
 function stockLabel(p){if(p==null)return 'Não localizado';if(p<=0)return 'Sem estoque';return 'Estoque identificado'}
 function analyze(o){
- let ch=S.channels[id(o)]||{},cad=getCad(o),sap=cad?.sap||o.sap,ratio=cad?.cxPlt||null;
+ let ch=S.channels[id(o)]||{},cad=getCad(o),sap=cad?.sap||'',ratio=cad?.cxPlt||null;
  let problems=[...(o.issuesInitial||[])],stock=null,stockPlt=null,prod=null,prodPlt=null,which='',primary='',qual='Não localizado',originDetails=[],cdDate='',cdStatus='';
   if(cad?.cadConflict)problems.push('CAD com fatores CX/PLT conflitantes: conversão não homologada');
  let date=$('referenceDate').value||today(),valid=o.validity?o.validity>=date:null;
@@ -898,7 +898,7 @@ function analyze(o){
  if(o.pending!=null&&o.pending<0)problems.push('Pendente negativo: verificar movimentos');
  if(o.initial>0&&o.billed!=null&&o.billed>o.initial)problems.push('Faturado superior ao original: indicador visual limitado a 100%, revisar conciliação');
  if(!o.validity)problems.push('Validade ausente');
- if(ch.mode==='VD'&&!sap)problems.push('CAD sem conversão EG → SAP para consultar a Malha');
+ if(ch.mode==='VD'&&!sap)problems.push('CAD sem conversão validada EG → SAP; SAP da Order não substitui o de/para da CAD');
  if(ch.mode==='CD'){
   which=ch.center?`${ch.center} · CDD`:'CDD não identificado';primary=ch.center||'';
   qual='Não localizado';
@@ -1001,8 +1001,14 @@ function analyze(o){
 function serviceStatus(r){
  if(r.pending==null)return 'Não validado';
  if(r.pending<0)return 'Saldo negativo — validar';
- const movement=(r.carWith||0)+(r.billed||0)>0;
- return r.pending===0?(movement?'Atendido':'Sem saldo, atendimento não comprovado'):(movement?'Parcialmente atendido':'Ainda não atendido');
+ const movement=(r.carWith||0)+(r.billed||0);
+ if(r.pending===0){
+   if(!(r.updated>0)||!(movement>0))return 'Sem saldo, atendimento não comprovado';
+   if((r.carWithout||0)>0)return 'Sem saldo, contém carro sem remessa';
+   if(movement+0.000001<r.updated)return 'Sem saldo, atendimento parcial';
+   return 'Atendido';
+ }
+ return movement>0?'Parcialmente atendido':'Ainda não atendido';
 }
 function hasFullCoverage(r){return r.pending>0&&r.stock!=null&&r.stock>=r.pending&&(r.channel!=='VD'||r.ratio>0)}
 function publicStockQualification(r){
