@@ -456,6 +456,11 @@ function convertOrderBalances(){
 
  function resolveVdRowOrigin(row){
    const headers=Object.keys(row).filter(x=>typeof x==='string');
+   const get=n=>{const h=headers.find(x=>norm(x)===n);return h?text(row[h]):'';};
+   const byBR=resolveCenter(get('orig s4'),'VD');
+   const byPCA=resolveCenter(get('orig pca'),'VD');
+   if(byBR&&byPCA)return byBR.list===byPCA.list?byBR.list:'';
+   if(byBR||byPCA)return (byBR||byPCA).list;
    const names=['orig s4','orig ecc','orig pca','fabrica','origem'];
    const options=[];
    for(const name of names){
@@ -488,6 +493,35 @@ function convertOrderBalances(){
    S.data.dpar=maprows('dpar').map(r=>({clientId:text(field(r,'clientId')),client:text(field(r,'client')),center:text(field(r,'center')||field(r,'origin'))})).filter(x=>x.clientId||x.client);
    // VD: distinguish independent source copies from independent stock.
    // Identical SKU/origin/attribute snapshots from two Excel files must NEVER add up.
+   // De/para VD oficial descoberto no próprio Estoque Fábricas:
+   // Orig. S4 (BR) + Orig. PCA (código EG) + Fábrica (nome).
+   // Na base real 16.11 os 40 BR observados possuem correspondência PCA única.
+   // Não inventar centro nem atribuir CDD a estoque de fábrica VD.
+   const vdMappings=new Map(),vdInconsistent=new Set();
+   for(const sheet of (chosen.vd||[]))for(const r of (sheet.rows||[])){
+     const find=n=>{const key=Object.keys(r).find(x=>norm(x)===n);return key?text(r[key]):'';};
+     const br=find('orig s4').toUpperCase(),code=find('orig pca'),label=find('fabrica');
+     if(!/^BR[A-Z0-9]{2}$/.test(br)||!/^\d+$/.test(code)||/^cdd\b/.test(norm(label)))continue;
+     const prev=vdMappings.get(br);
+     if(prev&&prev.center!==code)vdInconsistent.add(br);
+     else if(!prev)vdMappings.set(br,{br,center:code,name:label||br,type:'VD',list:code+'-VD'});
+   }
+   let mappedAdded=0;
+   for(const [br,c] of vdMappings){
+     if(vdInconsistent.has(br))continue;
+     const existing=CENTERS.find(x=>x.type==='VD'&&x.br===br);
+     if(existing){
+       if(existing.center!==c.center)S.problems.push('Conflito de origem VD '+br+': referência '+existing.center+' versus estoque '+c.center);
+       continue;
+     }
+     if(CENTERS.some(x=>x.type==='VD'&&x.center===c.center)){
+       S.problems.push('Centro VD '+c.center+' relacionado a mais de um BR: '+br);
+       continue;
+     }
+     CENTERS.push(c);mappedAdded++;
+   }
+   if(vdInconsistent.size)S.problems.push('Origens VD com códigos PCA divergentes: '+[...vdInconsistent].join(', '));
+   if(mappedAdded)S.info.push(mappedAdded+' origens VD adicionais identificadas pelo de/para BR/PCA/nome da base Estoque Fábricas.');
    const vdCombined=(chosen.vd||[]).flatMap(sheet=>(sheet.rows||[]).map(r=>({
      eg:codeEG(field(r,'eg')),origin:resolveVdRowOrigin(r),
      pallets:amount(field(r,'pallets')),attribute:text(field(r,'attribute')),name:text(field(r,'productName')),
