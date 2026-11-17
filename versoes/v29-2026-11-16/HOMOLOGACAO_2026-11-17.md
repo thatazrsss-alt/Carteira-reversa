@@ -1,5 +1,8 @@
 # Homologação técnica v29 — 17/11/2026
 
+> **ATUALIZAÇÃO POSTERIOR EM 17/11/2026:** a Order.zip foi localizada no repositório e reconciliada com a BASE_ESTOQUE. Este documento é histórico e suas referências à ausência da Order estão superadas. Consulte o [parecer de homologação real mais recente](HOMOLOGACAO_REAL_ORDER_ESTOQUE_2026-11-17.md). O status permanece **parcial**, com exceções documentadas.
+
+
 **Status: HOMOLOGAÇÃO FUNCIONAL PARCIAL. NÃO HOMOLOGADO COM BASES REAIS COMPLETAS.**
 
 ## Fontes localizadas
