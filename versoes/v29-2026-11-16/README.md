@@ -1,5 +1,7 @@
 # Carteira Reversa — Gerencial v29 (16/11/2026)
 
+**Parecer de homologação 17/11/2026:** [abrir relatório de testes e bloqueios](HOMOLOGACAO_2026-11-17.md) — homologação funcional parcial; bases reais ainda não reconciliadas.
+
 **[Parecer de homologação técnica v29](HOMOLOGACAO_v29_2026-11-16.md)** — cenários controlados aprovados; homologação operacional com Order e estoque reais ainda pendente.
 
 **Versão base:** v28 preservada. **Painel:** [Abrir HTML v29](Carteira_Reversa_Gerencial_v29_Conciliacao_Formacao_Origem.html).
