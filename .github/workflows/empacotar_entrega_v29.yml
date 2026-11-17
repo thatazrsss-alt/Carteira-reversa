@@ -1,0 +1,46 @@
+name: Pacote final Carteira Reversa v29
+on:
+  push:
+    paths:
+      - '.github/workflows/empacotar_entrega_v29.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  empacotar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Organizar entrega final atual do repositorio
+        run: |
+          mkdir -p entrega/HTML entrega/Homologacao entrega/Script
+          cp versoes/v29-2026-11-16/Carteira_Reversa_Gerencial_v29_Conciliacao_Formacao_Origem.html entrega/HTML/Carteira_Reversa_Gerencial_v29_Final.html
+          cp versoes/v29-2026-11-16/HOMOLOGACAO_REAL_ORDER_ESTOQUE_2026-11-17.md entrega/Homologacao/
+          cp versoes/v29-2026-11-16/HOMOLOGACAO_ESTOQUE_REAL_2026-11-17.md entrega/Homologacao/
+          cp versoes/v29-2026-11-16/README.md entrega/Homologacao/README_v29.md
+          cp scripts/reconciliar_order_v29.py entrega/Script/
+          cat > entrega/LEIA_ME.txt <<'TXT'
+          CARTEIRA REVERSA - VERSAO FINAL CONSOLIDADA V29 - 17/11/2026
+          
+          HTML/Carteira_Reversa_Gerencial_v29_Final.html
+          Painel interativo. Abrir no navegador; carregar Order.zip e BASE_ESTOQUE 16.11.xlsx.
+          
+          Homologacao/
+          Pareceres tecnicos reais. Auditoria Python executada no GitHub Actions.
+          
+          Script/
+          Reconciliacao reproduzivel de Order e Estoque.
+          
+          A homologacao operacional esta PARCIAL: tipos ASCD/ASVD mistos,
+          unidades nao convertiveis, originais divergentes e ausencia de
+          Pendente independente na Order exigem tratamento.
+          
+          Arquivos detalhados CSV e Excel sao entregues separadamente para
+          nao misturar dados operacionais sensiveis a este pacote HTML.
+          TXT
+          ls -lh entrega/HTML/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pacote-final-html-v29
+          path: entrega/
+          retention-days: 30
