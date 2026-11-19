@@ -1731,7 +1731,7 @@ analyze=function(o){
   }
  }
  r.fillRate=r.initial>0&&r.billed!=null&&r.carWith!=null?100*(r.billed+r.carWith)/r.initial:null;
- r.itemAttended=r.billed!=null&&r.carWith!=null&&(r.billed>0||r.carWith>0);
+ r.itemAttended=(r.billed!=null&&r.billed>0)||(r.carWith!=null&&r.carWith>0)||(o.rawMovements||[]).some(m=>movementValue(m,"billed")>0||movementValue(m,"carWith")>0);
  r.criticity=critical31(r.stockPlt);
  if(r.channel==="CD"&&r.pending!=null&&r.pending>0){
   r.cdQualification=r.stock==null?"Estoque não identificado":r.stock<=0?"Sem estoque disponível":r.stock>=r.pending?"Estoque atende o pedido":"Estoque atende parcialmente";
