@@ -2251,4 +2251,79 @@ const all=document.querySelectorAll(".topnav .tab[data-tab]");
 for(const tab of all)if(tab.dataset.tab==="analise")tab.title="Painel v31 com composição efetiva de carros por Cliente EG e origem";
 })();
 </script>
+<script>
+
+(function(){
+"use strict";
+const originalRows31=analysisRows,originalExcel31=buildExcel;
+const N=x=>String(x??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+function cdAndMixed31(rows){
+ if(rows.__extra31)return rows;
+ Object.defineProperty(rows,"__extra31",{value:true,configurable:true});
+ const consumed=new Map();
+ for(const r of rows){
+  if(r.channel!=="CD"||!(r.pending>0))continue;
+  const key=[r.network,r.clientId,r.eg,r.center].map(N).join("|");
+  const old=consumed.get(key)||0;
+  const stock=r.stock==null?null:Math.max(0,r.stock);
+  const covered=stock==null?null:Math.min(Math.max(0,stock-old),Math.max(0,r.pending));
+  r.cdQualifiedCX=covered;
+  r.cdUncoveredCX=covered==null?null:Math.max(0,r.pending-covered);
+  r.cdQualification=covered==null?"Estoque não identificado":covered<=0?"Sem estoque disponível":covered+1e-7>=r.pending?"Estoque atende o pedido":"Estoque atende parcialmente";
+  if(covered!=null)consumed.set(key,old+covered);
+ }
+ for(const r of rows){
+  if(r.channel!=="MISTO")continue;
+  const by={ASVD:{updated:0,carWith:0,carWithout:0,billed:0,valid:true,count:0},ASCD:{updated:0,carWith:0,carWithout:0,billed:0,valid:true,count:0}};
+  for(const raw of r.rawMovements||[]){
+   const col=Object.keys(raw).find(x=>N(x)==="tipo pedido");
+   const type=N(col?raw[col]:"").toUpperCase(),t=by[type];
+   if(!t)continue;
+   t.count++;
+   for(const k of ["updated","carWith","carWithout","billed"]){
+    const z=movementValue(raw,k);
+    if(z==null)t.valid=false;else t[k]+=z;
+   }
+  }
+  const factor=r.unit==="CX"?1:r.unit==="PLT"&&r.ratio>0?r.ratio:null;
+  r.channelMovements=Object.entries(by).map(([type,m])=>({
+   type,count:m.count,unit:r.unit,valid:m.valid&&factor!=null,
+   updated:m.valid&&factor!=null?m.updated*factor:null,
+   marked:m.valid&&factor!=null?m.carWith*factor:null,
+   without:m.valid&&factor!=null?m.carWithout*factor:null,
+   billed:m.valid&&factor!=null?m.billed*factor:null,
+   pending:m.valid&&factor!=null?(m.updated-m.carWith-m.carWithout-m.billed)*factor:null
+  }));
+  const parts=r.channelMovements;
+  const total=parts.every(z=>z.pending!=null)?parts.reduce((a,z)=>a+z.pending,0):null;
+  r.mixedReconciled=total!=null&&r.pending!=null&&Math.abs(total-r.pending)<0.001;
+  r.issues=[r.issues,"Chave ASCD/ASVD mista: movimentos exibidos por canal na conferência"+(r.mixedReconciled?" (saldos conferidos)":" (segregação a validar)")].filter(Boolean).join(" · ");
+ }
+ return rows;
+}
+analysisRows=function(net=""){return cdAndMixed31(originalRows31(net));};
+buildExcel=function(net,internal=false){
+ const source=originalExcel31(net,internal);
+ const wb=XLSX.read(source,{type:"array"});
+ const rows=analysisRows(net).filter(r=>!document.getElementById("v31-client")?.value||String(r.clientId)===document.getElementById("v31-client").value);
+ const cd=rows.filter(r=>r.channel==="CD").map(r=>[r.network,r.clientId,r.client,r.order,r.eg,r.skuName,r.center,r.pending,r.stock,r.cdQualifiedCX,r.cdUncoveredCX,r.cdQualification]);
+ const ws=XLSX.utils.aoa_to_sheet([["Rede","Cliente EG","Nome","Pedido ERP","SKU EG","Produto","CDD","Pendente CX","Saldo Grade CX","Coberto CX","Não coberto CX","Qualificação CD"],...cd]);
+ ws["!autofilter"]={ref:"A1:L"+Math.max(1,cd.length+1)};XLSX.utils.book_append_sheet(wb,ws,"Cobertura CD");
+ if(internal){
+  const mixed=rows.filter(r=>r.channel==="MISTO").flatMap(r=>(r.channelMovements||[]).map(z=>[r.network,r.clientId,r.client,r.order,r.eg,r.skuName,z.type,z.unit,z.count,z.updated,z.marked,z.without,z.billed,z.pending,r.pending,r.mixedReconciled?"Sim":"A conferir"]));
+  const w=XLSX.utils.aoa_to_sheet([["Rede","Cliente EG","Nome","Pedido ERP","SKU EG","Produto","Tipo Pedido","Unidade","Linhas","Atualizada CX","Marcado CX","Sem remessa CX","Faturado CX","Pendente canal CX","Pendente chave CX","Reconciliado"],...mixed]);
+  w["!autofilter"]={ref:"A1:P"+Math.max(1,mixed.length+1)};XLSX.utils.book_append_sheet(wb,w,"Movimentos ASCD ASVD");
+ }
+ return XLSX.write(wb,{bookType:"xlsx",type:"array",compression:true});
+};
+const originalRender31=renderOrders;
+renderOrders=function(){
+ originalRender31();
+ const rows=analysisRows(document.getElementById("analysisNetwork")?.value||"");
+ const m=rows.filter(r=>r.channel==="MISTO").length;
+ const aud=document.getElementById("v31-audit");
+ if(aud&&m)aud.innerHTML+='<div class="notice">'+m+' chave(s) mistas ASCD/ASVD identificadas. A segregação dos movimentos por canal está no Excel interno; a atribuição de estoque exige que o saldo por canal seja comprovado.</div>';
+};
+})();
+</script>
 </body></html>
