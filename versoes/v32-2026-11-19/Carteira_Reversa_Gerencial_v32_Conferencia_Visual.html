@@ -2408,4 +2408,65 @@ const badge=document.querySelector(".version-chip");if(badge)badge.textContent="
 window.CarteiraV32={render:render32,inspect:inspect32};
 try{render32()}catch(e){console.warn("v32: aguarda importação",e)}
 })();
-</script></body></html>
+</script><script>
+
+(function(){
+"use strict";
+const $e=id=>document.getElementById(id),hh=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])),ff=x=>x==null||!Number.isFinite(Number(x))?"N/D":Number(x).toLocaleString("pt-BR",{maximumFractionDigits:2}),nn=x=>String(x??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+const div=document.createElement("div");div.className="panel";div.id="cv32stock";$e("analise")?.appendChild(div);
+function oneOrigin(r,x){
+ const portions=(r.v31?.portions||[]).filter(z=>z.origin===x.center);
+ const load=portions.reduce((n,z)=>n+(z.kind==="load"||z.kind==="extraParaCarga"?z.plt:0),0);
+ const residue=Math.max(0,portions.reduce((n,z)=>n+(z.kind==="noLoad"?z.plt:z.kind==="extraParaCarga"?-z.plt:0),0));
+ return {load,residue};
+}
+function renderSupplement32(){
+ if(!div)return;
+ const net=$e("analysisNetwork")?.value||"",rows=analysisRows(net),plan=window.CarteiraV31?.getAnalysis(net)||{cars:[]},entries=[];
+ const residual=new Map();
+ rows.forEach((r,index)=>{
+  if(!(r.pending>0))return;
+  if(r.channel==="VD"){
+   const centers=r.originDetails||[];
+   if(centers.length===0)entries.push({r,index,origin:"Origem não homologada",unit:"PLT",stock:null,need:r.pendingPlt,load:0,residue:0});
+   for(const x of centers){
+    const z=oneOrigin(r,x);
+    entries.push({r,index,origin:x.center+" — "+x.name,unit:"PLT",stock:x.pallets,need:r.pendingPlt,load:z.load,residue:z.residue});
+    if(z.residue<=0)continue;
+    const key=[r.network,r.clientId,x.center].map(nn).join("|");
+    if(!residual.has(key))residual.set(key,{network:r.network,clientId:r.clientId,client:r.client,origin:x.center,qty:0,items:[],stocks:new Map()});
+    const group=residual.get(key);group.qty+=z.residue;group.items.push({sku:r.eg,name:r.skuName,order:r.order,qty:z.residue});
+    const product=nn(r.eg),prior=group.stocks.get(product);
+    if(prior===undefined)group.stocks.set(product,x.pallets);else if(prior!==x.pallets)group.stocks.set(product,null);
+   }
+  }else if(r.channel==="CD"){
+   entries.push({r,index,origin:r.center||"CDD não identificado",unit:"CX",stock:r.stock,need:r.pending,load:r.cdQualifiedCX??null,residue:r.cdUncoveredCX??null});
+  }else entries.push({r,index,origin:"Canal misto — não homologado",unit:"CX",stock:null,need:r.pending,load:null,residue:null});
+ });
+ const sorted=[...residual.values()].sort((a,b)=>b.qty-a.qty);
+ const out=sorted.map(g=>{
+  const cars=plan.cars.filter(c=>nn(c.network)===nn(g.network)&&nn(c.clientId)===nn(g.clientId)&&nn(c.origin)===nn(g.origin));
+  const stocks=[...g.stocks.values()],stock=stocks.length&&stocks.every(v=>v!=null)?stocks.reduce((a,b)=>a+b,0):null;
+  return '<tr><td>'+hh(g.clientId+" — "+g.client)+'<div class="cv32muted">'+hh(g.network)+'</div></td><td>'+hh(g.origin)+'</td><td>'+ff(g.qty)+' PLT</td><td>'+ff(Math.max(0,24-g.qty))+' PLT</td><td>'+cars.length+'</td><td>'+ff(stock)+' PLT <span class="cv32muted">(soma de SKUs distintos; D1 fixo)</span></td><td>'+g.items.map(x=>'<div class="cv32muted">'+hh(x.order+" · "+x.sku+" — "+x.name)+" · "+ff(x.qty)+" PLT</div>").join("")+'</td></tr>';
+ }).join("");
+ const productTable=entries.slice(0,450).map(x=>'<tr><td>'+hh(x.r.network)+'<div class="cv32muted">'+hh(x.r.clientId+" — "+x.r.client)+'</div></td><td>'+hh(x.r.order)+'<div class="cv32muted">'+hh(x.r.eg+" — "+x.r.skuName)+'</div></td><td>'+hh(x.r.channel)+'</td><td>'+hh(x.origin)+'</td><td>'+ff(x.need)+' '+x.unit+'</td><td>'+ff(x.stock)+' '+x.unit+'</td><td>'+ff(x.load)+' '+x.unit+'</td><td>'+ff(x.residue)+' '+x.unit+'</td><td><button class="cv32button" data-stock32="'+x.index+'">Investigar</button></td></tr>').join("");
+ const metadata=new WeakMap();
+ for(const sheet of S.sheets||[])if(sheet.type==="orders"&&Array.isArray(sheet.rows))sheet.rows.forEach((raw,i)=>{if(raw&&typeof raw==="object")metadata.set(raw,{file:sheet.fileName||sheet.filename||"",sheet:sheet.sheetName||sheet.name||"Order",line:(Number(sheet.headerRow)||0)+i+2})});
+ const canc=(S.cancelled32||[]).slice(0,500).map(x=>{
+  const m=metadata.get(x.raw)||{};
+  const kv=Object.keys(x.raw).filter(k=>/status|situacao|cancelamento/.test(nn(k))).map(k=>k+": "+x.raw[k]).filter(Boolean).join(" · ");
+  return '<tr><td>'+hh(x.order)+'</td><td>'+hh(x.clientId)+'</td><td>'+hh(x.eg)+'</td><td>'+hh(m.file||"Order")+' / '+hh(m.sheet)+' · linha '+hh(m.line||"N/D")+'</td><td>'+hh(kv||"Cancelamento identificado")+'</td></tr>';
+ }).join("");
+ div.innerHTML='<h2>Estoque e oportunidades · abertura completa</h2><p class="cv32muted">Qualificação de fábrica em PLT; Grade CD em CX. Estoque físico é apresentado sem descontar D1 compartilhado entre pedidos. Carga potencial não é faturamento realizado.</p>'+
+ '<div class="cv32panel"><h3>Complemento real por Cliente EG + origem</h3><p class="cv32muted">Residual agregado por origem e cliente, com SKUs e pedidos que o compõem. Completar até 24 PLT é uma referência para fechar carro; respeitar limite de 28 PLT e disponibilidade por SKU.</p><div class="cv32scroll"><table class="cv32table"><tr><th>Cliente</th><th>Origem</th><th>Residual</th><th>Faltam p/ 24</th><th>Carros formados</th><th>Estoque físico</th><th>Itens</th></tr>'+out+'</table></div>'+(out?"":'<div class="cv32warning">Nenhum residual qualificado foi demonstrado no recorte. Investigue o estoque físico e as restrições do modelo antes de concluir ausência de oportunidades.</div>')+'</div>'+
+ '<div class="cv32panel"><h3>Qualificação detalhada VD e CD · produto e estoque</h3><div class="cv32scroll"><table class="cv32table"><tr><th>Rede / Cliente</th><th>Pedido / Produto</th><th>Canal</th><th>Origem</th><th>Necessidade</th><th>Estoque físico</th><th>Alocado / coberto</th><th>Residual / não coberto</th><th>Ação</th></tr>'+productTable+'</table></div><p class="cv32muted">Exibidos até 450 registros/origens. Quando o dado não é demonstrável, é exibido N/D. A Grade CD não representa estoque de fábrica.</p></div>'+
+ '<div class="cv32panel"><h3>Auditoria de linhas canceladas com localizador</h3><details><summary>'+(S.cancelled32||[]).length+' linha(s) explicitamente cancelada(s) excluída(s) · visualizar</summary><div class="cv32scroll"><table class="cv32table"><tr><th>Pedido ERP</th><th>Cliente EG</th><th>SKU</th><th>Arquivo / aba / linha</th><th>Campo de cancelamento</th></tr>'+canc+'</table></div></details></div>';
+ div.querySelectorAll("[data-stock32]").forEach(b=>b.onclick=()=>window.CarteiraV32?.inspect(Number(b.dataset.stock32)));
+}
+const prevRender=renderOrders;renderOrders=function(){prevRender();try{renderSupplement32()}catch(e){console.error("estoque v32",e)}};
+const prevAll=renderEverything;renderEverything=function(){prevAll();try{renderSupplement32()}catch(e){console.error("estoque v32",e)}};
+try{renderSupplement32()}catch(e){console.warn("aguardando base v32",e)}
+})();
+
+</script>
+</body></html>
