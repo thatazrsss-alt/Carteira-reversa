@@ -2165,22 +2165,26 @@ loadFiles=async function(files){
  }
  return oldLoad(files);
 };
-function stockSummary31(){
+function stockSummary31(rows){
+ const relevant=new Set();
+ for(const r of rows)for(const origin of r.originDetails||[])relevant.add(String(origin.center)+"|"+String(r.eg));
  const skus=new Map();
  for(const r of S.data.vd||[]){
   const origin=stockCenter(r.origin,"VD")||r.origin;
   const k=String(origin)+"|"+String(r.eg);
-  if(!k||r.pallets==null)continue;
+  if(!relevant.has(k)||r.pallets==null)continue;
   if(!skus.has(k))skus.set(k,[]);
   skus.get(k).push(r);
  }
- let total=0;for(const list of skus.values()){
+ let total=0;
+ for(const list of skus.values()){
   const chosen=list.some(x=>/estoque|disponivel/i.test(x.attribute||""))?list.filter(x=>/estoque|disponivel/i.test(x.attribute||"")):list;
   if(chosen.some(x=>x.conflict||x.pallets==null))continue;
-  total+=chosen.reduce((s,r)=>s+Math.max(0,r.pallets),0);
+  total+=chosen.reduce((sum,r)=>sum+Math.max(0,r.pallets),0);
  }
  return total;
 }
+
 originFormation=function(rows){
  const p=window.CarteiraV31.getAnalysis(document.getElementById("analysisNetwork")?.value||"");
  const m=new Map();
@@ -2204,13 +2208,32 @@ renderOriginFormation=function(rows){
  div.innerHTML='<h3>Formação potencial conciliada por Cliente EG + origem</h3><p class="small">Carros efetivamente compostos no planejamento v31, cada um entre 24 e 28 PLT. O detalhamento de itens está na seção “Formação VD por Cliente EG”.</p>'+
  '<div class="scroller"><table><thead><tr><th>Rede</th><th>Cliente EG</th><th>Nome</th><th>Origem</th><th>Carros</th><th>PLT formados</th></tr></thead><tbody>'+
  [...groups.values()].slice(0,240).map(x=>'<tr><td>'+h(x.network)+'</td><td>'+h(x.clientId)+'</td><td>'+h(x.client)+'</td><td>'+h(x.origin)+'</td><td>'+x.cars+'</td><td>'+cash(x.plt)+'</td></tr>').join("")+'</tbody></table></div><p class="small">'+groups.size+' combinações Cliente EG/origem · até 240 exibidas. Excel interno exporta todas as composições.</p>';
+ const leftovers=new Map();
+ for(const r of rows){
+  if(r.channel!=="VD"||!r.v31)continue;
+  for(const part of r.v31.portions||[]){
+   if(part.kind!=="load"&&part.kind!=="noLoad")continue;
+   const k=key(r)+"|"+part.origin;
+   if(!leftovers.has(k))leftovers.set(k,{network:r.network,clientId:r.clientId,client:r.client,origin:part.origin,plt:0});
+   leftovers.get(k).plt+=part.plt;
+  }
+ }
+ for(const car of cars)for(const part of car.parts){
+  const k=key(car)+"|"+car.origin;
+  if(leftovers.has(k))leftovers.get(k).plt-=part.plt;
+ }
+ const pending=[...leftovers.values()].filter(x=>x.plt>0.00001);
+ div.innerHTML+='<h3>Qualificado sem carga · por Cliente EG e origem</h3><div class="scroller"><table><thead><tr><th>Rede</th><th>Cliente EG</th><th>Origem</th><th>Qualificado sem carga</th><th>Faltam para 24 PLT</th></tr></thead><tbody>'+
+ pending.slice(0,240).map(x=>'<tr><td>'+h(x.network)+'</td><td>'+h(x.clientId+" — "+x.client)+'</td><td>'+h(x.origin)+'</td><td>'+cash(x.plt)+'</td><td>'+cash(Math.max(0,24-x.plt))+'</td></tr>').join("")+
+ '</tbody></table></div><p class="small">'+pending.length+' combinações com saldo qualificado sem carro completo.</p>';
+
 };
 renderOrders=function(){
  priorRender();
  const r=analysisRows(q("analysisNetwork")?.value||"");
  const p=window.CarteiraV31.getAnalysis(q("analysisNetwork")?.value||"");
  const qualifying=r.reduce((sum,x)=>sum+(x.v31?.qual||0),0);
- const initial=stockSummary31();
+ const initial=stockSummary31(r);
  const disq=r.reduce((sum,x)=>sum+(x.v31?.desqualified||0),0);
  const frac=r.reduce((sum,x)=>sum+(x.v31?.fraction||0),0);
  const k=q("kpis");
@@ -2220,6 +2243,7 @@ renderOrders=function(){
   '<div class="kpi"><span>Desqualificado VD — estoque</span><strong>'+cash(disq)+' PLT</strong></div>'+
   '<div class="kpi"><span>Não qualificado — fracionados VD</span><strong>'+cash(frac)+' PLT</strong></div>';
  }
+ const oldAudit=q("audit");if(oldAudit)oldAudit.innerHTML="Recorte atual: "+r.length+" chaves da Order · "+p.cars.length+" carros potenciais de 24–28 PLT · "+p.cdRows.length+" oportunidades alternativas CDD para VD. Conferir discrepâncias na aba Conferência interna.";
  const a=q("v31-status");if(a)a.textContent=p.plans.some(x=>x.opt.includes("heurística"))?"Planejamento v31 executado; há clientes que exigem teste adicional para comprovar ótimo global de carros. Não liberar envio antes da homologação.":"Planejamento v31 executado; confira divergências e bases reais antes de liberar materiais externos.";
 };
 if(q("loadGithub"))q("loadGithub").remove();
