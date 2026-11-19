@@ -158,7 +158,7 @@ dpar:[{clientId:'SH001',client:'Shibata Loja 01',center:'216-CD'},{clientId:'SH0
 production:[{sap:'SAP80001',origin:'892-VD',pallets:20,date:'2026-11-17'},{sap:'SAP80001',origin:'952-VD',pallets:10,date:'2026-11-21'},{sap:'SAP80002',origin:'260-VD',pallets:2,date:'2026-11-25'}]};for(const row of S.data.vd){row.eg=S.data.cad.find(x=>x.sap===row.sap)?.eg||'';delete row.sap;}
 for(const row of S.data.production){row.eg=S.data.cad.find(x=>x.sap===row.sap)?.eg||'';row.stockStatus='';row.pallets=null;delete row.sap;}
 for(const row of S.data.grade){row.eg=gradeFromEG(row.eg);}
-for(const o of S.data.orders){o.captured=({'SH001':'2026-11-10','SH002':'2026-11-12','SH003':'2026-11-15','SH004':'2026-11-09','SHCD':'2026-11-13','HCD':'2026-11-14'})[o.clientId]||'';o.created=o.captured;o.diff=o.initial-o.billed-o.pending;o.fillRate=o.initial?Math.max(0,Math.min(100,100*o.billed/o.initial)):null;o.duplicateCount=1;o.issuesInitial=[]}S.unitsCache=null;S.analyticsCache.clear();buildIndexes();initData(true)}
+for(const o of S.data.orders){o.captured=({'SH001':'2026-11-10','SH002':'2026-11-12','SH003':'2026-11-15','SH004':'2026-11-09','SHCD':'2026-11-13','HCD':'2026-11-14'})[o.clientId]||'';o.created=o.captured;o.diff=o.initial-o.billed-o.pending;o.fillRate=o.initial>0&&o.billed!=null&&o.carWith!=null?100*(o.billed+o.carWith)/o.initial:null;o.duplicateCount=1;o.issuesInitial=[]}S.unitsCache=null;S.analyticsCache.clear();buildIndexes();initData(true)}
   const ALIAS={
  network:['rede','nome da rede do cliente','razao da rede','rede de lojas','rede','nome rede','nome da rede','rede cliente','rede do cliente','bandeira','nome rede acomp','nome rede acompanhamento','nome da rede acompanhamento','rede nome','rede varejo','rede comercial','rede de atendimento','descricao rede','desc rede','rede cliente nome','nome grupo cliente','grupo rede'],
  client:['nome loja','nome cliente','nome cliente sap','cliente','loja','nome fantasia','razao social','cliente nome','descricao cliente','nome da loja','cliente loja','nome pdv','nome da unidade'],
@@ -483,7 +483,7 @@ function convertOrderBalances(){
      o.issuesInitial.push('Pendente calculado diverge do Pendente informado na Order em '+fmt(o.pendingVsSourceDelta)+' CX');
   if(o.initial==null&&o.initialPlt!=null){if(ratio){o.initial=o.initialPlt*ratio;o.issuesInitial.push('Original em CX derivado de PLT × CAD, pois W não foi identificado');}
    else o.issuesInitial.push('Original W ausente e fator CAD indisponível');}
-  o.fillRate=o.initial>0&&o.billed!=null?Math.max(0,Math.min(100,100*o.billed/o.initial)):null;
+  o.fillRate=o.initial>0&&o.billed!=null&&o.carWith!=null?100*(o.billed+o.carWith)/o.initial:null;
   if(o.initial!=null&&o.billed!=null&&o.billed>o.initial)o.issuesInitial.push('Excesso faturado em relação ao original: '+fmt(o.billed-o.initial)+' CX');
   o.diff=o.initial!=null&&o.billed!=null&&o.pending!=null?o.initial-o.billed-o.pending:null;
  }
@@ -1258,7 +1258,7 @@ function managerOrders(rs){
    pending:g.pendingKnown?g.pending:null,pendingPlt:g.channel==='VD'&&g.pendingPltKnown?g.pendingPlt:null,
    initialHL:g.hlKnown?g.initialHL:null,initialPlt:g.pltKnown?g.initialPlt:null,
    production:g.productionKnown?g.production:null,
-   fillRate:g.originalKnown&&g.billedKnown&&g.initial>0?Math.max(0,Math.min(100,100*g.billed/g.initial)):null};
+   fillRate:g.originalKnown&&g.billedKnown&&g.markedKnown&&g.initial>0?100*(g.billed+g.marked)/g.initial:null};
  });
 }
 function originFormation(rows){
@@ -1357,7 +1357,7 @@ function emailSubject(net){const w=validityWindow();const validade=$('emailExpir
 function emailBodyText(net){
  const rs=analysisRows(net),mg=managerOrders(rs).sort((a,b)=>(b.pending||0)-(a.pending||0)),m=metricSummary(rs);
  const cap=(x)=>x==null?'N/D':fmt(x);
- let lines=['Olá, pessoal!','','Compartilho a atualização da Carteira Reversa para acompanhamento do atendimento dos pedidos.','',emailScope(),'',`Entrada original: ${cap(m.initial)} CX`,`Quantidade faturada: ${cap(m.billed)} CX`,`Quantidade pendente: ${cap(m.pending)} CX`,`Fill rate de faturamento: ${m.fillRate==null?'N/D':fmt(m.fillRate)+'%'}`,`Marcado (carro com remessa): ${rs.every(r=>r.carWith!=null)?fmt(rs.reduce((t,r)=>t+r.carWith,0)): 'N/D'} CX`,`Itens atendidos: ${rs.filter(r=>serviceStatus(r)==='Atendido').length} de ${rs.length}`,''];
+ let lines=['Olá, pessoal!','','Compartilho a atualização da Carteira Reversa para acompanhamento do atendimento dos pedidos.','',emailScope(),'',`Entrada original: ${cap(m.initial)} CX`,`Quantidade faturada: ${cap(m.billed)} CX`,`Quantidade pendente: ${cap(m.pending)} CX`,`Fill Rate de volume: ${m.fillRate==null?'N/D':fmt(m.fillRate)+'%'}`,`Marcado (carro com remessa): ${rs.every(r=>r.carWith!=null)?fmt(rs.reduce((t,r)=>t+r.carWith,0)): 'N/D'} CX`,`Itens atendidos: ${rs.filter(r=>(r.billed||0)>0||(r.carWith||0)>0).length} de ${rs.length}`,''];
  if(norm(net).includes('shibata')){
    lines.push('SHIBATA — ATENDIMENTO SEPARADO POR CANAL');
    for(const [name,group] of [['CD Shibata (VD)',rs.filter(x=>shibataSegment(x)==='CD Shibata · VD')],['Lojas Shibata (CD / loja a loja)',rs.filter(x=>shibataSegment(x)==='Lojas Shibata · CD')]]){
@@ -1669,7 +1669,7 @@ function png(net){
  const max=Math.max(1,...cats.map(x=>x[1]));
  cats.forEach(([label,value,col],i)=>{let yy=panelY+125+i*71;txt(label,leftX+26,yy,17,C.ink,true);txt(value+' '+(value===1?'item':'itens'),leftX+630,yy,16,C.ink,true);rect(leftX+27,yy+13,675,12,'#EAF0F4',6);rect(leftX+27,yy+13,675*value/max,12,col,6)});
  txt(norm(net).includes('shibata')?'SHIBATA · CD SHIBATA (VD) X LOJAS (CD)':'PEDIDOS COM MAIOR PENDÊNCIA',rightX+25,panelY+41,21,C.ink,true);
- txt('Pedido ERP · Pendente · Fill rate de faturamento',rightX+25,panelY+68,14,C.muted);
+ txt('Pedido ERP · Pendente · Fill Rate de volume',rightX+25,panelY+68,14,C.muted);
  if(norm(net).includes('shibata')){
   const a=metricSummary(data.filter(x=>shibataSegment(x)==='CD Shibata · VD'));
   const b=metricSummary(data.filter(x=>shibataSegment(x)==='Lojas Shibata · CD'));
