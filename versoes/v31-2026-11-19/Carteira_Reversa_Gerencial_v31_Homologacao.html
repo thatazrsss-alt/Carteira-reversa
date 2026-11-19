@@ -1319,7 +1319,7 @@ function renderOrders(){
  const totalInit=sum('initial'),totalBill=sum('billed'),totalPend=sum('pending');
  const fill=totalInit>0&&totalBill!==null?Math.max(0,Math.min(100,100*totalBill/totalInit)):null;
  drawInsightPanels(rs);renderShibataBreakdown(rs);
-	 $('kpis').innerHTML=[['Pedidos / EG / canal',`${mg.length}`],['Linhas únicas',`${rs.length}`],['Entrada inicial (CX)',fmt(totalInit)],['Faturado (CX)',fmt(totalBill)],['Marcado · c/ remessa (CX)',fmt(sum('carWith'))],['Pendente (CX)',fmt(totalPend)],['Fill rate faturado',fill==null?'N/D':fmt(fill)+'%'],['Itens atendidos / total',fmt(rs.filter(x=>serviceStatus(x)==='Atendido').length)+' / '+fmt(rs.length)],['Itens com cobertura D1/grade',fmt(rs.filter(hasFullCoverage).length)+' / '+fmt(rs.filter(x=>x.pending>0).length)],['Atendimento parcial',fmt(rs.filter(x=>x.status==='Estoque insuficiente').length)],['Pedidos VD ≥ 24 PLT qualificados',fmt(mg.filter(x=>x.channel==='VD'&&x.fullTruck).length)]].map(([title,value])=>`<div class="kpi"><span>${title}</span><strong>${value}</strong></div>`).join('');
+	 $('kpis').innerHTML=[['Pedidos / EG / canal',`${mg.length}`],['Linhas únicas',`${rs.length}`],['Entrada inicial (CX)',fmt(totalInit)],['Faturado (CX)',fmt(totalBill)],['Marcado · c/ remessa (CX)',fmt(sum('carWith'))],['Pendente (CX)',fmt(totalPend)],['Fill rate de volume',fill==null?'N/D':fmt(fill)+'%'],['Itens atendidos / total',fmt(rs.filter(x=>serviceStatus(x)==='Atendido').length)+' / '+fmt(rs.length)],['Itens com cobertura D1/grade',fmt(rs.filter(hasFullCoverage).length)+' / '+fmt(rs.filter(x=>x.pending>0).length)],['Atendimento parcial',fmt(rs.filter(x=>x.status==='Estoque insuficiente').length)],['Pedidos VD ≥ 24 PLT qualificados',fmt(mg.filter(x=>x.channel==='VD'&&x.fullTruck).length)]].map(([title,value])=>`<div class="kpi"><span>${title}</span><strong>${value}</strong></div>`).join('');
  $('audit').innerHTML=`${rs.filter(r=>!r.captured).length&&($('captureStart').value||$('captureEnd').value)?'Captação ausente excluída do filtro. · ':''}${rs.length} linhas únicas (até 150 exibidas para manter a tela rápida; Excel exporta todas) · ${rs.filter(r=>r.duplicateCount>1).length} com linhas duplicadas consolidadas · ${rs.filter(r=>r.issues).length} alertas · ${rs.filter(r=>r.channel==='CD').length} linhas CD em caixas. <b>Importante:</b> cobertura é apenas indicativa e não reserva estoque. A diferença Inicial − Faturado − Pendente inclui alterações e movimentos; não equivale automaticamente a um erro.`;
  $('analysisMode').textContent=S.demo?'EXEMPLO FICTÍCIO':'BASE IMPORTADA — A VALIDAR';
  $('orderRows').innerHTML=rs.length?rs.slice(0,150).map(r=>`<tr><td><b>${esc(r.network)}</b><div class="small">${esc(r.client)} · EG ${esc(r.clientId)}</div></td><td><b>${esc(r.order)}</b><div class="small">SKU EG ${esc(r.eg)} · ${esc(r.skuName)}</div></td><td>${esc(r.channel)}</td><td><b>${fmt(r.initial)}</b><div class="small">${fmt(r.initialPlt)} PLT · ${fmt(r.initialHL)} HL</div></td><td>${fmt(r.billed)}</td><td>${fmt(r.carWith)}</td><td><b>${fmt(r.pending)}</b></td><td>${r.channel==='VD'?fmt(r.pendingPlt):'—'}</td><td>${r.fillRate==null?'N/D':fmt(r.fillRate)+'%'}</td><td>${formatDate(r.validity)}<div class="small">Captação: ${formatDate(r.captured)}</div></td><td><b>${esc(r.originName||'Não identificado')}</b><div class="small">${esc(r.channel==='VD'?r.primary:r.center)}</div>${r.channel==='VD'&&r.originDetails.length?`<details><summary>${r.originDetails.length} origens</summary>${r.originDetails.map(x=>esc(x.name)+' ('+esc(x.center)+') · D1: '+fmt(x.pallets)+' PLT · Pendente: '+fmt(x.pendingPlt)+' PLT · Potencial: '+fmt(x.qualifiedPlt)+' PLT · '+esc(x.qualification)+' · Produção: '+(x.productionDate?formatDate(x.productionDate):'—')).join('<div></div>')}</details>`:''}</td><td>${r.channel==='VD'?fmt(r.stockPlt)+' PLT':fmt(r.stock)+' CX'}</td><td>${`<span class="pill ${r.status==='Estoque insuficiente'?'orange':r.status==='Tem estoque para o pedido'?'':'gray'}">${esc(publicStockQualification(r))}</span><div class="small">Atendimento: ${esc(serviceStatus(r))}</div>`}</td><td>${r.productionDate?formatDate(r.productionDate):'—'}<div class="small">${esc(r.productionStatus||'')}</div></td><td>${cellStatus(r.status)}</td><td><details><summary>${r.issues?'Ver alerta':'Detalhes'}</summary><div style="min-width:220px;max-width:330px;white-space:normal">${esc(r.issues||'Sem alertas de consistência')}<div>Qtd. atualizada: ${fmt(r.updated)} · c/ remessa: ${fmt(r.carWith)} · s/ remessa: ${fmt(r.carWithout)} · Diferença: ${fmt(r.diff)}</div></div></details></td></tr>`).join(''):'<tr><td colspan="16">Sem pedidos válidos no recorte.</td></tr>';
@@ -1597,7 +1597,7 @@ function buildExcel(net,internal=false){
    numbers:['Estoque D1 PLT','Pendente PLT','Potencial qualificado PLT','Pendente CX'],dates:['Data produção'],emphasis:['Pedido ERP'],widths:{'Fábrica':25,'Qualificação VD':19,'Origem':14,'Comercial':18}
  });
  const formation=originFormation(data);
- if(formation.length)tab('Formação VD', ['Origem','Nome origem','SKUs','Pendente PLT','Potencial qualificado PLT','Carros 24 PLT','Faltam p/ próximo carro','SKUs alternativos','Qualificação'],formation.map(x=>[x.code,x.name,x.skus,x.known?x.pendingPlt:null,x.qualifiedPlt,x.fullCars,x.missingPlt,x.alternativeSKUs,x.fullCars?'Potencial de carro':'Abaixo de 24 PLT']),{numbers:['SKUs','Pendente PLT','Potencial qualificado PLT','Carros 24 PLT','Faltam p/ próximo carro','SKUs alternativos'],widths:{'Nome origem':25,'Qualificação':27}});
+ if(formation.length)tab('Formação VD', ['Origem','Nome origem','SKUs','Pendente PLT','Potencial qualificado PLT','Carros 24–28 PLT','Faltam p/ próximo carro','SKUs alternativos','Qualificação'],formation.map(x=>[x.code,x.name,x.skus,x.known?x.pendingPlt:null,x.qualifiedPlt,x.fullCars,x.missingPlt,x.alternativeSKUs,x.fullCars?'Potencial de carro':'Abaixo de 24 PLT']),{numbers:['SKUs','Pendente PLT','Potencial qualificado PLT','Carros 24 PLT','Faltam p/ próximo carro','SKUs alternativos'],widths:{'Nome origem':25,'Qualificação':27}});
  } // end internal technical sheets
  // Preserve Order original only in explicit INTERNAL export.
  const originals=(!internal||!$('includeRawOrder').checked)?[]:(S.demo?data.flatMap(r=>r.raw&&Object.keys(r.raw).length?[r.raw]:[]):(S.data.sourceOrders||[]).filter(r=>norm(field(r,'network'))===norm(net)));
@@ -2132,6 +2132,91 @@ const css=document.createElement("style");css.textContent=
 document.head.appendChild(css);
 try{renderClient31();}catch(e){console.warn("v31: seletor inicial",e)}
 window.CarteiraV31={getAnalysis:net=>enrich31(analysisRows(net||"")),generatePrint:pdf31,version:"31.0"};
+})();
+</script>
+<script>
+
+(function(){
+"use strict";
+const q=id=>document.getElementById(id);
+const cash=n=>n==null?"N/D":Number(n).toLocaleString("pt-BR",{maximumFractionDigits:2});
+const h=x=>String(x??"").replace(/[&<>"']/g,k=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
+const key=o=>[o.network,o.clientId||o.client].join("|");
+const priorRender=renderOrders;
+const oldLoad=loadFiles;
+loadFiles=async function(files){
+ const names=Array.from(files||[]).map(x=>x.name);
+ const order=names.some(x=>/order|pedido|carteira|pendente/i.test(x));
+ const stock=names.some(x=>/estoque|stock|base|cad|grade|malha/i.test(x));
+ if(order||stock){
+  const discard=entry=>(order&&stock)||order&&entry.type==="orders"||stock&&entry.type&&entry.type!=="orders";
+  const removed=new Set(S.sheets.filter(discard).map(x=>x.name.split(" / ")[0]));
+  S.sheets=S.sheets.filter(x=>!discard(x));
+  for(const n of removed)S.fileCache.delete(n);
+  S.importSummary=S.importSummary.filter(x=>!removed.has(x.name));
+ }
+ return oldLoad(files);
+};
+function stockSummary31(){
+ const skus=new Map();
+ for(const r of S.data.vd||[]){
+  const origin=stockCenter(r.origin,"VD")||r.origin;
+  const k=String(origin)+"|"+String(r.eg);
+  if(!k||r.pallets==null)continue;
+  if(!skus.has(k))skus.set(k,[]);
+  skus.get(k).push(r);
+ }
+ let total=0;for(const list of skus.values()){
+  const chosen=list.some(x=>/estoque|disponivel/i.test(x.attribute||""))?list.filter(x=>/estoque|disponivel/i.test(x.attribute||"")):list;
+  if(chosen.some(x=>x.conflict||x.pallets==null))continue;
+  total+=chosen.reduce((s,r)=>s+Math.max(0,r.pallets),0);
+ }
+ return total;
+}
+originFormation=function(rows){
+ const p=window.CarteiraV31.getAnalysis(document.getElementById("analysisNetwork")?.value||"");
+ const m=new Map();
+ for(const car of p.cars){
+  const k=car.network+"|"+car.clientId+"|"+car.origin;
+  if(!m.has(k))m.set(k,{network:car.network,clientId:car.clientId,client:car.client,code:car.origin,cars:0,loadPlt:0,skus:new Set(),fullCars:0});
+  const x=m.get(k);x.cars++;x.fullCars++;x.loadPlt+=car.plt;
+  for(const item of car.parts)x.skus.add(item.sku);
+ }
+ return [...m.values()].map(x=>({...x,qualifiedPlt:x.loadPlt,pendingPlt:x.loadPlt,missingPlt:0,skus:x.skus.size,known:true,name:x.code,alternativeSKUs:0}));
+};
+renderOriginFormation=function(rows){
+ const div=q("originFormation");if(!div)return;
+ const p=window.CarteiraV31.getAnalysis(q("analysisNetwork")?.value||"");
+ const cars=p.cars;const groups=new Map();
+ for(const c of cars){
+  const k=key(c)+"|"+c.origin;
+  if(!groups.has(k))groups.set(k,{client:c.client,clientId:c.clientId,network:c.network,origin:c.origin,cars:0,plt:0});
+  const rec=groups.get(k);rec.cars++;rec.plt+=c.plt;
+ }
+ div.innerHTML='<h3>Formação potencial conciliada por Cliente EG + origem</h3><p class="small">Carros efetivamente compostos no planejamento v31, cada um entre 24 e 28 PLT. O detalhamento de itens está na seção “Formação VD por Cliente EG”.</p>'+
+ '<div class="scroller"><table><thead><tr><th>Rede</th><th>Cliente EG</th><th>Nome</th><th>Origem</th><th>Carros</th><th>PLT formados</th></tr></thead><tbody>'+
+ [...groups.values()].slice(0,240).map(x=>'<tr><td>'+h(x.network)+'</td><td>'+h(x.clientId)+'</td><td>'+h(x.client)+'</td><td>'+h(x.origin)+'</td><td>'+x.cars+'</td><td>'+cash(x.plt)+'</td></tr>').join("")+'</tbody></table></div><p class="small">'+groups.size+' combinações Cliente EG/origem · até 240 exibidas. Excel interno exporta todas as composições.</p>';
+};
+renderOrders=function(){
+ priorRender();
+ const r=analysisRows(q("analysisNetwork")?.value||"");
+ const p=window.CarteiraV31.getAnalysis(q("analysisNetwork")?.value||"");
+ const qualifying=r.reduce((sum,x)=>sum+(x.v31?.qual||0),0);
+ const initial=stockSummary31();
+ const disq=r.reduce((sum,x)=>sum+(x.v31?.desqualified||0),0);
+ const frac=r.reduce((sum,x)=>sum+(x.v31?.fraction||0),0);
+ const k=q("kpis");
+ if(k){
+  k.innerHTML+='<div class="kpi"><span>Oportunidades qualificadas VD</span><strong>'+cash(qualifying)+' PLT</strong></div>'+
+  '<div class="kpi"><span>Estoque D1 físico de referência</span><strong>'+cash(initial)+' PLT</strong></div>'+
+  '<div class="kpi"><span>Desqualificado VD — estoque</span><strong>'+cash(disq)+' PLT</strong></div>'+
+  '<div class="kpi"><span>Não qualificado — fracionados VD</span><strong>'+cash(frac)+' PLT</strong></div>';
+ }
+ const a=q("v31-status");if(a)a.textContent=p.plans.some(x=>x.opt.includes("heurística"))?"Planejamento v31 executado; há clientes que exigem teste adicional para comprovar ótimo global de carros. Não liberar envio antes da homologação.":"Planejamento v31 executado; confira divergências e bases reais antes de liberar materiais externos.";
+};
+if(q("loadGithub"))q("loadGithub").remove();
+const all=document.querySelectorAll(".topnav .tab[data-tab]");
+for(const tab of all)if(tab.dataset.tab==="analise")tab.title="Painel v31 com composição efetiva de carros por Cliente EG e origem";
 })();
 </script>
 </body></html>
