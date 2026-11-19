@@ -1941,14 +1941,22 @@ metricSummary=function(rs){
 };
 managerOrders=function(rs){
  const out=OLD.manager(rs);
+ const groups=new Map();
+ for(const r of rs){
+  const k=[r.network,r.order,r.clientId||r.client,r.channel].map(n31).join("|");
+  if(!groups.has(k))groups.set(k,[]);
+  groups.get(k).push(r);
+ }
+ const loaded=new Set();
+ for(const car of enrich31(rs).cars)for(const part of car.parts)loaded.add(part.row);
  for(const g of out){
-  const all=rs.filter(r=>n31(r.network)===n31(g.network)&&n31(r.clientId)===n31(g.clientId)&&n31(r.order)===n31(g.order)&&r.channel===g.channel);
+  const all=groups.get(g.key)||[];
   g.attended=all.filter(r=>r.itemAttended).length;
   g.fillRate=g.initial>0&&g.marked!=null&&g.billed!=null?100*(g.billed+g.marked)/g.initial:null;
   if(g.channel==="VD"){
    g.qualifiedPlt=all.reduce((t,r)=>t+num31(r.v31?.qual),0);
-   const carset=new Set();for(const car of enrich31(rs).cars)if(car.parts.some(p=>all.includes(p.row)))carset.add(key31(car)+"|"+car.origin+"|"+car.n);
-   g.fullTruck=carset.size>0;g.missingTruckPlt=g.fullTruck?0:Math.max(0,24-g.qualifiedPlt);
+   g.fullTruck=all.some(r=>loaded.has(r));
+   g.missingTruckPlt=g.fullTruck?0:Math.max(0,24-g.qualifiedPlt);
   }
  }
  return out;
@@ -2022,11 +2030,11 @@ function reportHTML31(net,rows,cars){
  const sections=[...clients].map(([k,rr],idx)=>{
   const head=rr[0],m=metricSummary(rr);
   const cc=cars.filter(x=>key31(x)===k);
-  const details=rr.map(r=>'<tr><td>'+safe(r.order)+'</td><td>'+safe(r.eg)+'</td><td>'+safe(r.skuName)+'</td><td>'+formatDate(r.captured)+'</td><td>'+formatDate(r.validity)+'</td><td>'+f31(r.initial)+'</td><td>'+f31(r.billed)+'</td><td>'+f31(r.carWith)+'</td><td>'+f31(r.pending)+'</td><td>'+safe(r.channel==="VD"?r.v31.reason:r.cdQualification||r.qualification)+'</td><td>'+f31(r.v31?.load)+'</td><td>'+f31(r.v31?.noLoad)+'</td><td>'+f31(r.v31?.desqualified)+'</td><td>'+f31(r.v31?.fraction)+'</td></tr>').join("");
+  const details=rr.map(r=>'<tr><td>'+safe(r.order)+'</td><td>'+safe(r.eg)+'</td><td>'+safe(r.skuName)+'</td><td>'+formatDate(r.captured)+'</td><td>'+formatDate(r.validity)+'</td><td>'+f31(r.initial)+'</td><td>'+f31(r.billed)+'</td><td>'+f31(r.carWith)+'</td><td>'+f31(r.pending)+'</td><td>'+safe(r.v31?.portions.map(x=>x.origin).filter((v,i,a)=>a.indexOf(v)===i).join(' / ')||r.primary||r.center||'Não identificada')+'</td><td>'+safe(r.channel==="VD"?r.v31.reason:r.cdQualification||r.qualification)+'</td><td>'+f31(r.v31?.load)+'</td><td>'+f31(r.v31?.noLoad)+'</td><td>'+f31(r.v31?.desqualified)+'</td><td>'+f31(r.v31?.fraction)+'</td></tr>').join("");
   return '<section class="customer" id="eg'+idx+'"><h2>'+safe(head.clientId+' — '+head.client)+'</h2>'+
    '<div class="meters"><span>Fill Rate Volume <b>'+f31(m.fillRate)+'%</b></span><span>Fill Rate Itens <b>'+f31(m.itemFill)+'%</b></span><span>Carros formados <b>'+cc.length+'</b></span></div>'+
    '<h3>Cargas potenciais por origem</h3>'+cards31(cc)+'<h3>Pedidos e itens da carteira</h3>'+
-   '<table class="full"><thead><tr>'+["Pedido ERP","SKU EG","Produto","Captação","Validade","Original CX","Faturado CX","Marcado CX","Pendente CX","Qualificação","Forma carga PLT","Sem carga PLT","Desqualificado PLT","Fração PLT"].map(x=>'<th>'+x+'</th>').join("")+'</tr></thead><tbody>'+details+'</tbody></table></section>';
+   '<table class="full"><thead><tr>'+["Pedido ERP","SKU EG","Produto","Captação","Validade","Original CX","Faturado CX","Marcado CX","Pendente CX","Origem","Qualificação","Forma carga PLT","Sem carga PLT","Desqualificado PLT","Fração PLT"].map(x=>'<th>'+x+'</th>').join("")+'</tr></thead><tbody>'+details+'</tbody></table></section>';
  }).join("");
  const title="Carteira Reversa - "+net+" - "+(validityWindow().end||$v("emailExpiryDate")?.value||today());
  return '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>'+safe(title)+'</title><style>'+
