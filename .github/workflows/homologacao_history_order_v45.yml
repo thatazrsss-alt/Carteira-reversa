@@ -1,0 +1,29 @@
+name: Homologacao v45 History Order
+on:
+  push:
+    branches: [homologacao-v45-history-order]
+    paths:
+      - '.github/workflows/homologacao_history_order_v45.yml'
+      - 'scripts/homologar_history_order_v45.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conferencia independente History Order e inventario estoque
+        run: python scripts/homologar_history_order_v45.py
+      - name: Revalidar movimentos e estoque com motor independente anterior
+        run: |
+          python scripts/reconciliar_order_v29.py > /tmp/auditoria-legada.log
+          cp auditoria-order/resumo_reconciliacao.json auditoria-v45/resumo_estoque_movimentos.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: homologacao-v45-agregados
+          path: auditoria-v45/
+          retention-days: 7
+          if-no-files-found: warn
