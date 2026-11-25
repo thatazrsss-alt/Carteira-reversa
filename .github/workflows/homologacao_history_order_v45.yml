@@ -5,13 +5,14 @@ on:
     paths:
       - '.github/workflows/homologacao_history_order_v45.yml'
       - 'scripts/homologar_history_order_v45.py'
+      - 'qa/Carteira_Reversa_Gerencial_v45.html'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Conferencia independente History Order e inventario estoque
@@ -20,6 +21,66 @@ jobs:
         run: |
           python scripts/reconciliar_order_v29.py > /tmp/auditoria-legada.log
           cp auditoria-order/resumo_reconciliacao.json auditoria-v45/resumo_estoque_movimentos.json
+      - name: Instalar Chromium para homologacao do HTML exato
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Executar v45 com as tres bases reais
+        run: |
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          from pathlib import Path
+          import json, hashlib
+          root=Path.cwd()
+          files=[root/'Order.zip',next(root.glob('*ExportReportOrderHistory.csv')),root/'BASE_ESTOQUE 16.11.xlsx']
+          html=root/'qa/Carteira_Reversa_Gerencial_v45.html'
+          out={'sha256_html':hashlib.sha256(html.read_bytes()).hexdigest(),'erros_js':[]}
+          try:
+              with sync_playwright() as p:
+                  b=p.chromium.launch(headless=True,args=['--no-sandbox','--disable-dev-shm-usage','--js-flags=--max-old-space-size=8192'])
+                  page=b.new_page()
+                  page.on('pageerror',lambda e:out['erros_js'].append(str(e).splitlines()[0][:200]))
+                  page.route('https://**/*',lambda route:route.abort())
+                  page.goto(html.as_uri(),wait_until='load',timeout=120000)
+                  page.locator('#files').set_input_files([str(x) for x in files])
+                  page.wait_for_function("typeof S !== 'undefined' && !S.demo && S.sourceCount===3 && S.data.orders.length>0 && S.historyStats && document.querySelector('#files').value===''",timeout=360000)
+                  out['importacao']=page.evaluate("""() => ({
+                    fontes:S.sourceCount, abas:S.sheets.length, linhas_consolidadas:S.data.orders.length,
+                    history:S.historyStats, avisos_importacao:S.importWarnings.length,
+                    tipos:Object.fromEntries(Object.entries(S.data).map(([k,v])=>[k,Array.isArray(v)?v.length:null])),
+                    datas_order:[...new Set(S.data.orders.map(r=>r.historyOrderDate).filter(Boolean))].sort().filter((x,i,a)=>i===0||i===a.length-1),
+                    movimentos:['updated','billed','carWith','carWithout','pending'].map(k=>({campo:k,conhecidos:S.data.orders.filter(r=>r[k]!=null).length,cx:S.data.orders.reduce((a,r)=>a+(Number(r[k])||0),0)}))
+                  })""")
+                  out['recortes']=page.evaluate("""() => {
+                    function snap(){
+                      S.analyticsCache.clear();S.v32RowsCache?.clear();
+                      renderOrders();
+                      const rs=analysisRows($('analysisNetwork').value);
+                      const s=window.CarteiraV36.summary(rs);
+                      return {chaves:rs.length,fill:s.fillMetric,attendance:s.attendanceMetric,
+                      cards:[...$('kpis').querySelectorAll('.kpi')].map(c=>({nome:c.querySelector('span')?.textContent,valor:c.querySelector('strong')?.textContent}))};
+                    }
+                    $('analysisNetwork').value='';$('v32ValidityScope').value='all';$('captureStart').value='';$('captureEnd').value='';$('v36MissingCapture').checked=true;
+                    const all=snap();
+                    $('captureStart').value='2026-11-19';$('captureEnd').value='2026-11-19';$('v36MissingCapture').checked=false;
+                    const cap=snap();
+                    $('captureStart').value='';$('captureEnd').value='';$('v36MissingCapture').checked=true;
+                    $('referenceDate').value='2026-11-17';$('v32ValidityScope').value='week';
+                    const week=snap();
+                    return {todos:all,captacao_19nov:cap,semana_16_22nov:week};
+                  }""")
+                  b.close()
+              out['execucao']='concluida'
+          except Exception as e:
+              out['execucao']='falha'
+              out['erro']=type(e).__name__+': '+str(e).splitlines()[0][:250]
+          finally:
+              p=root/'auditoria-v45'/'html_v45.json'
+              p.parent.mkdir(exist_ok=True)
+              p.write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+              print(json.dumps(out,ensure_ascii=False))
+          if out['execucao']!='concluida' or out['erros_js']: raise SystemExit(1)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
