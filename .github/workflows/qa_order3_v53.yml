@@ -1,0 +1,132 @@
+name: Homologacao Order 3 v53
+on:
+  push:
+    paths:
+      - '.github/workflows/qa_order3_v53.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Auditoria independente da entrada e movimentos
+        run: |
+          python - <<'PY'
+          import csv,io,zipfile,json,re,unicodedata,collections,decimal,datetime,pathlib
+          csv.field_size_limit(1000000000)
+          D=decimal.Decimal
+          def norm(x):
+            s=unicodedata.normalize('NFKC',str(x or '')).strip().upper()
+            s=re.sub(r'[\s\u200b\ufeff]+','',s)
+            if re.fullmatch(r'\d+(\.0+)?',s):return str(int(s.split('.')[0]))
+            return s
+          def day(x):
+            s=str(x or '').strip()
+            for fmt in ('%d/%m/%Y','%Y-%m-%d'):
+              try:
+                dt=datetime.datetime.strptime(s[:10],fmt).date()
+                if dt.year>=1900:return dt.isoformat()
+              except ValueError:pass
+            return ''
+          def num(x):
+            s=str(x or '').strip()
+            if not s:return D(0)
+            if ',' in s:s=s.replace('.','').replace(',','.')
+            try:return D(s)
+            except decimal.InvalidOperation:return None
+          def read(name,required):
+            with zipfile.ZipFile(name) as z:
+              print('ZIP',name,[(x.filename,x.file_size,x.CRC) for x in z.infolist()])
+              files=[n for n in z.namelist() if n.lower().endswith('.csv')]
+              if len(files)!=1:raise ValueError('CSV unico esperado: '+name)
+              raw=z.read(files[0]).rstrip(b'\0')
+              txt=raw.decode('utf-8-sig',errors='strict').lstrip('\ufeff')
+            rd=csv.DictReader(io.StringIO(txt),delimiter=';')
+            print('SCHEMA',name,len(rd.fieldnames),json.dumps(rd.fieldnames,ensure_ascii=False))
+            missing=set(required)-set(rd.fieldnames)
+            if missing:raise ValueError(str(missing))
+            return rd
+          hist=read('History.zip',['Nº Pedido ERP','Código Produto Cliente','EAN','Qtd. Pedida','Data de Criação'])
+          order=read('Order 3.zip',['Nº Pedido ERP','Código Produto Cliente','EAN','Data Captação ECC','Status','Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada','Unidade','Cliente EG','SKU EG','Data de Vencimento'])
+          counts=collections.Counter(); ids_h=set();ids_o=set();hkeys={};hconf=set();hdates=collections.Counter()
+          for r in hist:
+            p=norm(r['Nº Pedido ERP'])
+            if not p or 'TESTE' in p:counts['history_excluded']+=1;continue
+            counts['history_rows']+=1;ids_h.add(p)
+            c=norm(r['Código Produto Cliente']);e=norm(r['EAN']);d=day(r['Data de Criação']);q=num(r['Qtd. Pedida'])
+            hdates[d]+=1
+            if not(c or e) or not d or q is None:counts['history_invalid']+=1;continue
+            k=(p,'C' if c else 'E',c or e,d)
+            if k in hkeys:
+              counts['history_duplicate_rows']+=1
+              if hkeys[k]!=q:hconf.add(k)
+            else:hkeys[k]=q
+          lookup=collections.defaultdict(list)
+          for k in hkeys:lookup[k[:3]].append(k)
+          groups={};matches=collections.defaultdict(set);status=collections.Counter();units=collections.Counter();odates=collections.Counter();sums=collections.defaultdict(lambda:D(0))
+          for r in order:
+            p=norm(r['Nº Pedido ERP'])
+            if not p or 'TESTE' in p:counts['order_excluded']+=1;continue
+            counts['order_rows']+=1;ids_o.add(p)
+            c=norm(r['Código Produto Cliente']);e=norm(r['EAN']);cap=day(r['Data Captação ECC']);valid=day(r['Data de Vencimento']);odates[cap]+=1
+            g=(p,norm(r['Cliente EG']),norm(r['SKU EG']))
+            st=norm(r['Status']);cancel='CANCELAD' in st;status[st]+=1
+            unit=norm(r['Unidade']);units[unit]+=1
+            if not all(g):counts['order_invalid_key']+=1;continue
+            a,m,s,f=[num(r[x]) for x in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]
+            if None in (a,m,s,f):counts['order_invalid_qty']+=1;continue
+            # Entrada por codigo do cliente quando preenchido no History; EAN somente para entradas sem codigo.
+            candidates=set((lookup.get((p,'C',c),[]) if c else [])+(lookup.get((p,'E',e),[]) if e else []))
+            exact={k for k in candidates if k[3]==cap} if cap else set()
+            if exact:candidates=exact
+            if len(candidates)==1:
+              k=next(iter(candidates));matches[k].add(g)
+              counts['order_rows_match']+=1
+              if cap and cap!=k[3]:counts['order_rows_cap_diff']+=1
+            elif candidates:counts['order_rows_ambiguous']+=1
+            else:counts['order_rows_no_match']+=1
+            row=groups.setdefault(g,{'h':set(),'units':set(),'f':D(0),'m':D(0),'p':D(0),'caps':set(),'valids':set(),'noncancel':False})
+            row['h'].update(candidates if len(candidates)==1 else [])
+            row['units'].add(unit);row['f']+=f;row['m']+=m
+            if cap:row['caps'].add(cap)
+            if not cancel:
+              row['p']+=a-m-s-f;row['noncancel']=True
+              if valid:row['valids'].add(valid)
+            else:counts['order_cancelled_rows']+=1
+            if unit=='CX':
+              sums['delivered_all_CX']+=f;sums['marked_all_CX']+=m
+              if not cancel:sums['pending_all_CX']+=a-m-s-f
+          validmatch={k for k,gs in matches.items() if len(gs)==1 and k not in hconf}
+          matchedgroups={g for k in validmatch for g in matches[k]}
+          def datebounds(c):
+            a=sorted(x for x in c if x);return {'min':a[0] if a else '', 'max':a[-1] if a else '', 'missing':c.get('',0)}
+          def cohort(ref):
+            active=set()
+            for g,v in groups.items():
+              caps={k[3] for k in v['h'] if k in validmatch} or v['caps']
+              if caps and min(caps)<=ref and any(x>=ref for x in v['valids']):active.add(g[:2])
+            t=collections.defaultdict(lambda:D(0));ct=collections.Counter()
+            for g,v in groups.items():
+              if g[:2] not in active:continue
+              caps={k[3] for k in v['h'] if k in validmatch} or v['caps']
+              if not caps or min(caps)>ref:continue
+              ct['keys']+=1
+              if v['units']!={'CX'}:ct['keys_non_CX_or_mixed']+=1;continue
+              t['pending_CX_all']+=v['p'];t['delivered_CX_all']+=v['f'];t['marked_CX_all']+=v['m']
+              if len(v['h'])!=1 or not v['h']<=validmatch:ct['keys_without_unique_history']+=1;continue
+              k=next(iter(v['h']));q=hkeys[k]
+              ct['keys_matched_CX']+=1
+              t['initial_CX_matched']+=q;t['delivered_CX_matched']+=v['f'];t['marked_CX_matched']+=v['m'];t['pending_CX_matched']+=v['p']
+            ini=t['initial_CX_matched']
+            return {'reference':ref,'active_orders_client':len(active),**ct,**{k:str(v) for k,v in t.items()},'fill_delivered_pct':str(t['delivered_CX_matched']*100/ini) if ini else None,'fill_delivered_marked_pct':str((t['delivered_CX_matched']+t['marked_CX_matched'])*100/ini) if ini else None}
+          result={'counts':dict(counts),'history_orders':len(ids_h),'order_orders':len(ids_o),'common_ERP':len(ids_h&ids_o),'history_keys':len(hkeys),'history_conflicting_keys':len(hconf),'history_unique_matches':len(validmatch),'history_matches_multiple_order_groups':sum(len(v)>1 for v in matches.values()),'order_groups':len(groups),'matched_order_groups':len(matchedgroups),'history_date_range':datebounds(hdates),'order_capture_range':datebounds(odates),'status_counts':dict(status),'unit_counts':dict(units),'order_CX_totals':{k:str(v) for k,v in sums.items()},'cohorts':[cohort(x) for x in ('2026-11-19','2026-11-25','2026-11-26','2026-11-30')]}
+          print('AUDIT_RESULT',json.dumps(result,ensure_ascii=False))
+          pathlib.Path('qa-order3.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: auditoria-order3-v53
+          path: qa-order3.json
