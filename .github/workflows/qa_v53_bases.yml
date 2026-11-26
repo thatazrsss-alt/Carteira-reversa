@@ -1,0 +1,55 @@
+name: QA v53 bases atualizadas
+on:
+  push:
+    paths:
+      - '.github/workflows/qa_v53_bases.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventario e correspondencia ERP
+        run: |
+          python - <<'PY'
+          import zipfile, pathlib, csv, io, json, collections, unicodedata, re
+          csv.field_size_limit(1000000000)
+          def norm(s):
+            s=unicodedata.normalize('NFKC',str(s or '')).strip().upper()
+            s=re.sub(r'\s+','',s)
+            if re.fullmatch(r'\d+(\.0+)?',s):return str(int(s.split('.')[0]))
+            return s
+          def read(name):
+            with zipfile.ZipFile(name) as z:
+              print('ZIP',name,[(i.filename,i.file_size,i.CRC) for i in z.infolist()])
+              for n in z.namelist():
+                if not n.lower().endswith('.csv'):continue
+                raw=z.read(n).rstrip(b'\0')
+                txt=raw.decode('utf-8-sig',errors='replace').lstrip('\ufeff')
+                rd=csv.DictReader(io.StringIO(txt),delimiter=';')
+                heads=rd.fieldnames
+                print('HEADERS',name,json.dumps(heads,ensure_ascii=False))
+                if not heads or 'Nº Pedido ERP' not in heads:continue
+                rows=0; ids=set(); dates=collections.Counter(); products=set(); eans=set()
+                for r in rd:
+                  p=norm(r.get('Nº Pedido ERP'))
+                  if not p or 'TESTE' in p:continue
+                  rows+=1;ids.add(p)
+                  dates[str(r.get('Data Captação ECC') or r.get('Data de Criação') or '')[:10]]+=1
+                  c=norm(r.get('Código Produto Cliente'));e=norm(r.get('EAN'))
+                  if c:products.add((p,c))
+                  if e:eans.add((p,e))
+                return {'rows':rows,'ids':ids,'products':products,'eans':eans,'dates':dates,'headers':heads,'file':n}
+            return None
+          a=read('Order 2.zip');b=read('History.zip')
+          if a and b:
+            out={'order_rows':a['rows'],'history_rows':b['rows'],'order_ids':len(a['ids']),'history_ids':len(b['ids']),'common_erp':len(a['ids']&b['ids']),'common_product':len(a['products']&b['products']),'common_ean':len(a['eans']&b['eans']),'order_file':a['file'],'history_file':b['file'],'order_headers':a['headers'],'history_headers':b['headers'],'order_dates':dict(a['dates']),'history_dates':dict(b['dates']),'history_is_order_schema':'Qtd. Atualizada' in b['headers'],'history_has_initial':'Qtd. Pedida' in b['headers']}
+            print('QA_V53',json.dumps(out,ensure_ascii=False))
+            pathlib.Path('qa-v53.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-v53-bases-atualizadas
+          path: qa-v53.json
