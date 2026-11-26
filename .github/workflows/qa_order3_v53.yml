@@ -129,4 +129,8 @@ jobs:
         if: always()
         with:
           name: auditoria-order3-v53
-          path: qa-order3.json
+          path: |
+            qa-order3.json
+            Order 3.zip
+            History.zip
+            BASE_ESTOQUE 16.11.xlsx
