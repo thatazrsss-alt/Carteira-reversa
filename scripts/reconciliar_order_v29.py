@@ -366,3 +366,18 @@ print("AUDITORIA_ORDER_V29_SUMMARY_START")
 print(json.dumps(summary,ensure_ascii=False))
 print("AUDITORIA_ORDER_V29_SUMMARY_END")
 print("ARQUIVOS_DE_EVIDENCIA",json.dumps({p.name:p.stat().st_size for p in OUT.iterdir() if p.is_file()},ensure_ascii=False))
+
+
+# QA v53: preserva a auditoria v29 e inclui os insumos do mesmo commit para teste local.
+if __name__ == '__main__':
+    import pathlib, shutil, hashlib, json
+    root=pathlib.Path('.')
+    out=pathlib.Path('auditoria-order/insumos-v53')
+    out.mkdir(parents=True,exist_ok=True)
+    sources=[root/'Order.zip',root/'BASE_ESTOQUE 16.11.xlsx',*root.glob('*ExportReportOrderHistory.csv')]
+    manifest=[]
+    for source in sources:
+        shutil.copy2(source,out/source.name)
+        manifest.append({'file':source.name,'bytes':source.stat().st_size,'sha256':hashlib.sha256(source.read_bytes()).hexdigest()})
+    (out/'manifesto.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
+    print('QA_V53_INSUMOS',json.dumps(manifest,ensure_ascii=False))
