@@ -1,0 +1,39 @@
+name: Verificar ZIPs na main
+on:
+  push:
+    paths:
+      - '.github/workflows/verificar_zip_ord_history.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar cada arquivo de forma independente
+        run: |
+          git rev-parse HEAD
+          git ls-tree HEAD -- 'Order 2.zip' 'History.zip'
+          python - <<'PY'
+          import zipfile, hashlib, json, pathlib
+          result={}
+          for name in ('Order 2.zip','History.zip'):
+            p=pathlib.Path(name)
+            raw=p.read_bytes()
+            info={'zip_sha256':hashlib.sha256(raw).hexdigest(),'git_blob_sha1':hashlib.sha1(('blob '+str(len(raw))+'\0').encode()+raw).hexdigest(),'bytes':len(raw),'entries':[]}
+            with zipfile.ZipFile(p) as z:
+              for i in z.infolist():
+                if i.is_dir():continue
+                with z.open(i) as f:
+                  first=f.readline()
+                  h=hashlib.sha256(first)
+                  for chunk in iter(lambda:f.read(1024*1024),b''):h.update(chunk)
+                info['entries'].append({'name':i.filename,'bytes':i.file_size,'crc':i.CRC,'sha256':h.hexdigest(),'header':first[:4096].decode('utf-8-sig',errors='replace').strip().lstrip('\ufeff')})
+            result[name]=info
+          print('VERIFY_RESULT',json.dumps(result,ensure_ascii=False))
+          pathlib.Path('verificacao.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verificacao-zip
+          path: verificacao.json
