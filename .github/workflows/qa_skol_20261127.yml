@@ -1,4 +1,4 @@
-name: QA Carteira 27-11 - cobertura independente do canal
+name: QA 27-11 - aderencia estrita History Order
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -53,7 +53,7 @@ jobs:
           def find(r,*aliases):
               return next((r[k] for k in aliases if k in r),'')
           def orderrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'realoc_qty':q(find(r,'Qtd. Realocada')),'order_id':n(find(r,'Nº Pedido Ambev')),'sap':n(find(r,'SKU SAP')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
           def histrow(r):
               return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
           import openpyxl
@@ -89,10 +89,13 @@ jobs:
           wb=openpyxl.load_workbook('BASE_ESTOQUE 16.11.xlsx',read_only=True,data_only=True)
           cad=next(x for x in wb if hdr(x.title)=='cad'); it=iter(cad.values); header=next(it); names=[hdr(str(v or '')) for v in header]
           si=names.index('codprod'); ecols=[i for i,x in enumerate(names) if x in ('ean13sku','ean13unitario')]
-          ca=collections.defaultdict(set); reverse=collections.defaultdict(set)
+          ca=collections.defaultdict(set); reverse=collections.defaultdict(set); factors=collections.defaultdict(set)
           for r in it:
               sku=n(r[si]); 
               if not sku:continue
+              for j in [names.index('qtdinternasku')]:
+                  x=q(str(r[j] or ''))
+                  if x and x>0:factors[sku].add(x)
               for j in ecols:
                   val=n(r[j])
                   if val and val not in ('0','1','-'):ca[sku].add(val);reverse[val].add(sku)
@@ -125,105 +128,72 @@ jobs:
               for i in direct|alt|cross|cadset:own[i].add(g)
               candidate_info[g]=(tier,len(cand),bool(raw))
           print('QA_MATCH_STAGE',len(chosen))
-          impact=collections.defaultdict(collections.Counter); iv=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); blocks=collections.defaultdict(collections.Counter); bv=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); calibration=collections.defaultdict(collections.Counter); maxcal=collections.defaultdict(collections.Counter)
-          stats=collections.defaultdict(collections.Counter); volumes=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); reasons=collections.defaultdict(collections.Counter); bynetwork=collections.defaultdict(collections.Counter); bymode=collections.defaultdict(collections.Counter)
+          # Build relaxed date candidate sets independent of quantity and ownership.
+          relaxed={}; relaxed_owners=collections.defaultdict(set)
           for g,oo in groups.items():
-              p,c,sku=g
-              pick=chosen.get(g); tier,number,raw=candidate_info[g]
+              p,c,sku=g; cand=set()
+              for o in oo:
+                  ids={o['code'],o['ean']}-{''}
+                  for v in ids|{v for v in ca[sku] if reverse[v]=={sku}}:
+                      for k in ('ean','code'):
+                          cand.update(i for i in hi.get((p,k,v),()) if o['cnpj'] and hist[i]['cnpj']==o['cnpj'])
+              relaxed[g]=cand
+              for i in cand:relaxed_owners[i].add(g)
+          hmin=min(x for x in hd if x);hmax=max(hd)
+          results=collections.defaultdict(collections.Counter); missing=collections.defaultdict(collections.Counter); unit_results=collections.defaultdict(collections.Counter); five=[]; patterns=collections.Counter(); multi_patterns=collections.Counter(); missing_dates=collections.Counter()
+          for g,oo in groups.items():
+              p,c,sku=g;pick=chosen.get(g);tier,number,raw=candidate_info[g]
               h=hist[pick[0]] if pick and own[pick[0]]=={g} and hist[pick[0]]['qty'] is not None and hist[pick[0]]['qty']>0 else None
-              reason='history_'+pick[1] if h else 'erp_missing' if p not in he else 'competing_owner' if pick and len(own[pick[0]])>1 else 'ambiguous_history' if number>1 else 'history_quantity_invalid' if pick else 'context_divergent' if raw else 'product_no_match'
-              active=any(o['valid']>=ref and 'CANCELAD' not in o['status'] for o in oo)
-              valid_qty=all(None not in o['qty'] for o in oo)
-              unitset={o['unit'] for o in oo};cx=unitset=={'CX'}
-              originals={o['original'] for o in oo if o['original'] is not None}
-              original=next(iter(originals)) if len(originals)==1 and all(o['original'] is not None for o in oo) else None
-              unique=original is not None and original>0
-              multiple=len(originals)>1
-              cancel=[o for o in oo if 'CANCELAD' in o['status']]
-              channels={o['channel'] for o in oo if o['channel']}
-              live_channels={o['channel'] for o in oo if o['channel'] and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status']}
-              mixed={'ASCD','ASVD'}<=channels
-              channel='MISTO' if mixed else next(iter(channels)) if len(channels)==1 else 'INDEFINIDO'
-              mixed_live={'ASCD','ASVD'}<=live_channels
-              if valid_qty:
-                  a,m,s,f=[sum((o['qty'][j] for o in oo),D(0)) for j in range(4)]
-                  rowpend=[o['qty'][0]-sum(o['qty'][1:]) for o in oo]
-                  pend=sum(rowpend,D(0));pn=sum((v for v,o in zip(rowpend,oo) if 'CANCELAD' not in o['status']),D(0))
-                  assert pend==a-m-s-f
-              else:a=m=s=f=pend=pn=None;rowpend=[]
-              histok=bool(h and cx and channel in ('ASVD','ASCD') and valid_qty and f+m<=h['qty'] and f>=0 and m>=0)
-              orderok=bool(not h and unique and cx and not mixed and valid_qty and not any(x<0 for x in rowpend) and f>=0 and m>=0 and f+m<=original and a<=original)
-              # Do not override ambiguous or competing History; proposed fallback only absent ERP/product, or date divergence.
-              fallback=orderok and reason in ('erp_missing','product_no_match','context_divergent')
-              # Entry identification, fill validity and operational allocation are independent.
-              allowed_reason=reason in ('erp_missing','product_no_match','context_divergent')
-              fallback_entry=bool(not h and allowed_reason and unique)
-              entry=h['qty'] if h else original if fallback_entry else None
-              sameunit=len(unitset)==1 and '' not in unitset
-              # Native-unit ratio uses same-unit Order quantities; History non-CX unit is unconfirmed.
-              source_unit_ok=cx if h else sameunit
-              fill_ok=bool(entry is not None and entry>0 and source_unit_ok and valid_qty and f>=0 and m>=0 and f+m<=entry)
-              current_single=len(live_channels)==1 and live_channels<= {'ASVD','ASCD'}
-              channel_ok=bool(not mixed_live and (current_single or channel in ('ASVD','ASCD')))
-              operational=fill_ok and channel_ok
-              live_a=sum((o['qty'][0] for o in oo if 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status']),D(0)) if valid_qty else None
-              live_p=sum((v for o,v in zip(oo,rowpend) if 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status'] and o['valid']>=ref),D(0)) if valid_qty else None
-              for lab in ['all']+(['active'] if active else [])+(['active_live_pending'] if live_p is not None and live_p>0 else []):
-                  z=impact[lab];t=iv[lab]; z['keys']+=1;z['history_entry']+=bool(h);z['order_entry_candidate']+=fallback_entry;z['entry_known']+=entry is not None;z['fill_key_ok']+=fill_ok;z['operational_channel_ok']+=operational
-                  z['fill_recovered_from_previous']+=fill_ok and not(histok or fallback);z['historical_mixed_single_live']+=mixed and current_single;z['truly_mixed']+=mixed_live;z['fill_known_mixed']+=fill_ok and mixed_live
-                  z['fallback_native_non_cx']+=fallback_entry and not cx and fill_ok;z['fallback_updated_exceeds_entry']+=bool(fallback_entry and valid_qty and a>original);z['fallback_updated_exceeds_but_live_not']+=bool(fallback_entry and valid_qty and a>original and live_a<=original)
-                  if cx and valid_qty:
-                      t['gross_pending']+=pend;t['noncancel_pending']+=pn;t['live_valid_pending']+=live_p;t['fill_ok_live_pending']+=live_p if fill_ok else D(0);t['operational_live_pending']+=live_p if operational else D(0)
-                  if not fill_ok:
-                      if entry is None:
-                          b='History ambiguo ou disputado' if reason in ('ambiguous_history','competing_owner') else 'Original divergente sem History' if multiple else 'Entrada sem fonte segura'
-                      elif not source_unit_ok:b='Unidade History nao comprovada'
-                      elif not valid_qty:b='Movimento invalido'
-                      elif f<0 or m<0:b='Movimento negativo'
-                      elif f+m>entry:b='Entregue e marcado maior que entrada'
-                      else:b='Outro'
-                      blocks[lab][b]+=1
-                      if cx and valid_qty:bv[lab][b]+=live_p
-                  if h and cx and multiple:
-                      zz=maxcal[lab];zz['multi_original']+=1;zz['max_equal_history']+=max(originals)==h['qty'];zz['min_equal_history']+=min(originals)==h['qty'];zz['sum_distinct_equal_history']+=sum(originals,D(0))==h['qty']
-                      live_originals={o['original'] for o in oo if o['original'] is not None and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status']}
-                      zz['single_live_original']+=len(live_originals)==1;zz['single_live_equal_history']+=live_originals=={h['qty']}
-                  if not h and multiple:
-                      zz=maxcal[lab];zz['missing_multi_original']+=1
-                  if h and cx and unique:
-                      zz=calibration[lab];zz['n']+=1;zz['equal']+=original==h['qty']
-              sets=['all']+(['active'] if active else [])+(['positive_pending'] if valid_qty and pend>0 else [])+(['active_positive_pending'] if active and valid_qty and pend>0 else [])+(['skol'] if sku=='360248' else [])
-              for k in sets:
-                  z=stats[k];t=volumes[k];z['keys']+=1;z['rows']+=len(oo);z['multiple_rows']+=len(oo)>1;z['unique_original_positive']+=unique;z['multiple_original_values']+=multiple;z['original_missing']+=any(o['original'] is None for o in oo);z['original_zero_or_negative']+=original is not None and original<=0;z['all_cx']+=cx;z['mixed_units']+=len(unitset)>1;z['mixed_channel']+=mixed;z['mixed_active_channel']+=mixed_live;z['all_cancelled']+=len(cancel)==len(oo);z['partially_cancelled']+=0<len(cancel)<len(oo);z['invalid_movements']+=not valid_qty
-                  reasons[k][reason]+=1
-                  z['history_identified']+=bool(h);z['channel_unknown']+=channel=='INDEFINIDO';z['history_fill_valid']+=histok;z['fallback_candidate']+=fallback;z['no_valid_fill_after_fallback']+=not(histok or fallback)
-                  if h and cx:
-                      z['history_cx']+=1;z['history_original_unique']+=unique;z['history_original_equal']+=unique and original==h['qty'];z['history_original_diff']+=unique and original!=h['qty'];z['original_greater_history']+=unique and original>h['qty'];z['original_less_history']+=unique and original<h['qty'];z['history_multiple_original']+=multiple;z['history_qty_among_originals']+=h['qty'] in originals
-                      z['history_original_equal_multirow']+=len(oo)>1 and unique and original==h['qty'];z['history_original_sum_equal']+=all(o['original'] is not None for o in oo) and sum((o['original'] for o in oo if o['original'] is not None),D(0))==h['qty'];t['history_entry_CX']+=h['qty']
+              active=any(o['valid']>=ref and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status'] for o in oo)
+              orig={o['original'] for o in oo if o['original'] is not None}
+              cx={o['unit'] for o in oo}=={'CX'}
+              unit=next(iter({o['unit'] for o in oo}),'')
+              unique=len(orig)==1
+              rawc=relaxed[g]; relaxed_exclusive=[i for i in rawc if relaxed_owners[i]=={g}]
+              rq={hist[i]['qty'] for i in relaxed_exclusive if hist[i]['qty'] is not None}
+              # Equal-quantity duplicate History rows can identify a volume, but not necessarily a unique physical item.
+              relaxed_strict=len(rawc)==1 and len(relaxed_exclusive)==1
+              alt_h=hist[relaxed_exclusive[0]] if relaxed_strict else None
+              liveorig={o['original'] for o in oo if o['original'] is not None and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status']}
+              firstdate=min((o['created'] for o in oo if o['created']),default='')
+              firstorig={o['original'] for o in oo if o['created']==firstdate}
+              lastdate=max((o['created'] for o in oo if o['created']),default='')
+              lastorig={o['original'] for o in oo if o['created']==lastdate}
+              peritem=collections.defaultdict(set)
+              for o in oo:
+                  peritem[(o['order_id'],o['item'])].add(o['original'])
+              sumitem=sum((next(iter(v)) for v in peritem.values()),D(0)) if all(len(v)==1 and None not in v for v in peritem.values()) else None
+              labs=['all']+(['active'] if active else [])
+              for lab in labs:
+                  z=results[lab];z['keys']+=1;z['history_unique']+=bool(h)
                   if not h:
-                      z['missing_history_unique_positive']+=unique;z['missing_history_multiple_original']+=multiple;z['missing_history_unique_exceeds_entry']+=bool(unique and valid_qty and f+m>original);z['missing_history_updated_exceeds_original']+=bool(unique and valid_qty and a>original)
-                  if valid_qty:
-                      z['negative_pending_line']+=any(x<0 for x in rowpend);z['negative_pending_key']+=pend<0;z['cancel_changes_pending']+=pend!=pn
-                      z['history_fill_exceeds_entry']+=bool(h and cx and f+m>h['qty'])
-                      z['cancelled_pending_keys']+=len(cancel)>0 and pend!=pn
-                      z['fully_cancelled_pending_positive']+=len(cancel)==len(oo) and pend>0
-                      z['pending_net_positive']+=pn>0
-                      if cx and pend!=pn:t['cancelled_pending_CX']+=pend-pn
-                      if cx:
-                          for name,v in [('updated',a),('delivered',f),('marked',m),('without_remessa',s),('pending',pend),('pending_non_cancelled',pn)]:t[name+'_CX']+=v
-                          if unique:t['order_original_unique_CX']+=original
-                          if histok or fallback:
-                              entry=h['qty'] if histok else original
-                              for name,v in [('entry',entry),('delivered',f),('marked',m),('pending',pend)]:t['eligible_'+name+'_CX']+=v
-                              if fallback:t['fallback_entry_CX']+=entry
-                              else:t['history_valid_entry_CX']+=entry
-                          else:t['unvalidated_pending_CX']+=pend
-                  if active and k=='active':
-                      net=next(iter({o['net'] for o in oo if o['net']}),'')
-                      zz=bynetwork[net];zz['keys']+=1;zz['history']+=histok;zz['fallback']+=fallback;zz['unresolved']+=not(histok or fallback)
-              for mode in [channel]:
-                  zz=bymode[mode];zz['keys']+=1;zz['history']+=bool(h);zz['history_equal']+=bool(h and unique and original==h['qty'] and cx);zz['fallback']+=fallback;zz['unresolved']+=not(histok or fallback)
-          print('QA_CHANNEL_RAW',json.dumps(dict(collections.Counter(o['channel'] for oo in groups.values() for o in oo)),ensure_ascii=False))
-          result={'counts':{k:dict(v) for k,v in stats.items()},'reasons':{k:dict(v) for k,v in reasons.items()},'volumes_CX':{k:{a:str(b) for a,b in v.items()} for k,v in volumes.items()},'channel_counts_exclusive':{k:dict(v) for k,v in bymode.items()},'active_network_summary':{'networks':len(bynetwork),'with_unresolved':sum(v['unresolved']>0 for v in bynetwork.values()),'all_covered':sum(v['unresolved']==0 for v in bynetwork.values())}}
-          print('QA_COVERAGE',json.dumps({'counts':{k:dict(v) for k,v in impact.items()},'volumes':{k:{a:str(b) for a,b in v.items()} for k,v in iv.items()},'blocks':{k:dict(v) for k,v in blocks.items()},'block_pending':{k:{a:str(b) for a,b in v.items()} for k,v in bv.items()},'multi_original_calibration':{k:dict(v) for k,v in maxcal.items()},'single_original_calibration':{k:dict(v) for k,v in calibration.items()}},ensure_ascii=False))
+                      a=missing[lab];a['keys']+=1;a['erp_missing']+=p not in he;a['erp_present']+=p in he
+                      a['any_relaxed_identity']+=bool(rawc);a['relaxed_unique_exclusive']+=relaxed_strict;a['relaxed_unique_equal_order']+=bool(alt_h and unique and alt_h['qty'] in orig and cx);a['relaxed_unique_multiple_contains']+=bool(alt_h and not unique and alt_h['qty'] in orig and cx)
+                      a['relaxed_multiple_same_qty']+=len(relaxed_exclusive)>1 and len(rq)==1
+                      a['erp_missing_before_range']+=p not in he and all(o['date'] and o['date']<hmin for o in oo)
+                      a['erp_missing_in_range']+=p not in he and any(hmin<=o['date']<=hmax for o in oo)
+                      a['erp_present_no_relaxed_id']+=p in he and not rawc
+                      continue
+                  qty=h['qty']; u=unit_results[unit]; 
+                  if lab=='all':
+                      u['matched']+=1;u['one_original']+=unique;u['exact_unique']+=unique and qty in orig;u['any_original_equal']+=qty in orig
+                      if unique and len(factors[sku])==1:
+                          fac=next(iter(factors[sku]));v=next(iter(orig))
+                          u['factor_mul_equal']+=v*fac==qty;u['factor_div_equal']+=v/fac==qty
+                      if unique:
+                          v=next(iter(orig));u['dz12_mul_equal']+=v*12==qty;u['dz12_div_equal']+=v/12==qty
+                  if not cx:continue
+                  z['history_cx']+=1;z['unique_original']+=unique;z['unique_equal']+=unique and qty in orig;z['unique_diff']+=unique and qty not in orig
+                  z['multi_original']+=not unique;z['multi_any_equal']+=not unique and qty in orig;z['multi_no_equal']+=not unique and qty not in orig
+                  if not unique:
+                      z['multi_first_created_unique_equal']+=firstorig=={qty};z['multi_last_created_unique_equal']+=lastorig=={qty}
+                      z['multi_live_unique_equal']+=liveorig=={qty};z['multi_max_equal']+=max(orig)==qty;z['multi_sum_distinct_equal']+=sum(orig,D(0))==qty;z['multi_sum_item_equal']+=sumitem==qty
+                      z['multi_any_test_equal']+=qty in orig or sum(orig,D(0))==qty or sumitem==qty
+              if h and cx and unique and h['qty'] not in orig:
+                  five.append({'history':str(h['qty']),'original':str(next(iter(orig))),'rows':len(oo),'active':active,'status':sorted({o['status'] for o in oo}),'realoc_type_present':any(o['realoc'] for o in oo),'realoc_qty_positive':any(o['realoc_qty'] and o['realoc_qty']>0 for o in oo),'order_created_equals_history':any(o['created']==h['date'] for o in oo),'alternative_history_quantities':sorted(str(x) for x in rq),'alt_qty_contains_original':bool(orig&rq)})
+              if h and cx and not unique:
+                  qty=h['qty'];multi_patterns['no_exact_original_but_sum_distinct']+=qty not in orig and sum(orig,D(0))==qty
+                  multi_patterns['no_exact_original_but_item_sum']+=qty not in orig and sumitem==qty
+                  multi_patterns['no_exact_original_and_no_test']+=qty not in orig and sum(orig,D(0))!=qty and sumitem!=qty
+          print('QA_ADHERENCE',json.dumps({'counts':{k:dict(v) for k,v in results.items()},'missing':{k:dict(v) for k,v in missing.items()},'unit_checks':{k:dict(v) for k,v in unit_results.items()},'single_discrepancy_examples':five,'multi_patterns':dict(multi_patterns)},ensure_ascii=False))
           PY
