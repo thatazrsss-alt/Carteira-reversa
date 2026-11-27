@@ -1,4 +1,4 @@
-name: QA Carteira completa 27-11
+name: QA Carteira completa 27-11 - canal e cancelamento
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -53,7 +53,7 @@ jobs:
           def find(r,*aliases):
               return next((r[k] for k in aliases if k in r),'')
           def orderrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
           def histrow(r):
               return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
           import openpyxl
@@ -139,30 +139,38 @@ jobs:
               unique=original is not None and original>0
               multiple=len(originals)>1
               cancel=[o for o in oo if 'CANCELAD' in o['status']]
-              mixed=len({o['mode'] for o in oo if o['mode']})>1
+              channels={o['channel'] for o in oo if o['channel']}
+              live_channels={o['channel'] for o in oo if o['channel'] and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status']}
+              mixed={'ASCD','ASVD'}<=channels
+              channel='MISTO' if mixed else next(iter(channels)) if len(channels)==1 else 'INDEFINIDO'
+              mixed_live={'ASCD','ASVD'}<=live_channels
               if valid_qty:
                   a,m,s,f=[sum((o['qty'][j] for o in oo),D(0)) for j in range(4)]
                   rowpend=[o['qty'][0]-sum(o['qty'][1:]) for o in oo]
                   pend=sum(rowpend,D(0));pn=sum((v for v,o in zip(rowpend,oo) if 'CANCELAD' not in o['status']),D(0))
                   assert pend==a-m-s-f
               else:a=m=s=f=pend=pn=None;rowpend=[]
-              histok=bool(h and cx and not mixed and valid_qty and f+m<=h['qty'] and f>=0 and m>=0)
+              histok=bool(h and cx and channel in ('ASVD','ASCD') and valid_qty and f+m<=h['qty'] and f>=0 and m>=0)
               orderok=bool(not h and unique and cx and not mixed and valid_qty and not any(x<0 for x in rowpend) and f>=0 and m>=0 and f+m<=original and a<=original)
               # Do not override ambiguous or competing History; proposed fallback only absent ERP/product, or date divergence.
               fallback=orderok and reason in ('erp_missing','product_no_match','context_divergent')
               sets=['all']+(['active'] if active else [])+(['positive_pending'] if valid_qty and pend>0 else [])+(['active_positive_pending'] if active and valid_qty and pend>0 else [])+(['skol'] if sku=='360248' else [])
               for k in sets:
-                  z=stats[k];t=volumes[k];z['keys']+=1;z['rows']+=len(oo);z['multiple_rows']+=len(oo)>1;z['unique_original_positive']+=unique;z['multiple_original_values']+=multiple;z['original_missing']+=any(o['original'] is None for o in oo);z['original_zero_or_negative']+=original is not None and original<=0;z['all_cx']+=cx;z['mixed_units']+=len(unitset)>1;z['mixed_mode']+=mixed;z['all_cancelled']+=len(cancel)==len(oo);z['partially_cancelled']+=0<len(cancel)<len(oo);z['invalid_movements']+=not valid_qty
+                  z=stats[k];t=volumes[k];z['keys']+=1;z['rows']+=len(oo);z['multiple_rows']+=len(oo)>1;z['unique_original_positive']+=unique;z['multiple_original_values']+=multiple;z['original_missing']+=any(o['original'] is None for o in oo);z['original_zero_or_negative']+=original is not None and original<=0;z['all_cx']+=cx;z['mixed_units']+=len(unitset)>1;z['mixed_channel']+=mixed;z['mixed_active_channel']+=mixed_live;z['all_cancelled']+=len(cancel)==len(oo);z['partially_cancelled']+=0<len(cancel)<len(oo);z['invalid_movements']+=not valid_qty
                   reasons[k][reason]+=1
-                  z['history_identified']+=bool(h);z['history_fill_valid']+=histok;z['fallback_candidate']+=fallback;z['no_valid_fill_after_fallback']+=not(histok or fallback)
+                  z['history_identified']+=bool(h);z['channel_unknown']+=channel=='INDEFINIDO';z['history_fill_valid']+=histok;z['fallback_candidate']+=fallback;z['no_valid_fill_after_fallback']+=not(histok or fallback)
                   if h and cx:
-                      z['history_cx']+=1;z['history_original_unique']+=unique;z['history_original_equal']+=unique and original==h['qty'];z['history_original_diff']+=unique and original!=h['qty'];z['history_multiple_original']+=multiple;z['history_qty_among_originals']+=h['qty'] in originals
+                      z['history_cx']+=1;z['history_original_unique']+=unique;z['history_original_equal']+=unique and original==h['qty'];z['history_original_diff']+=unique and original!=h['qty'];z['original_greater_history']+=unique and original>h['qty'];z['original_less_history']+=unique and original<h['qty'];z['history_multiple_original']+=multiple;z['history_qty_among_originals']+=h['qty'] in originals
                       z['history_original_equal_multirow']+=len(oo)>1 and unique and original==h['qty'];z['history_original_sum_equal']+=all(o['original'] is not None for o in oo) and sum((o['original'] for o in oo if o['original'] is not None),D(0))==h['qty'];t['history_entry_CX']+=h['qty']
                   if not h:
                       z['missing_history_unique_positive']+=unique;z['missing_history_multiple_original']+=multiple;z['missing_history_unique_exceeds_entry']+=bool(unique and valid_qty and f+m>original);z['missing_history_updated_exceeds_original']+=bool(unique and valid_qty and a>original)
                   if valid_qty:
                       z['negative_pending_line']+=any(x<0 for x in rowpend);z['negative_pending_key']+=pend<0;z['cancel_changes_pending']+=pend!=pn
                       z['history_fill_exceeds_entry']+=bool(h and cx and f+m>h['qty'])
+                      z['cancelled_pending_keys']+=len(cancel)>0 and pend!=pn
+                      z['fully_cancelled_pending_positive']+=len(cancel)==len(oo) and pend>0
+                      z['pending_net_positive']+=pn>0
+                      if cx and pend!=pn:t['cancelled_pending_CX']+=pend-pn
                       if cx:
                           for name,v in [('updated',a),('delivered',f),('marked',m),('without_remessa',s),('pending',pend),('pending_non_cancelled',pn)]:t[name+'_CX']+=v
                           if unique:t['order_original_unique_CX']+=original
@@ -175,8 +183,9 @@ jobs:
                   if active and k=='active':
                       net=next(iter({o['net'] for o in oo if o['net']}),'')
                       zz=bynetwork[net];zz['keys']+=1;zz['history']+=histok;zz['fallback']+=fallback;zz['unresolved']+=not(histok or fallback)
-              for mode in {o['mode'] for o in oo}:
+              for mode in [channel]:
                   zz=bymode[mode];zz['keys']+=1;zz['history']+=bool(h);zz['history_equal']+=bool(h and unique and original==h['qty'] and cx);zz['fallback']+=fallback;zz['unresolved']+=not(histok or fallback)
-          result={'counts':{k:dict(v) for k,v in stats.items()},'reasons':{k:dict(v) for k,v in reasons.items()},'volumes_CX':{k:{a:str(b) for a,b in v.items()} for k,v in volumes.items()},'mode_counts_nonexclusive':{k:dict(v) for k,v in bymode.items()},'active_network_summary':{'networks':len(bynetwork),'with_unresolved':sum(v['unresolved']>0 for v in bynetwork.values()),'all_covered':sum(v['unresolved']==0 for v in bynetwork.values())}}
+          print('QA_CHANNEL_RAW',json.dumps(dict(collections.Counter(o['channel'] for oo in groups.values() for o in oo)),ensure_ascii=False))
+          result={'counts':{k:dict(v) for k,v in stats.items()},'reasons':{k:dict(v) for k,v in reasons.items()},'volumes_CX':{k:{a:str(b) for a,b in v.items()} for k,v in volumes.items()},'channel_counts_exclusive':{k:dict(v) for k,v in bymode.items()},'active_network_summary':{'networks':len(bynetwork),'with_unresolved':sum(v['unresolved']>0 for v in bynetwork.values()),'all_covered':sum(v['unresolved']==0 for v in bynetwork.values())}}
           print('QA_COMPLETE',json.dumps(result,ensure_ascii=False))
           PY
