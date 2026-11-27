@@ -1,4 +1,4 @@
-name: QA SKOL 27-11 - CAD e datas
+name: QA SKOL 27-11 - aliases CAD
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -64,8 +64,8 @@ jobs:
               vals=[n(v) for v in row]
               if '360248' in vals or '7891991308267' in vals or '91373' in vals:
                   idxs.append(i);hits.append([(j+1,str(v)) for j,v in enumerate(row) if v is not None])
-          print('CAD_HEADERS',json.dumps([[str(v or '') for v in row] for row in cadrows[:3]],ensure_ascii=False))
-          print('CAD_TARGET_ROWS',json.dumps(hits[:12],ensure_ascii=False))
+          print('CAD_HEADERS',json.dumps([str(v or '') for v in cadrows[0]],ensure_ascii=False))
+          print('CAD_TARGET_COUNT',len(hits))
           # EAN columns identified by header, not fixed offsets.
           hidx=next((i for i,row in enumerate(cadrows[:10]) if any('ean' in hdr(str(v or '')) for v in row)),None)
           alias=set()
@@ -75,7 +75,7 @@ jobs:
               ecols=[j for j,v in enumerate(headers) if 'ean' in v or 'gtin' in v or 'codigobarras' in v]
               skucols=[j for j,v in enumerate(headers) if 'eg' in v and ('sku' in v or 'cod' in v or 'material' in v or v=='eg')]
               if not skucols:
-                  skucols=[j for j,v in enumerate(headers) if v=='eg']
+                  skucols=[j for j,v in enumerate(headers) if v in ('eg','codprod')]
               sku_col=next((j for j in skucols if any(n(cadrows[i][j])=='360248' for i in idxs)),None)
               if sku_col is not None:
                   for row in cadrows[hidx+1:]:
@@ -109,7 +109,7 @@ jobs:
           group=collections.defaultdict(list)
           for p,oo in order.items():
               for o in oo:group[(p,o['client'])].append(o)
-          counts=collections.Counter(); missing=collections.Counter(); alt=collections.Counter(); candidates=collections.Counter(); cadconf=collections.Counter(); namepat=collections.Counter(); nets=collections.Counter(); active=collections.Counter()
+          counts=collections.Counter(); missing=collections.Counter(); alt=collections.Counter(); candidates=collections.Counter(); cadconf=collections.Counter(); unmatched=collections.Counter(); no_context=collections.Counter(); namepat=collections.Counter(); nets=collections.Counter(); active=collections.Counter()
           for (p,c),oo in group.items():
               hh=hist[p]
               direct=[h for h in hh if any(match(o,h) and comp(o,h) for o in oo)]
@@ -142,6 +142,12 @@ jobs:
               cc=[h for h in hh if any(comp(o,h,True) and bool({h['ean'],h['code']}&alias) for o in oo)]
               clean=[h for h in cc if not any(ids.get((p,h['cnpj'],v),set())-{'360248'} for v in (h['ean'],h['code']) if v)]
               cadconf['candidate_any']+=bool(cc);cadconf['unique']+=len(uq(cc))==1;cadconf['unique_no_other_sku']+=len(uq(clean))==1 and len(uq(cc))==1
+              allcad=[h for h in hh if bool({h['ean'],h['code']}&alias)]
+              cadconf['any_cad_alias_without_context']+=bool(allcad)
+              for v in {h['ean'] for h in allcad if h['ean']}:no_context[v]+=1
+              unowned=[h for h in hh if any(comp(o,h,True) for o in oo) and not any(ids.get((p,h['cnpj'],v),set()) for v in (h['ean'],h['code']) if v)]
+              cadconf['unowned_history_unique']+=len(uq(unowned))==1
+              for v in {h['ean'] for h in unowned if h['ean']}:unmatched[v]+=1
               # Description and item number are diagnostic, never automatic approval.
               dd=[h for h in hh if 'SKOL' in h['desc'] and ('ZERO' in h['desc'] or 'SEMALCOOL' in h['desc']) and any(comp(o,h,True) for o in oo)]
               namepat['description_any']+=bool(dd);namepat['description_unique']+=len(uq(dd))==1
@@ -149,5 +155,5 @@ jobs:
               namepat['item_unique']+=len(uq(ii))==1
               for v in {h['ean'] for h in dd if h['ean']}:candidates[v]+=1
               for v in {h['ean'] for h in ii if h['ean']}:nets[v]+=1
-          print('QA_FINAL',json.dumps({'counts':dict(counts),'active':dict(active),'missing':dict(missing),'alternative_dates':dict(alt),'cad':dict(cadconf),'description':dict(namepat),'description_ean_candidates':dict(candidates),'item_ean_candidates_top':nets.most_common(12),'history_date_range':[min(x for x in allhdates if x),max(allhdates)]},ensure_ascii=False))
+          print('QA_FINAL',json.dumps({'counts':dict(counts),'active':dict(active),'missing':dict(missing),'alternative_dates':dict(alt),'cad':dict(cadconf),'description':dict(namepat),'description_ean_candidates':dict(candidates),'item_ean_candidates_top':nets.most_common(12),'unowned_ean_top':unmatched.most_common(15),'cad_alias_without_context':dict(no_context),'history_date_range':[min(x for x in allhdates if x),max(allhdates)]},ensure_ascii=False))
           PY
