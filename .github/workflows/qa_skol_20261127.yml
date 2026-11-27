@@ -1,4 +1,4 @@
-name: QA SKOL 27-11 - aliases CAD
+name: QA SKOL 27-11 - exclusividade e origem
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -50,7 +50,7 @@ jobs:
               m={hdr(k):v for k,v in r.items() if k is not None}
               return next((m[hdr(k)] for k in aliases if hdr(k) in m),'')
           def orderrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')),'mode':n(find(r,'Modo')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
           def histrow(r):
               return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
           import openpyxl
@@ -89,9 +89,11 @@ jobs:
               if n(r.get('SKU EG'))=='360248':
                   o=orderrow(r);order[o['p']].append(o)
           # Include every other SKU of the relevant ERP to check candidate ownership.
+          allorder=collections.defaultdict(list)
           for r in rows(op):
               p=n(r.get('Nº Pedido ERP'))
               if p not in order:continue
+              allorder[p].append(orderrow(r))
               for k in ('EAN','Código Produto Cliente'):
                   v=n(r.get(k))
                   if v:ids[(p,n(r.get('CNPJ Cliente')),v)].add(n(r.get('SKU EG')))
@@ -109,6 +111,53 @@ jobs:
           group=collections.defaultdict(list)
           for p,oo in order.items():
               for o in oo:group[(p,o['client'])].append(o)
+          def owners(p,h):
+              return {(o['client'],o['sku']) for o in allorder[p] if comp(o,h,True) and (match(o,h) or bool(({o['ean'],o['code']}-{''}) & ({h['ean'],h['code']}-{''})))}
+          ownstats=collections.Counter(); active_own=collections.Counter(); absent_stats=collections.Counter(); code_context=collections.Counter(); qty_stats=collections.Counter(); order_eans=collections.Counter(); absent_active=collections.Counter()
+          for (p,c),oo in group.items():
+              hh=hist[p]; isactive=any(o['valid']>='2026-11-27' and 'CANCELAD' not in o['status'] for o in oo)
+              direct=[h for h in hh if any(match(o,h) and comp(o,h) for o in oo)]
+              alt=[h for h in hh if any(match(o,h) and comp(o,h,True) for o in oo)]
+              bucket='direct' if len(uq(direct))==1 else 'alternative' if len(uq(alt))==1 else 'missing_erp' if not hh else 'date_unresolved' if any(match(o,h) for o in oo for h in hh) else 'missing_product'
+              if bucket in ('direct','alternative'):
+                  h=(direct or alt)[0]
+                  own=owners(p,h)
+                  # Conservative: any other SKU or client using the same History identifier, even outside original dates, is counted separately.
+                  rawowners={(o['client'],o['sku']) for o in allorder[p] if (not(o['cnpj'] and h['cnpj']) or o['cnpj']==h['cnpj']) and match(o,h)}
+                  verdict='exclusive' if own=={(c,'360248')} else 'competing'
+                  ownstats[bucket+'_'+verdict]+=1
+                  if rawowners-{(c,'360248')}:ownstats[bucket+'_other_owner_ignoring_dates']+=1
+                  if isactive:active_own[bucket+'_'+verdict]+=1
+                  if bucket=='alternative':
+                      qty_stats['alternative_original_equal']+=bool(h['qty'] is not None and any(o['original']==h['qty'] for o in oo))
+                      qty_stats['alternative_movement_exceeds_entry']+=bool(h['qty'] is not None and sum((o['qty'][1]+o['qty'][3] for o in oo if None not in o['qty']),D(0))>h['qty'])
+                  continue
+              if bucket=='missing_product':
+                  absent_stats['groups']+=1
+                  if isactive:absent_active['groups']+=1
+                  hh_c=[h for h in hh if any(not(o['cnpj'] and h['cnpj']) or o['cnpj']==h['cnpj'] for o in oo)]
+                  hh_ctx=[h for h in hh if any(comp(o,h,True) for o in oo)]
+                  hh_item=[h for h in hh_c if any(o['item'] and o['item']==h['item'] for o in oo)]
+                  hh_unowned=[h for h in hh_ctx if not owners(p,h)]
+                  absent_stats['cnpj_found']+=bool(hh_c);absent_stats['context_found']+=bool(hh_ctx)
+                  absent_stats['all_context_items_claimed']+=bool(hh_ctx) and not hh_unowned
+                  absent_stats['item_number_match_ignoring_dates']+=bool(hh_item)
+                  absent_stats['item_number_matches_other_sku']+=any(owners(p,h)-{(c,'360248')} for h in hh_item)
+                  absent_stats['all_cancelled']+=all('CANCELAD' in o['status'] for o in oo)
+                  absent_stats['has_order_original_gt0']+=any(o['original'] is not None and o['original']>0 for o in oo)
+                  absent_stats['has_positive_pending']+=any(None not in o['qty'] and o['qty'][0]-sum(o['qty'][1:])>0 and 'CANCELAD' not in o['status'] for o in oo)
+                  absent_stats['has_delivered_or_marked']+=any(None not in o['qty'] and o['qty'][1]+o['qty'][3]>0 for o in oo)
+                  for h in hh_item:
+                      if h['ean']:code_context[h['ean']]+=1
+                  for o in oo:
+                      if o['ean']:order_eans[o['ean']]+=1
+                  if isactive:
+                      absent_active['all_context_items_claimed']+=bool(hh_ctx) and not hh_unowned
+                      absent_active['has_positive_pending']+=any(None not in o['qty'] and o['qty'][0]-sum(o['qty'][1:])>0 and 'CANCELAD' not in o['status'] for o in oo)
+              if bucket=='missing_erp':
+                  absent_stats['missing_erp_before_start']+=all(o['date'] and o['date']<min(x for x in allhdates if x) for o in oo)
+                  absent_stats['missing_erp_after_end']+=all(o['date'] and o['date']>max(allhdates) for o in oo)
+          print('QA_EXCLUSIVITY',json.dumps({'owners':dict(ownstats),'active_owners':dict(active_own),'alternative_qty_checks':dict(qty_stats),'missing_product':dict(absent_stats),'missing_active':dict(absent_active),'item_number_history_eans_top':code_context.most_common(10),'missing_product_order_eans':dict(order_eans)},ensure_ascii=False))
           counts=collections.Counter(); missing=collections.Counter(); alt=collections.Counter(); candidates=collections.Counter(); cadconf=collections.Counter(); unmatched=collections.Counter(); no_context=collections.Counter(); namepat=collections.Counter(); nets=collections.Counter(); active=collections.Counter()
           for (p,c),oo in group.items():
               hh=hist[p]
