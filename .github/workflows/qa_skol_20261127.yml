@@ -1,4 +1,4 @@
-name: QA SKOL 27-11
+name: QA SKOL 27-11 - diagnostico
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -69,7 +69,7 @@ jobs:
           groups=collections.defaultdict(list)
           for p,oo in order.items():
               for o in oo:groups[(p,o['client'])].append(o)
-          counts=collections.Counter();results=[]
+          counts=collections.Counter();results=[];why=collections.Counter();detail=collections.Counter();codes=collections.Counter()
           for (p,client),oo in groups.items():
               hh=hist[p]; C=[h for h in hh if any(o['code'] and o['code']==h['code'] for o in oo)]
               E=[h for h in hh if any(o['ean'] and o['ean']==h['ean'] for o in oo)]
@@ -77,9 +77,25 @@ jobs:
               # Collapse identical snapshots, never sum repeated original quantities automatically.
               unique={(h['item'],h['code'],h['ean'],h['date'],h['valid'],h['cnpj'],h['qty']) for h in B}
               counts['groups']+=1;counts['erp_found']+=bool(hh);counts['code_match']+=bool(C);counts['ean_match']+=bool(E);counts['context_match']+=bool(B);counts['one_distinct_history']+=len(unique)==1
-              if p in target:
+              if len(unique)!=1:
+                  if not hh:
+                      why['ERP ausente']+=1
+                  elif not (C or E):
+                      cross=[(o,h) for o in oo for h in hh if (o['code'] and o['code']==h['ean']) or (o['ean'] and o['ean']==h['code'])]
+                      why['codigo em coluna trocada' if cross else 'sem codigo igual no ERP']+=1
+                      if cross:detail['coluna trocada e contexto compativel']+=any(compatible(o,h) for o,h in cross)
+                      if not any(o['code'] or o['ean'] for o in oo):detail['Order sem identificadores']+=1
+                      for k in {o['ean'] for o in oo if o['ean']}:codes[k]+=1
+                  elif not B:
+                      why['codigo igual, contexto divergente']+=1
+                      pairs=[(o,h) for o in oo for h in hh if (o['code'] and o['code']==h['code']) or (o['ean'] and o['ean']==h['ean'])]
+                      patterns={'+'.join(k for k in ('date','valid','cnpj') if o[k] and h[k] and o[k]!=h[k]) for o,h in pairs}
+                      detail['contexto: '+' | '.join(sorted(patterns))]+=1
+                  else:
+                      why['multiplos registros History']+=1
+              if False:
                   moves=[sum((o['qty'][i] for o in oo if o['qty'][i] is not None),D(0)) for i in range(4)]
                   rec={'erp':p,'client':client,'order_rows':len(oo),'history_rows_erp':len(hh),'code_matches':len(C),'ean_matches':len(E),'context_matches':len(B),'unique_history':len(unique),'order_codes':sorted({o['code'] for o in oo}),'order_eans':sorted({o['ean'] for o in oo}),'history_codes':sorted({h['code'] for h in hh}),'history_eans':sorted({h['ean'] for h in hh}),'matched_history_qty':sorted({str(h['qty']) for h in B}),'date_match':any(o['date'] and o['date']==h['date'] for o in oo for h in B),'cnpj_comparable':any(o['cnpj'] and h['cnpj'] for o in oo for h in B),'units':sorted({o['unit'] for o in oo}),'statuses':sorted({o['status'] for o in oo}),'moves':list(map(str,moves)),'other_sku_count':sum(v for (pp,ss),v in other.items() if pp==p)}
                   results.append(rec)
-          print('QA_RESULT',json.dumps({'counts':dict(counts),'sku_rows':sum(allsku.values()),'target':results,'target_missing_order':sorted(target-set(order))},ensure_ascii=False))
+          print('QA_RESULT',json.dumps({'counts':dict(counts),'sku_rows':sum(allsku.values()),'motivos':dict(why),'detalhes':dict(detail),'ean_order_sem_match':dict(codes)},ensure_ascii=False))
           PY
