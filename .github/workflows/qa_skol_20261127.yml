@@ -1,4 +1,4 @@
-name: QA SKOL 27-11 - diagnostico
+name: QA SKOL 27-11 - CAD e datas
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -11,6 +11,7 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+      - run: python -m pip install openpyxl
       - name: Reconciliar SKU 360248
         run: |
           python - <<'PY'
@@ -49,53 +50,104 @@ jobs:
               m={hdr(k):v for k,v in r.items() if k is not None}
               return next((m[hdr(k)] for k in aliases if hdr(k) in m),'')
           def orderrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
           def histrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
-          target={'842558010202','842558010215'}
-          order=collections.defaultdict(list); allsku=collections.Counter(); other=collections.Counter()
-          for r in rows('2026.11.27_10.22 ExportReportOrderItem ultimo.zip'):
-              # Read only rows relevant to audit.
-              sku=n(r.get('SKU EG')); p=n(r.get('Nº Pedido ERP'))
-              if sku=='360248':
-                  o=orderrow(r);order[p].append(o);allsku[o['code']]+=1
-              if p in target and sku!='360248':other[(p,sku)]+=1
-          hist=collections.defaultdict(list)
-          for r in rows('2026.11.27_10.24 ExportReportOrderHistory ultimo.zip'):
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
+          import openpyxl
+          wb=openpyxl.load_workbook('BASE_ESTOQUE 16.11.xlsx',read_only=True,data_only=True)
+          print('SHEETS',wb.sheetnames)
+          cad=next(x for x in wb if hdr(x.title)=='cad')
+          cadrows=list(cad.values)
+          # Inspect target row and matching identifiers only, not other commercial data.
+          hits=[]; idxs=[]
+          for i,row in enumerate(cadrows):
+              vals=[n(v) for v in row]
+              if '360248' in vals or '7891991308267' in vals or '91373' in vals:
+                  idxs.append(i);hits.append([(j+1,str(v)) for j,v in enumerate(row) if v is not None])
+          print('CAD_HEADERS',json.dumps([[str(v or '') for v in row] for row in cadrows[:3]],ensure_ascii=False))
+          print('CAD_TARGET_ROWS',json.dumps(hits[:12],ensure_ascii=False))
+          # EAN columns identified by header, not fixed offsets.
+          hidx=next((i for i,row in enumerate(cadrows[:10]) if any('ean' in hdr(str(v or '')) for v in row)),None)
+          alias=set()
+          sku_col=None
+          if hidx is not None:
+              headers=[hdr(str(v or '')) for v in cadrows[hidx]]
+              ecols=[j for j,v in enumerate(headers) if 'ean' in v or 'gtin' in v or 'codigobarras' in v]
+              skucols=[j for j,v in enumerate(headers) if 'eg' in v and ('sku' in v or 'cod' in v or 'material' in v or v=='eg')]
+              if not skucols:
+                  skucols=[j for j,v in enumerate(headers) if v=='eg']
+              sku_col=next((j for j in skucols if any(n(cadrows[i][j])=='360248' for i in idxs)),None)
+              if sku_col is not None:
+                  for row in cadrows[hidx+1:]:
+                      if n(row[sku_col])=='360248':
+                          alias.update(n(row[j]) for j in ecols if row[j] is not None and n(row[j]))
+              print('CAD_KEYS',json.dumps({'headers':headers,'ean_cols':ecols,'sku_col':sku_col,'aliases':sorted(alias)}))
+          order=collections.defaultdict(list); ids=collections.defaultdict(set); caps=collections.Counter()
+          op='2026.11.27_10.22 ExportReportOrderItem ultimo.zip'
+          hp='2026.11.27_10.24 ExportReportOrderHistory ultimo.zip'
+          for r in rows(op):
+              if n(r.get('SKU EG'))=='360248':
+                  o=orderrow(r);order[o['p']].append(o)
+          # Include every other SKU of the relevant ERP to check candidate ownership.
+          for r in rows(op):
               p=n(r.get('Nº Pedido ERP'))
-              if p in order or p in target:hist[p].append(histrow(r))
-          def compatible(o,h):
-              return all(not(o[k] and h[k]) or o[k]==h[k] for k in ('date','valid','cnpj'))
-          groups=collections.defaultdict(list)
+              if p not in order:continue
+              for k in ('EAN','Código Produto Cliente'):
+                  v=n(r.get(k))
+                  if v:ids[(p,n(r.get('CNPJ Cliente')),v)].add(n(r.get('SKU EG')))
+          hist=collections.defaultdict(list); allhdates=collections.Counter()
+          for r in rows(hp):
+              p=n(r.get('Nº Pedido ERP'))
+              allhdates[day(r.get('Data de Criação'))]+=1
+              if p in order:hist[p].append(histrow(r))
+          def match(o,h):
+              return (o['ean'] and o['ean']==h['ean']) or (o['code'] and o['code']==h['code'])
+          def comp(o,h,alt=False):
+              return (not(o['cnpj'] and h['cnpj']) or o['cnpj']==h['cnpj']) and (not(o['date'] and h['date']) or h['date']==o['date'] or (alt and h['date']==o['created'])) and (not(o['valid'] and h['valid']) or h['valid']==o['valid'] or (alt and h['valid']==o['original_valid']))
+          def uq(hh):
+              return {(h['item'],h['code'],h['ean'],h['date'],h['valid'],h['cnpj'],h['qty']) for h in hh}
+          group=collections.defaultdict(list)
           for p,oo in order.items():
-              for o in oo:groups[(p,o['client'])].append(o)
-          counts=collections.Counter();results=[];why=collections.Counter();detail=collections.Counter();codes=collections.Counter()
-          for (p,client),oo in groups.items():
-              hh=hist[p]; C=[h for h in hh if any(o['code'] and o['code']==h['code'] for o in oo)]
-              E=[h for h in hh if any(o['ean'] and o['ean']==h['ean'] for o in oo)]
-              B=[h for h in hh if any(compatible(o,h) and ((o['code'] and o['code']==h['code']) or (o['ean'] and o['ean']==h['ean'])) for o in oo)]
-              # Collapse identical snapshots, never sum repeated original quantities automatically.
-              unique={(h['item'],h['code'],h['ean'],h['date'],h['valid'],h['cnpj'],h['qty']) for h in B}
-              counts['groups']+=1;counts['erp_found']+=bool(hh);counts['code_match']+=bool(C);counts['ean_match']+=bool(E);counts['context_match']+=bool(B);counts['one_distinct_history']+=len(unique)==1
-              if len(unique)!=1:
-                  if not hh:
-                      why['ERP ausente']+=1
-                  elif not (C or E):
-                      cross=[(o,h) for o in oo for h in hh if (o['code'] and o['code']==h['ean']) or (o['ean'] and o['ean']==h['code'])]
-                      why['codigo em coluna trocada' if cross else 'sem codigo igual no ERP']+=1
-                      if cross:detail['coluna trocada e contexto compativel']+=any(compatible(o,h) for o,h in cross)
-                      if not any(o['code'] or o['ean'] for o in oo):detail['Order sem identificadores']+=1
-                      for k in {o['ean'] for o in oo if o['ean']}:codes[k]+=1
-                  elif not B:
-                      why['codigo igual, contexto divergente']+=1
-                      pairs=[(o,h) for o in oo for h in hh if (o['code'] and o['code']==h['code']) or (o['ean'] and o['ean']==h['ean'])]
-                      patterns={'+'.join(k for k in ('date','valid','cnpj') if o[k] and h[k] and o[k]!=h[k]) for o,h in pairs}
-                      detail['contexto: '+' | '.join(sorted(patterns))]+=1
-                  else:
-                      why['multiplos registros History']+=1
-              if False:
-                  moves=[sum((o['qty'][i] for o in oo if o['qty'][i] is not None),D(0)) for i in range(4)]
-                  rec={'erp':p,'client':client,'order_rows':len(oo),'history_rows_erp':len(hh),'code_matches':len(C),'ean_matches':len(E),'context_matches':len(B),'unique_history':len(unique),'order_codes':sorted({o['code'] for o in oo}),'order_eans':sorted({o['ean'] for o in oo}),'history_codes':sorted({h['code'] for h in hh}),'history_eans':sorted({h['ean'] for h in hh}),'matched_history_qty':sorted({str(h['qty']) for h in B}),'date_match':any(o['date'] and o['date']==h['date'] for o in oo for h in B),'cnpj_comparable':any(o['cnpj'] and h['cnpj'] for o in oo for h in B),'units':sorted({o['unit'] for o in oo}),'statuses':sorted({o['status'] for o in oo}),'moves':list(map(str,moves)),'other_sku_count':sum(v for (pp,ss),v in other.items() if pp==p)}
-                  results.append(rec)
-          print('QA_RESULT',json.dumps({'counts':dict(counts),'sku_rows':sum(allsku.values()),'motivos':dict(why),'detalhes':dict(detail),'ean_order_sem_match':dict(codes)},ensure_ascii=False))
+              for o in oo:group[(p,o['client'])].append(o)
+          counts=collections.Counter(); missing=collections.Counter(); alt=collections.Counter(); candidates=collections.Counter(); cadconf=collections.Counter(); namepat=collections.Counter(); nets=collections.Counter(); active=collections.Counter()
+          for (p,c),oo in group.items():
+              hh=hist[p]
+              direct=[h for h in hh if any(match(o,h) and comp(o,h) for o in oo)]
+              isactive=any(o['valid']>='2026-11-27' and 'CANCELAD' not in o['status'] for o in oo)
+              if len(uq(direct))==1:
+                  counts['direct']+=1
+                  if isactive:active['direct']+=1
+                  continue
+              if not hh:
+                  counts['no_erp']+=1
+                  if isactive:active['no_erp']+=1
+                  missing['cap_missing']+=not any(o['date'] for o in oo)
+                  missing['creation_missing']+=not any(o['created'] for o in oo)
+                  missing['cancelled_all']+=all('CANCELAD' in o['status'] for o in oo)
+                  missing['all_active_valid']+=isactive
+                  missing['cap_outside_history_range']+=all(not o['date'] or o['date']<min(x for x in allhdates if x) or o['date']>max(allhdates) for o in oo)
+                  continue
+              same=[h for h in hh if any(match(o,h) for o in oo)]
+              if same:
+                  counts['date_or_valid']+=1
+                  if isactive:active['date_or_valid']+=1
+                  aa=[h for h in same if any(match(o,h) and comp(o,h,True) for o in oo)]
+                  alt['recovered_unique']+=len(uq(aa))==1
+                  alt['creation_equal']+=any(o['created'] and o['created']==h['date'] and o['date']!=h['date'] and match(o,h) for o in oo for h in same)
+                  alt['original_valid_equal']+=any(o['original_valid'] and o['original_valid']==h['valid'] and o['valid']!=h['valid'] and match(o,h) for o in oo for h in same)
+                  continue
+              counts['no_code']+=1
+              if isactive:active['no_code']+=1
+              # Use CAD EAN aliases only and require unambiguous ownership within ERP/CNPJ.
+              cc=[h for h in hh if any(comp(o,h,True) and bool({h['ean'],h['code']}&alias) for o in oo)]
+              clean=[h for h in cc if not any(ids.get((p,h['cnpj'],v),set())-{'360248'} for v in (h['ean'],h['code']) if v)]
+              cadconf['candidate_any']+=bool(cc);cadconf['unique']+=len(uq(cc))==1;cadconf['unique_no_other_sku']+=len(uq(clean))==1 and len(uq(cc))==1
+              # Description and item number are diagnostic, never automatic approval.
+              dd=[h for h in hh if 'SKOL' in h['desc'] and ('ZERO' in h['desc'] or 'SEMALCOOL' in h['desc']) and any(comp(o,h,True) for o in oo)]
+              namepat['description_any']+=bool(dd);namepat['description_unique']+=len(uq(dd))==1
+              ii=[h for h in hh if any(o['item'] and o['item']==h['item'] and comp(o,h,True) for o in oo)]
+              namepat['item_unique']+=len(uq(ii))==1
+              for v in {h['ean'] for h in dd if h['ean']}:candidates[v]+=1
+              for v in {h['ean'] for h in ii if h['ean']}:nets[v]+=1
+          print('QA_FINAL',json.dumps({'counts':dict(counts),'active':dict(active),'missing':dict(missing),'alternative_dates':dict(alt),'cad':dict(cadconf),'description':dict(namepat),'description_ean_candidates':dict(candidates),'item_ean_candidates_top':nets.most_common(12),'history_date_range':[min(x for x in allhdates if x),max(allhdates)]},ensure_ascii=False))
           PY
