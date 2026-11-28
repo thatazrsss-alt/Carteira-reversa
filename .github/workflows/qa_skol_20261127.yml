@@ -1,4 +1,4 @@
-name: QA 27-11 - entrada por item EAN criacao e captacao
+name: QA 27-11 - prioridade captacao e granularidade EAN
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -461,70 +461,83 @@ jobs:
                   if len(ex)<5:
                       oo=groups[g];ex.append({'erp':k[0],'history_cnpj_suffix':k[1][-4:],'order_cnpj_suffixes':sorted({o['cnpj'][-4:] for o in oo}),'history_ids':sorted(entries[k]['ids']),'order_eg':g[2],'order_desc':oo[0]['sapdesc_raw'],'history_created':k[3],'history_valid':k[4],'order_created':sorted({o['created'] for o in oo}),'order_original_valid':sorted({o['original_valid'] for o in oo}),'history_qty':sorted(str(x) for x in entries[k]['qty']),'order_qty':sorted(str(x) for x in {o['original'] for o in oo}),'active':g in active})
           print('QA_NEXT',json.dumps({'approved_swaps':len(swaps),'approved_swaps_active':len(set(swaps)&active),'history_keys_linked':len(matched),'active_history_keys':len(active_history),'order_active_linked':len(active_after),'order_active_total':len(active),'order_active_residual':dict(order_rem),'history_residual':dict(hist_rem),'cnpj':dict(cnpj_diag),'multi':dict(multi_diag),'cnpj_examples':ex_cnpj,'multi_examples':ex_multi},ensure_ascii=False))
-          # Audit original History item identities, independent of live status and quantity.
-          # A repeated customer code with multiple EANs is only separated if individual EANs
-          # identify different Order SKU groups; do not split EAN aliases of the same SKU.
-          collisions=[k for k,e in entries.items() if len({x[3] for x in e['detail'] if x[3]})>1]
-          cstats=collections.Counter(); mstats=collections.Counter(); examples=[]; multiex=[]
-          def audit_item(k,rec):
-              item,qty,code,ean=rec
+          # Preserve homologated links while reassessing each entry with capture as first priority.
+          # Correct only proven multi-product customer-code keys; unresolved EANs stay separate and visible.
+          corrected={}; collision_old=set(); collision_stats=collections.Counter()
+          for k,e in entries.items():
+              eans={x[3] for x in e['detail'] if x[3]}
+              if len(eans)<=1:
+                  corrected[(k,'')]=e['detail'];continue
+              collision_old.add(k);collision_stats['old_keys']+=1
+              for ean in sorted({x[3] for x in e['detail']}):
+                  corrected[(k,ean)]={x for x in e['detail'] if x[3]==ean}
+          collision_stats['new_entries']=sum(ck[0] in collision_old for ck in corrected)
+          collision_stats['old_matched']=sum(k in matched for k in collision_old)
+          def entry_pool(k,recs,split):
               gg=erp_clients[(k[0],k[1])]
-              exact_ean={g for g in gg if ean and any(ean in (o['ean'],o['code'],o['sku'],o['sap']) for o in groups[g])}
-              cad_eg={v['sku'] for v in idmap[ean]} if ean else set()
+              eans={x[3] for x in recs if x[3]};codes={x[2] for x in recs if x[2]}
+              ids=eans|codes
+              direct_ean={g for g in gg if any(eans&{o[f] for f in ('ean','code','sku','sap')} for o in groups[g])}
+              cad_ids=eans if split else ids
+              cad_eg={v['sku'] for x in cad_ids for v in idmap[x]}
               cadgroups={g for g in gg if g[2] in cad_eg}
-              codegroups={g for g in gg if code and any(code in (o['ean'],o['code'],o['sku'],o['sap']) for o in groups[g])}
-              pool=exact_ean or cadgroups or codegroups
-              def line_id(o):
-                  if exact_ean:return ean in (o['ean'],o['code'],o['sku'],o['sap'])
-                  if cadgroups:return True
-                  return code in (o['ean'],o['code'],o['sku'],o['sap'])
-              strong={}
-              for g in pool:
-                  oo=[o for o in groups[g] if line_id(o)]
-                  eligible=[o for o in oo if k[4] and o['original_valid']==k[4] and k[3] and k[3] in (o['created'],o['date'])]
-                  if eligible:strong[g]=eligible
-              # Prefer uniquely evidenced exact-day match, NOT active status or original quantity.
-              return pool,strong,exact_ean,cadgroups
-          for k in collisions:
-              e=entries[k]; recs=sorted(e['detail'],key=str); byean=collections.defaultdict(set); rowsout=[]
-              cstats['old_keys_with_multiple_eans']+=1
-              for rec in recs:
-                  i,qv,c,ean=rec
-                  pool,strong,ex,ca=audit_item(k,rec)
-                  cstats['item_records']+=1
-                  if len(strong)==1:
-                      g=next(iter(strong));byean[ean].add(g)
-                      oo=strong[g]
-                      rowsout.append({'item':i,'ean':ean,'eg':g[2],'qty':str(qv),'order_original':sorted({str(o['original']) for o in oo}),'created':sorted({o['created'] for o in oo}),'capture':sorted({o['date'] for o in oo}),'status':sorted({o['status'] for o in oo})})
-                      cstats['item_unique_date_match']+=1
-                  else:cstats['item_without_unique_date_match']+=1
-              allg=set().union(*byean.values()) if byean else set()
-              if len(allg)>1:
-                  cstats['confirmed_distinct_products_old_keys']+=1
-                  cstats['distinct_order_sku_groups']+=len(allg)
-                  if len(examples)<8:examples.append({'erp':k[0],'history_code':k[2],'creation':k[3],'validity':k[4],'items':rowsout})
-          for k,gg in candidates_multi.items():
-              g=next(iter(gg))
-              if len(claims3[g])!=1:continue
-              e=entries[k];mstats['previous_candidate_keys']+=1
-              for rec in sorted(e['detail'],key=str):
-                  i,qv,c,ean=rec;pool,strong,ex,ca=audit_item(k,rec)
-                  mstats['history_item_records']+=1
-                  if len(strong)==1:
-                      dest=next(iter(strong));oo=strong[dest]
-                      mstats['item_unique_dates']+=1
-                      mstats['item_unique_creation_match']+=any(o['created']==k[3] for o in oo)
-                      mstats['item_unique_capture_match']+=any(o['date']==k[3] for o in oo)
-                      mstats['item_unique_both_dates']+=any(o['date']==k[3] and o['created']==k[3] for o in oo)
-                      mstats['item_unique_qty_match']+=any(o['original']==qv for o in oo)
-                      mstats['item_unique_inactive']+=dest not in active
-                      mstats['item_unique_active']+=dest in active
-                      mstats['item_unique_active_original_candidate']+=dest==g
-                      mstats['item_unique_previously_linked']+=dest in linked_after
-                      if len(multiex)<25:multiex.append({'erp':k[0],'history_item':i,'ean':ean,'code':c,'history_qty':str(qv),'history_created':k[3],'history_valid':k[4],'order_eg':dest[2],'order_name':oo[0]['sapdesc_raw'],'order_ids':sorted({o['order_id'] for o in oo}),'order_created':sorted({o['created'] for o in oo}),'order_capture':sorted({o['date'] for o in oo}),'order_original':sorted({str(o['original']) for o in oo}),'status':sorted({o['status'] for o in oo}),'active':dest in active})
-                  else:
-                      mstats['item_without_unique_dates']+=1
-                      if len(pool)==1:mstats['item_unique_identity_without_exact_dates']+=1
-                      if len(multiex)<25:multiex.append({'erp':k[0],'history_item':i,'ean':ean,'code':c,'history_qty':str(qv),'history_created':k[3],'history_valid':k[4],'candidate_skus':sorted({x[2] for x in pool}),'exact_date_skus':sorted({x[2] for x in strong})})
-          print('QA_ENTRY_DATES',json.dumps({'collision_stats':dict(cstats),'collision_examples':examples,'multi_stats':dict(mstats),'multi_details':multiex},ensure_ascii=False))
+              direct={g for g in gg if any(ids&{o[f] for f in ('ean','code','sku','sap')} for o in groups[g])}
+              # An EAN resolves a known conflicting customer code; never use that code to merge products.
+              if split:return direct_ean or cadgroups
+              return direct|cadgroups
+          def date_priority(k,g):
+              oo=[o for o in groups[g] if o['cnpj']==k[1] and o['original_valid']==k[4]]
+              if not oo or not k[3] or not k[4]:return 0
+              if any(o['date']==k[3] for o in oo):return 2
+              if not any(o['date'] for o in oo) and any(o['created']==k[3] for o in oo):return 1
+              return 0
+          final={};stat=collections.Counter(); pending={}; proposals4={};reserved=collections.defaultdict(set); changes=[]; conflict_samples=[]
+          for ck,recs in corrected.items():
+              k,split=ck; pool=entry_pool(k,recs,k in collision_old)
+              cap={g for g in pool if date_priority(k,g)==2};creation={g for g in pool if date_priority(k,g)==1}
+              best=cap or creation
+              old=matched.get(k) if k not in collision_old else None
+              if old is not None:
+                  # Preserve earlier approvals; flag contradictory dates/alternative groups rather than silently reassign.
+                  final[ck]=old;reserved[old].add(ck)
+                  if best and old not in best:
+                      stat['prior_link_alternative_priority']+=1
+                      if len(conflict_samples)<5:conflict_samples.append({'erp':k[0],'old_sku':old[2],'alternative_skus':sorted({g[2] for g in best}),'history_capture':k[3]})
+                  continue
+              if len(best)==1:proposals4[ck]=next(iter(best))
+              else:pending[ck]='multiple' if len(best)>1 or len(pool)>1 else 'no_exact_dates' if pool else 'no_product'
+          claims4=collections.defaultdict(set)
+          for ck,g in proposals4.items():claims4[g].add(ck)
+          for ck,g in proposals4.items():
+              if reserved[g] or len(claims4[g])!=1:
+                  pending[ck]='group_already_claimed';continue
+              final[ck]=g;reserved[g].add(ck);stat['new_priority_links']+=1
+              stat['new_from_collision']+=ck[0] in collision_old
+              stat['new_active']+=g in active
+          # Preserve approved journeys, remapping the split key only if its original SKU is linked uniquely.
+          swap_ok={};swap_hold=0
+          for new,(k,old) in swaps.items():
+              choices=[ck for ck in reserved[old] if ck[0]==k]
+              if len(choices)==1:swap_ok[new]=choices[0]
+              else:swap_hold+=1
+          classes=collections.Counter(); activeclasses=collections.Counter(); histremaining=collections.Counter()
+          for ck,g in final.items():
+              k,_=ck;dp=date_priority(k,g);oo=[o for o in groups[g] if o['cnpj']==k[1]]
+              if dp==2:typ='captacao_e_validade_exatas'
+              elif dp==1:typ='captacao_ausente_criacao_e_validade_exatas'
+              elif any(o['date'] for o in oo):typ='excecao_com_captacao_preenchida'
+              else:typ='excecao_sem_captacao'
+              classes[typ]+=1
+              activeclasses[typ]+=g in active
+          for ck in corrected:
+              if ck in final:continue
+              k,_=ck
+              if not erp_clients[(k[0],k[1])]:reason='cliente divergente'
+              else:reason=pending.get(ck,'pendente')
+              histremaining[reason]+=1
+          linked_new=set(final.values())|set(swap_ok)
+          common=sum(bool(erp_clients[(ck[0][0],ck[0][1])]) for ck in corrected)
+          common_linked=sum(bool(erp_clients[(ck[0][0],ck[0][1])]) for ck in final)
+          coll_linked=sum(ck[0] in collision_old for ck in final)
+          print('QA_PRIORITY_FINAL',json.dumps({'old_history_common_erp':len(entries),'corrected_history_common_erp':len(corrected),'corrected_same_erp_cnpj':common,'matched_same_erp_cnpj':common_linked,'matched_history':len(final),'collision_stats':dict(collision_stats),'collision_linked':coll_linked,'collision_pending':collision_stats['new_entries']-coll_linked,'new_stats':dict(stat),'date_classes':dict(classes),'active_date_classes':dict(activeclasses),'approved_swaps_preserved':len(swap_ok),'swaps_held':swap_hold,'active_order_total':len(active),'active_order_linked':len(active&linked_new),'history_remaining':dict(histremaining),'priority_conflict_examples':conflict_samples},ensure_ascii=False))
           PY
