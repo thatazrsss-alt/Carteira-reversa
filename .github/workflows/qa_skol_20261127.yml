@@ -1,4 +1,4 @@
-name: QA 27-11 - History como fato da entrada
+name: QA 27-11 - bloco 266 produtos History sem vinculo
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -54,9 +54,9 @@ jobs:
           def find(r,*aliases):
               return next((r[k] for k in aliases if k in r),'')
           def orderrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'realoc_qty':q(find(r,'Qtd. Realocada')),'order_id':n(find(r,'Nº Pedido Ambev')),'sap':n(find(r,'SKU SAP')),'desc':n(find(r,'Descrição Produto Cliente')),'bees':n(find(r,'Nº Pedido Bees AS')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'realoc_qty':q(find(r,'Qtd. Realocada')),'order_id':n(find(r,'Nº Pedido Ambev')),'sap':n(find(r,'SKU SAP')),'sapdesc':n(find(r,'Descrição SKU SAP')),'supplier':n(find(r,'CNPJ Fornecedor')),'desc':n(find(r,'Descrição Produto Cliente')),'bees':n(find(r,'Nº Pedido Bees AS')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
           def histrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'bees':n(find(r,'Nº Pedido Bees AS')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'bees':n(find(r,'Nº Pedido Bees AS')),'supplier':n(find(r,'CNPJ Fornecedor')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
           op='2026.11.27_10.22 ExportReportOrderItem ultimo.zip'
           hp='2026.11.27_10.24 ExportReportOrderHistory ultimo.zip'
           ref='2026-11-27'
@@ -69,7 +69,7 @@ jobs:
               groups[g].append(o);erps.add(g[0]);units[o['unit']]+=1;nets.add(o['net']);skus.add(g[2])
           # History grain: original ERP, client CNPJ, client product (or EAN), creation and original validity.
           # The item number is not part of the entry key; equal repeated quantities are counted once.
-          entries=collections.defaultdict(lambda:{'qty':set(),'ids':set(),'rows':0,'items':set(),'detail':set(),'descs':set(),'bees':set()})
+          entries=collections.defaultdict(lambda:{'qty':set(),'ids':set(),'rows':0,'items':set(),'detail':set(),'descs':set(),'bees':set(),'suppliers':set()})
           he=set(); hd=collections.Counter(); hr=0; missing_id=0; outside=set(); invalid_history=0; outside_rows=0; outside_erps=set(); all_cnpj=set()
           for r in rows(hp):
               hr+=1;h=histrow(r);p=h['p']
@@ -80,7 +80,7 @@ jobs:
               k=(p,h['cnpj'],prod,h['date'],h['valid'])
               if p not in erps:
                   outside.add(k);outside_rows+=1;outside_erps.add(p);continue
-              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item']);z['detail'].add((h['item'],h['qty'],h['code'],h['ean']));z['descs'].add(h['desc']);z['bees'].add(h['bees'])
+              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item']);z['detail'].add((h['item'],h['qty'],h['code'],h['ean']));z['descs'].add(h['desc']);z['bees'].add(h['bees']);z['suppliers'].add(h['supplier'])
           index=collections.defaultdict(set); rawindex=collections.defaultdict(set)
           for k,e in entries.items():
               for v in e['ids']:
@@ -200,45 +200,70 @@ jobs:
                       if k not in original_assigned:ambiguous.add(k)
           for k in ambiguous:
               matched.pop(k,None);method.pop(k,None)
-          cnt=collections.Counter(); why=collections.Counter(); methods=collections.Counter(); byqty=collections.Counter(); volume=collections.defaultdict(lambda:D(0)); active_groups=set(); linked_groups=set(); detailed=collections.Counter(); histqtyissues=collections.Counter()
-          for g,oo in groups.items():
-              if any(validline(o) for o in oo):active_groups.add(g)
-          for k,e in entries.items():
-              cnt['history_common_erp_keys']+=1
-              cscope=bool(erp_clients.get((k[0],k[1])))
-              cnt['history_common_erp_cnpj_keys']+=cscope
-              # Original History items: equal repeated snapshot of same item counts once;
-              # distinct items with their own quantities count independently.
-              iq=collections.defaultdict(set)
-              for i,qv,code,ean in e['detail']:iq[i].add(qv)
-              item_conflict=any(len(v)>1 or None in v for v in iq.values())
-              hq=None if item_conflict else sum((next(iter(v)) for v in iq.values()),D(0))
-              cnt['history_original_items_common_erp']+=len(iq)
-              if k not in matched:
-                  b='ERP e CNPJ nao coincidem' if not cscope else 'alias ou varias entradas na mesma data' if k in ambiguous else 'candidatos disputados' if len(all_ro[k])>1 else 'identidade existe, data divergente' if all_ro[k] else 'produto nao identificado na Order'
-                  why[b]+=1
-                  if hq is not None:volume['unlinked_history_native_qty']+=hq
-                  continue
-              g=matched[k];oo=groups[g];linked_groups.add(g);methods[method[k]]+=1
-              cnt['history_linked_keys']+=1;cnt['history_linked_items']+=len(iq);cnt['history_linked_active_order_keys']+=g in active_groups
-              cnt['history_linked_common_cnpj_keys']+=cscope
-              if item_conflict:
-                  histqtyissues['same_item_conflicting_qty']+=1
-                  histqtyissues['active_same_item_conflicting_qty']+=g in active_groups
-              else:
-                  orig={o['original'] for o in oo if o['original'] is not None}
-                  exact=all(next(iter(v)) in orig for v in iq.values())
-                  byqty['each_history_item_qty_present_order']+=exact;byqty['history_qty_diagnostic_difference']+=not exact
-                  byqty['distinct_history_items_multi']+=len(iq)>1
-                  if g in active_groups:byqty['active_qty_diagnostic_difference']+=not exact
-                  if all(o['unit']=='CX' for o in oo):
-                      volume['linked_history_entry_CX']+=hq
-                      if g in active_groups:volume['linked_history_active_entry_CX']+=hq
-          cnt['history_keys_outside_order_erp']=len(outside)
-          cnt['history_keys_total']=len(outside)+len(entries)
-          cnt['history_rows_outside_order_erp']=outside_rows;cnt['history_distinct_erps_outside_order']=len(outside_erps)
-          cnt['history_rows_invalid_erp']=invalid_history;cnt['history_rows_missing_product']=missing_id
-          cnt['order_groups']=len(groups);cnt['order_groups_linked']=len(linked_groups);cnt['order_active_groups']=len(active_groups);cnt['order_active_groups_linked']=len(active_groups&linked_groups)
-          cnt['order_groups_without_history']=len(groups)-len(linked_groups);cnt['order_active_groups_without_history']=len(active_groups-linked_groups)
-          print('QA_REVERSE',json.dumps({'counts':dict(cnt),'unlinked_common_erp':dict(why),'methods':dict(methods),'quantity_checks':dict(byqty),'history_item_conflicts':dict(histqtyissues),'multiple_entry_diagnostics':dict(overlap),'additional_aliases_deferred':len(ambiguous),'volumes':{k:str(v) for k,v in volume.items()}},ensure_ascii=False))
+          # Audit only unlinked History keys with ERP+CNPJ present and no exact product identifier.
+          # Learn product aliases from independently reconciled keys, not from matching quantities.
+          import difflib
+          @functools.lru_cache(maxsize=200000)
+          def normcode(v):
+              if not v:return ''
+              if v.isdigit():return v.lstrip('0') or '0'
+              return re.sub(r'[^A-Z0-9]','',v)
+          @functools.lru_cache(maxsize=200000)
+          def normdesc(v):
+              return re.sub(r'[^A-Z0-9]','',unicodedata.normalize('NFKD',v).encode('ascii','ignore').decode())
+          mapping=collections.defaultdict(set); support=collections.defaultdict(set)
+          for k,g in matched.items():
+              e=entries[k];oo=groups[g]
+              for net in {o['net'] for o in oo if o['net']}:
+                  for v in e['ids']:
+                      for scope in [('network',net),('cnpj',k[1])]:
+                          mapping[(scope,v)].add(g[2]);support[(scope,v,g[2])].add(k[0])
+          target=[k for k in entries if k not in matched and erp_clients[(k[0],k[1])] and not all_ro[k]]
+          hits=collections.defaultdict(collections.Counter); types=collections.Counter(); aggregate=collections.Counter(); network=collections.Counter(); candidates={}; proposed=collections.defaultdict(set); qtyonly=collections.Counter(); cases=collections.Counter()
+          existing=collections.defaultdict(set)
+          for k,g in matched.items():existing[g].add(k)
+          for k in target:
+              e=entries[k];gg=erp_clients[(k[0],k[1])]; cs=collections.defaultdict(set); histdesc={normdesc(d) for d in e['descs'] if d}; normids={normcode(v) for v in e['ids'] if v}; origq=e['qty']
+              types['history_code_present']+=bool(k[2]);types['history_has_description']+=bool(histdesc);types['history_code_numeric']+=k[2].isdigit();types['history_identifier_length_'+str(len(k[2]))]+=1
+              nets_here={o['net'] for g in gg for o in groups[g] if o['net']}
+              network.update(nets_here)
+              aggregate['order_group_count_'+('1' if len(gg)==1 else '2-5' if len(gg)<=5 else '>5')]+=1
+              for g in gg:
+                  oo=groups[g]; os={o['original'] for o in oo if o['original'] is not None}; sc=score(k,oo); dated=sc[0]==0 and sc[1]<=3
+                  ods={normdesc(d) for o in oo for d in (o['desc'],o['sapdesc']) if d}; oi={normcode(v) for o in oo for v in (o['sku'],o['sap'],o['ean'],o['code']) if v}
+                  if normids&oi:cs['codigo_normalizado'].add(g)
+                  if histdesc&ods:cs['descricao_exata'].add(g)
+                  if histdesc and ods:
+                      sim=max(difflib.SequenceMatcher(None,a,b,autojunk=False).ratio() for a in histdesc for b in ods)
+                      if sim>=.92:cs['descricao_similar_92'].add(g)
+                  if any(mapping[(scope,v)]=={g[2]} and len(support[(scope,v,g[2])])>=2 for o in oo for scope in [('network',o['net']),('cnpj',k[1])] for v in e['ids']):cs['depara_comprovado'].add(g)
+                  if any(o['item'] and o['item'] in e['items'] and o['original_valid']==k[4] and min(distance(k[3],o['date']),distance(k[3],o['created']))<=3 for o in oo):cs['item_e_datas'].add(g)
+                  if any(o['bees'] and o['bees'] in e['bees'] and o['original_valid']==k[4] for o in oo):cs['bees_e_validade'].add(g)
+                  if dated:cs['datas_proximas'].add(g)
+                  if origq<=os:cs['quantidade_apenas_diagnostico'].add(g)
+              # Independently supported identity, with original validity equal and date within 3 days.
+              confident=(cs['codigo_normalizado']|cs['descricao_exata']|cs['depara_comprovado']) & cs['datas_proximas']
+              weak=(cs['descricao_similar_92'] & cs['item_e_datas']) & cs['datas_proximas']
+              if len(confident)==1:
+                  g=next(iter(confident));candidates[k]=(g,'identidade_forte');proposed[g].add(k)
+              elif not confident and len(weak)==1:
+                  g=next(iter(weak));candidates[k]=(g,'descricao_similar_item');proposed[g].add(k)
+              for m,gs in cs.items():
+                  if not gs:continue
+                  z=hits[m];z['has_candidate']+=1;z['unique_candidate']+=len(gs)==1
+                  if len(gs)==1:
+                      g=next(iter(gs));z['unique_not_yet_linked']+=not existing[g];z['unique_qty_present']+=origq<={o['original'] for o in groups[g]};z['unique_same_valid_close_date']+=g in cs['datas_proximas']
+              if len(cs['quantidade_apenas_diagnostico'])==1:qtyonly['unique_qty_candidate']+=1
+              if len(cs['datas_proximas'])==1:qtyonly['unique_date_candidate']+=1
+              if not any(cs[m] for m in ('codigo_normalizado','descricao_exata','descricao_similar_92','depara_comprovado')):cases['nenhum_indicio_produto']+=1
+              elif not confident and not weak:cases['indicio_produto_sem_contexto_suficiente']+=1
+          decision=collections.Counter(); status=collections.Counter()
+          for k,(g,tier) in candidates.items():
+              decision[tier+'_candidates']+=1
+              if len(proposed[g])>1:decision['new_claim_conflict']+=1;continue
+              if existing[g]:decision['already_linked_group']+=1;continue
+              decision[tier+'_exclusive_unlinked']+=1
+              decision[tier+'_exclusive_unlinked_qty_equal']+=entries[k]['qty']<={o['original'] for o in groups[g]}
+              status[tier+'_active']+=any(validline(o) for o in groups[g])
+          print('QA_PRODUCT_266',json.dumps({'target_keys':len(target),'hits':{k:dict(v) for k,v in hits.items()},'candidate_decision':dict(decision),'active':dict(status),'history_fields':dict(types),'order_candidates_per_key':dict(aggregate),'remaining_patterns':dict(cases),'network_top':network.most_common(12),'date_quantity_diagnostics':dict(qtyonly)},ensure_ascii=False))
           PY
