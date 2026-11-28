@@ -1,4 +1,4 @@
-name: QA 27-11 - CAD dos EANs divergentes
+name: QA 27-11 - consolidar equivalencias aprovadas
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -240,31 +240,44 @@ jobs:
                       if v:idmap[v].append({'sku':sku,'field':headers[i]})
           wb.close()
           pairs=[('7891991306232','7891991306171','323493'),('7891991295086','7891991295093','206037'),('7898925943020','17898925943027','145508'),('7892840812874','7892840812881','130658'),('17892840823600','7892840823603','331678'),('7892840812850','7892840812867','130617'),('7891991000826','7891991002189','90845'),('7892840819330','7892840819323','42937'),('17896326100223','7896326100226','321737'),('7891991000840','7891991002240','90910'),('9990021736709','7892840812867','130617'),('7891149108695','7891149108701','187724')]
-          out=[]
-          for h,o,sku in pairs:
-              hs={v['sku'] for v in idmap[h]};os={v['sku'] for v in idmap[o]}
-              descriptions=sorted({r['sapdesc'] for g,oo in groups.items() if g[2]==sku for r in oo if r['sapdesc']})
-              out.append({'history_ean':h,'order_ean':o,'order_eg':sku,'description_order':descriptions,'history_cad':idmap[h],'order_cad':idmap[o],'target_cad':info[sku],'history_matches_target':sku in hs,'order_matches_target':sku in os,'same_cad_sku':sorted(hs&os)})
-          print('QA_CAD_PAIRS',json.dumps(out,ensure_ascii=False))
-          # Scan all 266 remaining entries for CAD-confirmed mappings, not just the 15 candidates.
           existing=collections.defaultdict(set)
           for k,g in matched.items():existing[g].add(k)
-          stats=collections.Counter();claims=collections.defaultdict(set);new={}
+          approved_pairs={(h,sku) for h,o,sku in pairs}
+          cad={};manual={};claims=collections.defaultdict(set)
           for k in target:
               e=entries[k];gg=erp_clients[(k[0],k[1])]
               mapped={v['sku'] for x in e['ids'] for v in idmap[x]}
               cand={g for g in gg if g[2] in mapped}
-              stats['history_code_present_cad']+=bool(mapped);stats['cad_candidate_same_erp_cnpj']+=bool(cand)
               if len(cand)==1:
-                  g=next(iter(cand));stats['unique_cad_candidate']+=1
-                  stats['unique_cad_already_linked']+=bool(existing[g])
-                  if not existing[g]:
-                      new[k]=g;claims[g].add(k)
-                      stats['unique_cad_unlinked']+=1
-                      stats['unique_cad_unlinked_qty_equal']+=e['qty']<={o['original'] for o in groups[g]}
-          for k,g in new.items():
-              if len(claims[g])==1:
-                  stats['unique_cad_no_competing_claim']+=1
-                  stats['unique_cad_no_competing_claim_active']+=any(validline(o) for o in groups[g])
-          print('QA_CAD_TARGET',json.dumps(dict(stats),ensure_ascii=False))
+                  g=next(iter(cand))
+                  if not existing[g]:cad[k]=g
+              cand={g for g in gg if any((x,g[2]) in approved_pairs and any(mapping[(scope,x)]=={g[2]} and len(support[(scope,x,g[2])])>=2 for o in groups[g] for scope in [('network',o['net']),('cnpj',k[1])]) for x in e['ids'])}
+              if len(cand)==1:
+                  g=next(iter(cand))
+                  if not existing[g]:manual[k]=g
+          union={};conflicts=0
+          for k in cad.keys()|manual.keys():
+              gs={x[k] for x in (cad,manual) if k in x}
+              if len(gs)!=1:conflicts+=1;continue
+              g=next(iter(gs));union[k]=g;claims[g].add(k)
+          accepted={k:g for k,g in union.items() if len(claims[g])==1}
+          matched.update(accepted)
+          linked=set(matched.values());active={g for g,oo in groups.items() if any(validline(o) for o in oo)}
+          remaining=collections.Counter();res_order=collections.Counter();prod=collections.Counter()
+          for k in entries:
+              if k in matched:continue
+              reason='CNPJ divergente' if not erp_clients[(k[0],k[1])] else 'multiplos candidatos' if len(all_ro[k])>1 else 'data divergente' if all_ro[k] else 'produto nao identificado'
+              remaining[reason]+=1
+              if reason=='produto nao identificado':
+                  prod['CAD com identificador, sem SKU correspondente no ERP/CNPJ']+=any(idmap[x] for x in entries[k]['ids'])
+                  prod['CAD sem identificador']+=not any(idmap[x] for x in entries[k]['ids'])
+          for g in active-linked:
+              p,c,sku=g
+              if p not in he:reason='ERP ausente History'
+              elif bygroup[g][0]|bygroup[g][1]|sku_cands[g]:reason='multiplos candidatos'
+              elif all_rel[g]:reason='datas divergentes ou entrada ja atribuida'
+              elif all_raw[g]:reason='CNPJ divergente'
+              else:reason='produto nao identificado'
+              res_order[reason]+=1
+          print('QA_APPROVED',json.dumps({'cad':len(cad),'approved_pairs':len(manual),'overlap':len(cad.keys()&manual.keys()),'conflicting_group':conflicts,'competing_claims':len(union)-len(accepted),'new_accepted':len(accepted),'new_active':sum(g in active for g in accepted.values()),'matched_history':len(matched),'matched_order_active':len(linked&active),'remaining_history_common_erp':dict(remaining),'remaining_order_active':dict(res_order),'product_breakdown':dict(prod)},ensure_ascii=False))
           PY
