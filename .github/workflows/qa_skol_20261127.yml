@@ -1,4 +1,4 @@
-name: QA 27-11 - identificar entrada por SKU EG SAP
+name: QA 27-11 - motivos residuais entrada unica
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -124,58 +124,80 @@ jobs:
               for k in cs:
                   skuowners[k].add(g)
                   sku_methods[(g,k)].update(methods[k])
-          recovery=collections.defaultdict(collections.Counter); recvol=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); bymethod=collections.defaultdict(collections.Counter)
+          # First-pass assignments are identical to previous audit.
+          assigned={};used=collections.defaultdict(set)
           for g,oo in groups.items():
-              strict,cap,relaxed,raw,eg_sap,matches=bygroup[g]; base={k for k in strict|cap if owners[k]=={g}}
-              if base:continue
-              cs=sku_cands[g];orig={o['original'] for o in oo if o['original'] is not None};live=any(validline(o) for o in oo)
-              avail={k for k in cs if skuowners[k]=={g} and not (owners[k]-{g})}
-              match=next(iter(avail)) if len(cs)==1 and len(avail)==1 else None
-              hq=next(iter(entries[match]['qty'])) if match and len(entries[match]['qty'])==1 and None not in entries[match]['qty'] else None
-              for lab in ['all']+(['active'] if live else []):
-                  z=recovery[lab];z['unmatched']+=1;z['sku_candidate']+=bool(cs);z['sku_exclusive_unique']+=match is not None;z['sku_unique_qty']+=hq is not None;z['sku_qty_equal_order']+=hq is not None and hq in orig;z['sku_qty_equal_unique_order']+=hq is not None and orig=={hq};z['sku_qty_different']+=hq is not None and hq not in orig;z['sku_multiple_or_competing']+=bool(cs) and match is None;z['sku_history_quantity_conflict']+=match is not None and hq is None
-                  if match:
-                      kind='+'.join(sorted(sku_methods[(g,match)]));bymethod[lab][kind]+=1
-                      if hq is not None and {o['unit'] for o in oo}=={'CX'}:recvol[lab]['history_entry_CX_once']+=hq
-          print('QA_SKU_RECOVERY',json.dumps({'counts':{k:dict(v) for k,v in recovery.items()},'methods':{k:dict(v) for k,v in bymethod.items()},'volumes':{k:{a:str(b) for a,b in v.items()} for k,v in recvol.items()}},ensure_ascii=False))
-          res=collections.defaultdict(collections.Counter); histvol=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); block=collections.defaultdict(collections.Counter); sample=collections.Counter()
+              strict,cap,relaxed,raw,eg_sap,matches=bygroup[g]
+              base={k for k in strict|cap if owners[k]=={g}}
+              if len(base)==1:k=next(iter(base))
+              elif not base:
+                  cs=sku_cands[g];avail={k for k in cs if skuowners[k]=={g} and not (owners[k]-{g})}
+                  k=next(iter(avail)) if len(cs)==1 and len(avail)==1 else None
+              else:k=None
+              if k is not None:assigned[g]=k;used[k].add(g)
+          # Relax dates and CNPJ in separate diagnostic steps; no quantity used for identity.
+          all_rel=collections.defaultdict(set); all_ro=collections.defaultdict(set); all_raw=collections.defaultdict(set)
           for g,oo in groups.items():
-              p,c,sku=g;strict,cap,relaxed,raw,eg_sap,matches=bygroup[g]
-              sel=strict|cap;exclusive={k for k in sel if owners[k]=={g}}
-              # Candidate with unique ERP+CNPJ+product, regardless dates, is reported separately.
-              unique_relax=next(iter(relaxed)) if len(relaxed)==1 and relaxedown[next(iter(relaxed))]=={g} else None
-              live=any(validline(o) for o in oo)
-              livep=sum((o['qty'][0]-sum(o['qty'][1:]) for o in oo if validline(o) and None not in o['qty']),D(0))
+              p,c,sku=g
+              for o in oo:
+                  for v in {o['code'],o['ean'],o['sku'],o['sap']}-{''}:
+                      all_raw[g].update(rawindex[(p,v)])
+                      if o['cnpj']:all_rel[g].update(index[(p,o['cnpj'],v)])
+              for k in all_rel[g]:all_ro[k].add(g)
+          reasons=collections.defaultdict(collections.Counter); rec=collections.defaultdict(collections.Counter); qty=collections.defaultdict(collections.Counter); bynet=collections.defaultdict(collections.Counter); vol=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); qtynet=collections.defaultdict(collections.Counter); examples=collections.defaultdict(list)
+          hmin=min(x for x in hd if x)
+          for g,oo in groups.items():
+              p,c,sku=g;live=any(validline(o) for o in oo);livep=sum((o['qty'][0]-sum(o['qty'][1:]) for o in oo if validline(o) and None not in o['qty']),D(0));cx=all(o['unit']=='CX' for o in oo)
               orig={o['original'] for o in oo if o['original'] is not None}
-              for lab in ['all']+(['active'] if live else [])+(['active_pending'] if livep>0 else []):
-                  z=res[lab];z['order_groups']+=1;z['order_rows']+=len(oo);z['multirow_groups']+=len(oo)>1
-                  z['identity_exists']+=bool(sel);z['exclusive_entry_exists']+=bool(exclusive);z['exclusive_multirow_groups']+=bool(exclusive) and len(oo)>1;z['multiple_independent_entry_keys']+=len(exclusive)>1
-                  z['history_entry_keys']+=len(exclusive);z['strict_creation_entry_keys']+=len(exclusive&strict);z['capture_fallback_entry_keys']+=len(exclusive-strict)
-                  z['history_rows_represented']+=sum(entries[k]['rows'] for k in exclusive)
-                  z['history_repeated_entry_keys']+=sum(entries[k]['rows']>1 for k in exclusive)
-                  z['history_repeated_entry_keys_consistent']+=sum(entries[k]['rows']>1 and len(entries[k]['qty'])==1 for k in exclusive)
-                  qtykeys=[k for k in exclusive if len(entries[k]['qty'])==1 and None not in entries[k]['qty']]
-                  z['entry_qty_unique']+=len(qtykeys);z['entry_qty_conflicting']+=len(exclusive)-len(qtykeys)
-                  z['group_has_entry_qty']+=bool(qtykeys)
-                  eqkeys=[]
-                  for k in qtykeys:
-                      hq=next(iter(entries[k]['qty']))
-                      # All journey originals may differ, but any single matching original proves presence.
-                      if hq in orig:eqkeys.append(k)
-                      z['entry_qty_equals_some_order_original']+=hq in orig
-                      z['entry_qty_equals_original_matching_date_row']+=any(o['original']==hq for o in matches[k])
-                      z['entry_qty_equals_order_unique_original']+=orig=={hq}
-                      z['entry_qty_no_order_original_equal']+=hq not in orig
-                      if {o['unit'] for o in oo}=={'CX'}:histvol[lab]['entry_CX_once']+=hq
-                  z['group_has_equal_entry']+=bool(eqkeys)
-                  z['group_all_entry_keys_equal']+=bool(qtykeys) and len(qtykeys)==len(exclusive)==len(eqkeys)
-                  if not exclusive:
-                      b='erp_missing' if p not in he else 'candidate_shared_between_groups' if sel else 'date_conflict_same_product_cnpj' if relaxed else 'cnpj_conflict_same_product' if raw else 'product_no_identifier_match'
-                      block[lab][b]+=1
-                      z['diagnostic_relaxed_unique']+=unique_relax is not None
-                      z['diagnostic_relaxed_unique_equal']+=unique_relax is not None and len(entries[unique_relax]['qty'])==1 and next(iter(entries[unique_relax]['qty'])) in orig
-                      z['diagnostic_sku_code_candidate']+=bool(eg_sap)
-                  if len(oo)>1 and exclusive:
-                      z['matched_one_or_some_not_all_rows']+=any(not any(o in matches[k] for k in exclusive) for o in oo)
-          print('QA_ENTRY_GRAIN',json.dumps({'source':{'order_rows':src['order_rows'],'order_excluded':src['order_excluded'],'history_rows':hr,'history_entry_keys_in_common_erps':len(entries),'history_duplicate_rows_removed_at_entry_grain':sum(e['rows']-1 for e in entries.values()),'history_keys_multiple_quantity':sum(len(e['qty'])>1 for e in entries.values()),'history_keys_missing_product':missing_id},'counts':{k:dict(v) for k,v in res.items()},'unmatched':{k:dict(v) for k,v in block.items()},'volumes':{k:{a:str(b) for a,b in v.items()} for k,v in histvol.items()}},ensure_ascii=False))
+              net=next(iter(sorted({o['net'] for o in oo if o['net']})),'SEM_REDE')
+              labs=['all']+(['active'] if live else [])+(['active_pending'] if livep>0 else [])
+              if g in assigned:
+                  k=assigned[g];qs=entries[k]['qty']
+                  if len(qs)!=1 or None in qs:
+                      b='History tem mais de uma quantidade na mesma chave'
+                  elif next(iter(qs)) in orig:continue
+                  else:
+                      hq=next(iter(qs));peritem=collections.defaultdict(set)
+                      for o in oo:peritem[(o['order_id'],o['item'])].add(o['original'])
+                      isum=sum((next(iter(v)) for v in peritem.values()),D(0)) if all(len(v)==1 and None not in v for v in peritem.values()) else None
+                      if len(orig)>1 and sum(orig,D(0))==hq:b='Soma dos originais distintos coincide (investigar desdobramento)'
+                      elif isum==hq:b='Soma por pedido Ambev e item coincide (investigar desdobramento)'
+                      elif any(o['realoc_qty'] and o['realoc_qty']>0 for o in oo):b='Realocacao registrada, quantidade ainda divergente'
+                      elif len(oo)>1:b='Multiplas linhas, sem igualdade nos testes'
+                      else:b='Linha unica com quantidade diferente'
+                  for lab in labs:
+                      qty[lab][b]+=1
+                      if cx:vol[lab]['qty_difference_pending_CX']+=livep
+                      qtynet[lab][net]+=1
+                  if live and len(examples[b])<3:
+                      examples[b].append({'history_quantities':sorted(str(x) for x in qs),'order_original_values':sorted(str(x) for x in orig),'order_rows':len(oo),'unit':oo[0]['unit'],'realocation_present':any(o['realoc_qty'] and o['realoc_qty']>0 for o in oo)})
+                  continue
+              rel=all_rel[g];raw=all_raw[g]; available={k for k in rel if not used[k] and all_ro[k]=={g}}
+              strict,cap,_,_,_,_=bygroup[g];samedate=strict|cap|sku_cands[g]
+              if p not in he:
+                  b='ERP ausente no History'
+              elif samedate:
+                  b='Chave candidata disputada ou multipla'
+              elif rel:
+                  b='Produto e CNPJ iguais, datas divergentes'
+              elif raw:
+                  b='Produto igual no ERP, CNPJ divergente'
+              else:
+                  b='ERP existe, nenhum codigo do produto coincide'
+              for lab in labs:
+                  reasons[lab][b]+=1
+                  if cx:vol[lab]['unmatched_pending_CX']+=livep;vol[lab][b+'_pending_CX']+=livep
+                  if p not in he:
+                      rec[lab]['erp_absent_before_history']+=all(o['date'] and o['date']<hmin for o in oo)
+                      rec[lab]['erp_absent_without_capture']+=not any(o['date'] for o in oo)
+                  if len(rel)==1 and len(available)==1:
+                      k=next(iter(available));qs=entries[k]['qty'];rec[lab]['exclusive_relaxed_dates']+=1
+                      rec[lab]['exclusive_relaxed_dates_qty_equal']+=len(qs)==1 and bool(qs&orig)
+                      rec[lab]['exclusive_relaxed_dates_creation_equal']+=any(k[3] and k[3]==o['created'] for o in oo)
+                      rec[lab]['exclusive_relaxed_dates_original_valid_equal']+=any(k[4] and k[4]==o['original_valid'] for o in oo)
+                  rec[lab]['missing_capture']+=not any(o['date'] for o in oo)
+                  rec[lab]['missing_creation']+=not any(o['created'] for o in oo)
+                  rec[lab]['missing_original_validity']+=not any(o['original_valid'] for o in oo)
+                  bynet[lab][net]+=1
+          print('QA_RESIDUAL',json.dumps({'assigned_groups':len(assigned),'cross_assignment_conflicts':sum(len(x)>1 for x in used.values()),'unmatched_reasons':{k:dict(v) for k,v in reasons.items()},'diagnostic':{k:dict(v) for k,v in rec.items()},'quantity_reasons':{k:dict(v) for k,v in qty.items()},'volumes':{k:{a:str(b) for a,b in v.items()} for k,v in vol.items()},'unmatched_network_top':{k:v.most_common(10) for k,v in bynet.items()},'quantity_network_top':{k:v.most_common(10) for k,v in qtynet.items()},'quantity_examples':dict(examples)},ensure_ascii=False))
           PY
