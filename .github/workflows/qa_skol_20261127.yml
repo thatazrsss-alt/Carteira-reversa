@@ -1,4 +1,4 @@
-name: QA 27-11 - motivos residuais entrada unica
+name: QA 27-11 - proximidade de datas e entradas multiplas
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -69,7 +69,7 @@ jobs:
               groups[g].append(o);erps.add(g[0]);units[o['unit']]+=1;nets.add(o['net']);skus.add(g[2])
           # History grain: original ERP, client CNPJ, client product (or EAN), creation and original validity.
           # The item number is not part of the entry key; equal repeated quantities are counted once.
-          entries=collections.defaultdict(lambda:{'qty':set(),'ids':set(),'rows':0,'items':set()})
+          entries=collections.defaultdict(lambda:{'qty':set(),'ids':set(),'rows':0,'items':set(),'detail':set(),'descs':set(),'bees':set()})
           he=set(); hd=collections.Counter(); hr=0; missing_id=0
           for r in rows(hp):
               hr+=1;h=histrow(r);p=h['p']
@@ -79,7 +79,7 @@ jobs:
               prod=h['code'] or h['ean']
               if not prod:missing_id+=1;continue
               k=(p,h['cnpj'],prod,h['date'],h['valid'])
-              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item'])
+              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item']);z['detail'].add((h['item'],h['qty'],h['code'],h['ean']));z['descs'].add(h['desc']);z['bees'].add(h['bees'])
           index=collections.defaultdict(set); rawindex=collections.defaultdict(set)
           for k,e in entries.items():
               for v in e['ids']:
@@ -144,60 +144,81 @@ jobs:
                       all_raw[g].update(rawindex[(p,v)])
                       if o['cnpj']:all_rel[g].update(index[(p,o['cnpj'],v)])
               for k in all_rel[g]:all_ro[k].add(g)
-          reasons=collections.defaultdict(collections.Counter); rec=collections.defaultdict(collections.Counter); qty=collections.defaultdict(collections.Counter); bynet=collections.defaultdict(collections.Counter); vol=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); qtynet=collections.defaultdict(collections.Counter); examples=collections.defaultdict(list)
-          hmin=min(x for x in hd if x)
+          def distance(a,b):
+              if not a or not b:return 9999
+              return abs((datetime.date.fromisoformat(a)-datetime.date.fromisoformat(b)).days)
+          def diffs(k,oo):
+              return min((distance(k[3],d) for o in oo for d in (o['date'],o['created'])),default=9999), min((distance(k[4],o['original_valid']) for o in oo),default=9999)
+          # Compare distance on a single journey line, rather than combining unrelated lines.
+          def score(k,oo):
+              return min((distance(k[4],o['original_valid']),min(distance(k[3],o['date']),distance(k[3],o['created']))) for o in oo)
+          near=collections.defaultdict(collections.Counter); bins=collections.defaultdict(collections.Counter); multi=collections.defaultdict(collections.Counter); examples=collections.Counter(); recover={}; nearclaims=collections.defaultdict(set)
           for g,oo in groups.items():
-              p,c,sku=g;live=any(validline(o) for o in oo);livep=sum((o['qty'][0]-sum(o['qty'][1:]) for o in oo if validline(o) and None not in o['qty']),D(0));cx=all(o['unit']=='CX' for o in oo)
-              orig={o['original'] for o in oo if o['original'] is not None}
-              net=next(iter(sorted({o['net'] for o in oo if o['net']})),'SEM_REDE')
-              labs=['all']+(['active'] if live else [])+(['active_pending'] if livep>0 else [])
+              if g in assigned:continue
+              rel=all_rel[g];avail={k for k in rel if not used[k] and all_ro[k]=={g}}
+              # First priority: independently unique ERP+product+CNPJ, without requiring dates.
+              if len(rel)==1 and len(avail)==1:recover[g]=(next(iter(avail)),'unique_identity')
+              elif avail:
+                  ranked=sorted((score(k,oo),k) for k in avail)
+                  if (len(ranked)==1 or ranked[0][0]<ranked[1][0]) and ranked[0][0][0]==0 and ranked[0][0][1]<=3:
+                      recover[g]=(ranked[0][1],'nearest_same_original_valid')
+              if g in recover:nearclaims[recover[g][0]].add(g)
+          for g,oo in groups.items():
+              live=any(validline(o) for o in oo);orig={o['original'] for o in oo if o['original'] is not None};labs=['all']+(['active'] if live else [])
               if g in assigned:
-                  k=assigned[g];qs=entries[k]['qty']
-                  if len(qs)!=1 or None in qs:
-                      b='History tem mais de uma quantidade na mesma chave'
-                  elif next(iter(qs)) in orig:continue
-                  else:
-                      hq=next(iter(qs));peritem=collections.defaultdict(set)
-                      for o in oo:peritem[(o['order_id'],o['item'])].add(o['original'])
-                      isum=sum((next(iter(v)) for v in peritem.values()),D(0)) if all(len(v)==1 and None not in v for v in peritem.values()) else None
-                      if len(orig)>1 and sum(orig,D(0))==hq:b='Soma dos originais distintos coincide (investigar desdobramento)'
-                      elif isum==hq:b='Soma por pedido Ambev e item coincide (investigar desdobramento)'
-                      elif any(o['realoc_qty'] and o['realoc_qty']>0 for o in oo):b='Realocacao registrada, quantidade ainda divergente'
-                      elif len(oo)>1:b='Multiplas linhas, sem igualdade nos testes'
-                      else:b='Linha unica com quantidade diferente'
+                  k=assigned[g];e=entries[k]
+                  if len(e['qty'])<=1:continue
+                  iq=collections.defaultdict(set)
+                  for item,qv,code,ean in e['detail']:iq[item].add(qv)
+                  distinct_item=bool('' not in iq and all(len(v)==1 for v in iq.values()))
+                  itemsum=sum((next(iter(v)) for v in iq.values()),D(0)) if distinct_item else None
+                  orderitems=collections.defaultdict(set)
+                  for o in oo:orderitems[o['item']].add(o['original'])
+                  same_item_qty=all(i in orderitems and v<=orderitems[i] for i,v in iq.items()) if distinct_item else False
                   for lab in labs:
-                      qty[lab][b]+=1
-                      if cx:vol[lab]['qty_difference_pending_CX']+=livep
-                      qtynet[lab][net]+=1
-                  if live and len(examples[b])<3:
-                      examples[b].append({'history_quantities':sorted(str(x) for x in qs),'order_original_values':sorted(str(x) for x in orig),'order_rows':len(oo),'unit':oo[0]['unit'],'realocation_present':any(o['realoc_qty'] and o['realoc_qty']>0 for o in oo)})
+                      z=multi[lab];z['keys']+=1;z['distinct_history_items_consistent']+=distinct_item;z['same_history_item_multiple_quantities']+=any(len(v)>1 for v in iq.values());z['history_qty_set_equals_order']+=e['qty']==orig;z['history_qty_all_present_order']+=e['qty']<=orig;z['history_item_qty_match_order']+=same_item_qty;z['distinct_history_item_sum']+=itemsum is not None
+                  if live:examples[json.dumps({'history_qty':sorted(str(x) for x in e['qty']),'history_item_qty_pairs':sorted([str(x) for x in v] for v in iq.values()),'distinct_items':len(iq),'history_rows':e['rows'],'order_qty':sorted(str(x) for x in orig),'order_items':len(orderitems),'same_item_qty':same_item_qty,'sum_distinct_items':str(itemsum) if itemsum is not None else None},sort_keys=True)]+=1
                   continue
-              rel=all_rel[g];raw=all_raw[g]; available={k for k in rel if not used[k] and all_ro[k]=={g}}
-              strict,cap,_,_,_,_=bygroup[g];samedate=strict|cap|sku_cands[g]
-              if p not in he:
-                  b='ERP ausente no History'
-              elif samedate:
-                  b='Chave candidata disputada ou multipla'
-              elif rel:
-                  b='Produto e CNPJ iguais, datas divergentes'
-              elif raw:
-                  b='Produto igual no ERP, CNPJ divergente'
-              else:
-                  b='ERP existe, nenhum codigo do produto coincide'
+              if g not in recover:continue
+              k,tier=recover[g]
+              if nearclaims[k]!={g}:continue
+              d,v=diffs(k,oo);sv,sd=score(k,oo)
               for lab in labs:
-                  reasons[lab][b]+=1
-                  if cx:vol[lab]['unmatched_pending_CX']+=livep;vol[lab][b+'_pending_CX']+=livep
-                  if p not in he:
-                      rec[lab]['erp_absent_before_history']+=all(o['date'] and o['date']<hmin for o in oo)
-                      rec[lab]['erp_absent_without_capture']+=not any(o['date'] for o in oo)
-                  if len(rel)==1 and len(available)==1:
-                      k=next(iter(available));qs=entries[k]['qty'];rec[lab]['exclusive_relaxed_dates']+=1
-                      rec[lab]['exclusive_relaxed_dates_qty_equal']+=len(qs)==1 and bool(qs&orig)
-                      rec[lab]['exclusive_relaxed_dates_creation_equal']+=any(k[3] and k[3]==o['created'] for o in oo)
-                      rec[lab]['exclusive_relaxed_dates_original_valid_equal']+=any(k[4] and k[4]==o['original_valid'] for o in oo)
-                  rec[lab]['missing_capture']+=not any(o['date'] for o in oo)
-                  rec[lab]['missing_creation']+=not any(o['created'] for o in oo)
-                  rec[lab]['missing_original_validity']+=not any(o['original_valid'] for o in oo)
-                  bynet[lab][net]+=1
-          print('QA_RESIDUAL',json.dumps({'assigned_groups':len(assigned),'cross_assignment_conflicts':sum(len(x)>1 for x in used.values()),'unmatched_reasons':{k:dict(v) for k,v in reasons.items()},'diagnostic':{k:dict(v) for k,v in rec.items()},'quantity_reasons':{k:dict(v) for k,v in qty.items()},'volumes':{k:{a:str(b) for a,b in v.items()} for k,v in vol.items()},'unmatched_network_top':{k:v.most_common(10) for k,v in bynet.items()},'quantity_network_top':{k:v.most_common(10) for k,v in qtynet.items()},'quantity_examples':dict(examples)},ensure_ascii=False))
+                  z=near[lab];z['candidate_unique']+=1;z[tier]+=1;z['qty_equal_any_original']+=len(entries[k]['qty'])==1 and bool(entries[k]['qty']&orig);z['qty_diff']+=len(entries[k]['qty'])==1 and not bool(entries[k]['qty']&orig);z['history_qty_multiple']+=len(entries[k]['qty'])>1
+                  z['original_valid_equal']+=v==0;z['same_valid_creation_or_capture_1day']+=sv==0 and sd<=1;z['same_valid_creation_or_capture_3days']+=sv==0 and sd<=3;z['same_valid_creation_or_capture_7days']+=sv==0 and sd<=7
+                  label='0 dias' if d==0 else '1 dia' if d==1 else '2-3 dias' if d<=3 else '4-7 dias' if d<=7 else '8-30 dias' if d<=30 else '>30 dias' if d<9999 else 'sem data'
+                  bins[lab][label]+=1
+          # Remaining product identity tests: same ERP/CNPJ and description or item, BEES and normalized CNPJ.
+          ecnpj=collections.defaultdict(set);beesindex=collections.defaultdict(set)
+          def cnpj(v):return re.sub(r'[^0-9]','',v).lstrip('0')
+          for k,e in entries.items():
+              ecnpj[(k[0],cnpj(k[1]))].add(k)
+              for b in e['bees']-{''}:beesindex[b].add(k)
+          other=collections.defaultdict(dict); otherowners=collections.defaultdict(set)
+          for g,oo in groups.items():
+              p,c,sku=g;cs=collections.defaultdict(set)
+              for o in oo:
+                  for k in ecnpj[(p,cnpj(o['cnpj']))]:
+                      if not cnpj(o['cnpj']):continue
+                      e=entries[k];sameid=bool(e['ids']&({o['ean'],o['code'],o['sku'],o['sap']}-{''}))
+                      dt=min(distance(k[3],o['created']),distance(k[3],o['date']));va=distance(k[4],o['original_valid'])
+                      if sameid and dt<=3 and va==0:cs['cnpj_normalizado'].add(k)
+                      if dt<=3 and va==0 and o['desc'] and o['desc'] in e['descs']:cs['descricao_mesmo_cliente'].add(k)
+                      if dt<=3 and va==0 and o['item'] and o['item'] in e['items']:cs['numero_item_mesmo_cliente'].add(k)
+                  if o['bees']:
+                      for k in beesindex[o['bees']]:
+                          e=entries[k]
+                          if cnpj(o['cnpj']) and cnpj(o['cnpj'])==cnpj(k[1]) and bool(e['ids']&({o['ean'],o['code'],o['sku'],o['sap']}-{''})):cs['bees_cliente_produto'].add(k)
+              other[g]=cs
+              for method,kk in cs.items():
+                  for k in kk:otherowners[(method,k)].add(g)
+          additional=collections.defaultdict(collections.Counter)
+          for g,oo in groups.items():
+              if g in assigned or g in recover:continue
+              live=any(validline(o) for o in oo);orig={o['original'] for o in oo if o['original'] is not None}
+              for method,kk in other[g].items():
+                  avail={k for k in kk if otherowners[(method,k)]=={g} and not used[k] and not nearclaims[k]}
+                  for lab in ['all']+(['active'] if live else []):
+                      z=additional[lab];z[method+'_any']+=bool(kk);z[method+'_exclusive']+=len(kk)==len(avail)==1;z[method+'_exclusive_qty_equal']+=len(kk)==len(avail)==1 and bool(entries[next(iter(avail))]['qty']&orig)
+          print('QA_NEAR',json.dumps({'near':{k:dict(v) for k,v in near.items()},'date_gap':{k:dict(v) for k,v in bins.items()},'multi_history':{k:dict(v) for k,v in multi.items()},'multi_examples':[{'count':v,**json.loads(k)} for k,v in examples.items()],'other_candidates':{k:dict(v) for k,v in additional.items()}},ensure_ascii=False))
           PY
