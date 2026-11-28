@@ -1,4 +1,4 @@
-name: QA 27-11 - somente History e Order atuais
+name: QA 27-11 - chave unica de entrada e jornada
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -29,7 +29,9 @@ jobs:
           def day(x):
               s=str(x or '').strip()
               for fmt in ('%d/%m/%Y','%Y-%m-%d'):
-                  try: return datetime.datetime.strptime(s[:10],fmt).date().isoformat()
+                  try:
+                      d=datetime.datetime.strptime(s[:10],fmt).date()
+                      return d.isoformat() if d.year>1900 else ''
                   except ValueError: pass
               return ''
           @functools.lru_cache(maxsize=100000)
@@ -65,122 +67,85 @@ jobs:
               if not all(g) or 'TESTE' in g[0]:
                   src['order_excluded']+=1;continue
               groups[g].append(o);erps.add(g[0]);units[o['unit']]+=1;nets.add(o['net']);skus.add(g[2])
-          hist=[]; hi=collections.defaultdict(set); he=collections.Counter(); hd=collections.Counter(); hdups=set(); hs=collections.Counter()
+          # History grain: original ERP, client CNPJ, client product (or EAN), creation and original validity.
+          # The item number is not part of the entry key; equal repeated quantities are counted once.
+          entries=collections.defaultdict(lambda:{'qty':set(),'ids':set(),'rows':0,'items':set()})
+          he=set(); hd=collections.Counter(); hr=0; missing_id=0
           for r in rows(hp):
-              src['history_rows']+=1
-              h=histrow(r); p=h['p']
-              if not p or 'TESTE' in p:
-                  src['history_excluded']+=1;continue
-              he[p]+=1;hd[h['date']]+=1
+              hr+=1;h=histrow(r);p=h['p']
+              if not p:continue
+              he.add(p);hd[h['date']]+=1
               if p not in erps:continue
-              if not (h['code'] or h['ean']):
-                  src['history_without_product_code_in_common_erp']+=1;continue
-              key=(p,h['cnpj'],h['code'],h['ean'],h['date'],h['valid'],h['item'],h['qty'])
-              if key in hdups:
-                  src['history_identical_snapshots']+=1;continue
-              hdups.add(key);i=len(hist);hist.append(h)
-              for k in ('code','ean'):
-                  if h[k]:
-                      hi[(p,k,h[k])].add(i)
-          del hdups
-          print('QA_INVENTORY',json.dumps({'sources':dict(src),'order_keys':len(groups),'order_erps':len(erps),'history_erps':len(he),'common_erps':len(erps&he.keys()),'skus':len(skus),'networks':len(nets-{''}),'units_rows':dict(units),'history_date_range':[min(x for x in hd if x),max(hd)],'history_distinct_relevant_rows':len(hist)},ensure_ascii=False))
-          ca=collections.defaultdict(set); reverse=collections.defaultdict(set)
-          def context(o,h,alt=False):
-              return (not(o['cnpj'] and h['cnpj']) or o['cnpj']==h['cnpj']) and (not(o['date'] and h['date']) or h['date']==o['date'] or (alt and h['date']==o['created'])) and (not(o['valid'] and h['valid']) or h['valid']==o['valid'] or (alt and h['valid']==o['original_valid']))
-          # Candidate owners include exact and cross-column matches and unambiguous CAD aliases.
-          chosen={}; own=collections.defaultdict(set); candidate_info={}
+              prod=h['code'] or h['ean']
+              if not prod:missing_id+=1;continue
+              k=(p,h['cnpj'],prod,h['date'],h['valid'])
+              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item'])
+          index=collections.defaultdict(set); rawindex=collections.defaultdict(set)
+          for k,e in entries.items():
+              for v in e['ids']:
+                  index[(k[0],k[1],v)].add(k);rawindex[(k[0],v)].add(k)
+          def validline(o):return bool(o['valid'] and o['valid']>=ref and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status'])
+          # Prefer original creation/validity, then capture as secondary diagnostic. Current validity is not a key.
+          # One qualifying journey line is sufficient; later lines do not need to re-match.
+          bygroup={};owners=collections.defaultdict(set);relaxedown=collections.defaultdict(set)
           for g,oo in groups.items():
-              p,c,sku=g; direct=set(); alt=set(); cross=set(); cadset=set(); raw=set()
+              p,c,sku=g;strict=set();cap=set();relaxed=set();raw=set();eg_sap=set(); matches=collections.defaultdict(list)
               for o in oo:
-                  equal=set(); crossed=set()
-                  for k,other in (('code','ean'),('ean','code')):
-                      if o[k]:
-                          equal.update(hi.get((p,k,o[k]),()))
-                          crossed.update(hi.get((p,other,o[k]),()))
-                  raw.update(equal)
-                  direct.update(i for i in equal if context(o,hist[i]))
-                  alt.update(i for i in equal if context(o,hist[i],True))
-                  cross.update(i for i in crossed if context(o,hist[i],True))
-                  for v in ca[sku]:
-                      if reverse[v]!={sku}:continue
-                      for k in ('ean','code'):
-                          cadset.update(i for i in hi.get((p,k,v),()) if context(o,hist[i],True))
-              # Priority direct, alternative dates, cross field, then CAD. Never select multiple records.
-              tier='direct' if direct else 'alternative_dates' if alt else 'cross_field' if cross else 'cad_alias' if cadset else ''
-              cand=direct or alt or cross or cadset
-              if len(cand)==1:chosen[g]=(next(iter(cand)),tier)
-              for i in direct|alt|cross|cadset:own[i].add(g)
-              candidate_info[g]=(tier,len(cand),bool(raw))
-          print('QA_MATCH_STAGE',len(chosen))
-          # Current extracts only. All candidate identity rules are independent of quantities.
-          def strong_context(o,h):
-              return bool(o['cnpj'] and o['cnpj']==h['cnpj'] and h['date'] and h['date'] in {o['date'],o['created']} and h['valid'] and h['valid'] in {o['valid'],o['original_valid']})
-          def ids(o):
-              return {o['code'],o['ean']}-{''}
-          h_by_erp=collections.defaultdict(list);h_by_cnpj=collections.defaultdict(list)
-          for i,h in enumerate(hist):
-              h_by_erp[h['p']].append(i)
-              h_by_cnpj[(h['p'],h['cnpj'])].append(i)
-          strong={g:i for g,(i,t) in chosen.items() if own[i]=={g} and hist[i]['qty'] is not None and hist[i]['qty']>0}
-          # Known identifiers across current Order and known crosswalk from confirmed joins.
-          aliases=collections.defaultdict(set); inverse=collections.defaultdict(set)
+                  # compare identifiers in either named column; never rely on quantity to identify the entry
+                  for v in {o['code'],o['ean']}-{''}:
+                      raw.update(rawindex[(p,v)])
+                      for k in index[(p,o['cnpj'],v)]:
+                          if not o['cnpj']:continue
+                          relaxed.add(k)
+                          if k[3] and k[4] and o['created']==k[3] and o['original_valid']==k[4]:
+                              strict.add(k);matches[k].append(o)
+                          elif k[3] and k[4] and o['date']==k[3] and o['original_valid']==k[4]:
+                              cap.add(k);matches[k].append(o)
+                  for v in {o['sku'],o['sap']}-{''}:
+                      for k in index[(p,o['cnpj'],v)]:
+                          if o['cnpj'] and k[3] and k[4] and k[3] in {o['created'],o['date']} and k[4]==o['original_valid']:eg_sap.add(k)
+              selected=strict|cap
+              bygroup[g]=(strict,cap,relaxed,raw,eg_sap,matches)
+              for k in selected:owners[k].add(g)
+              for k in relaxed:relaxedown[k].add(g)
+          res=collections.defaultdict(collections.Counter); histvol=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); block=collections.defaultdict(collections.Counter); sample=collections.Counter()
           for g,oo in groups.items():
-              for o in oo:
-                  for v in ids(o):
-                      aliases[(o['net'],g[2])].add(v);inverse[(o['net'],v)].add(g[2])
-          for g,i in strong.items():
-              for o in groups[g]:
-                  for v in ids(hist[i]):
-                      aliases[(o['net'],g[2])].add(v);inverse[(o['net'],v)].add(g[2])
-          candidates={}; owners=collections.defaultdict(set)
-          for g,oo in groups.items():
-              p,c,sku=g; cs=collections.defaultdict(set)
-              for o in oo:
-                  for i in h_by_cnpj[(p,o['cnpj'])]:
-                      if not o['cnpj']:continue
-                      h=hist[i]
-                      equal=bool(ids(o)&ids(h))
-                      idalias=any(inverse[(o['net'],v)]=={sku} and v in aliases[(o['net'],sku)] for v in ids(h))
-                      ctx=strong_context(o,h)
-                      if equal:cs['id_cnpj_any_date'].add(i)
-                      if equal and ctx:cs['id_strict_dates'].add(i)
-                      if idalias and ctx:cs['network_alias_dates'].add(i)
-                      if ctx and o['desc'] and h['desc']==o['desc']:cs['description_dates'].add(i)
-                      if ctx and o['item'] and o['item']==h['item']:cs['item_dates'].add(i)
-                      if ctx and o['bees'] and o['bees']==h['bees'] and (equal or idalias):cs['bees_product_dates'].add(i)
-              candidates[g]=cs
-              for k,v in cs.items():
-                  for i in v:owners[(k,i)].add(g)
-          summary=collections.defaultdict(collections.Counter); missing_by_net=collections.Counter(); missing_by_date=collections.Counter(); missing_by_mode=collections.Counter(); hist_items_per_key=collections.Counter()
-          for g,oo in groups.items():
-              p,c,sku=g; live=any(o['valid']>=ref and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status'] for o in oo)
+              p,c,sku=g;strict,cap,relaxed,raw,eg_sap,matches=bygroup[g]
+              sel=strict|cap;exclusive={k for k in sel if owners[k]=={g}}
+              # Candidate with unique ERP+CNPJ+product, regardless dates, is reported separately.
+              unique_relax=next(iter(relaxed)) if len(relaxed)==1 and relaxedown[next(iter(relaxed))]=={g} else None
+              live=any(validline(o) for o in oo)
+              livep=sum((o['qty'][0]-sum(o['qty'][1:]) for o in oo if validline(o) and None not in o['qty']),D(0))
               orig={o['original'] for o in oo if o['original'] is not None}
-              h=hist[strong[g]] if g in strong else None
-              for lab in ['all']+(['active'] if live else []):
-                  z=summary[lab];z['keys']+=1;z['history_identified']+=bool(h)
-                  if h:
-                      z['original_unique']+=len(orig)==1;z['original_unique_equal']+=len(orig)==1 and h['qty'] in orig
-                      z['any_original_equal']+=h['qty'] in orig;z['multiple_original']+=len(orig)>1
-                      z['multiple_original_contains_history']+=len(orig)>1 and h['qty'] in orig
-                      z['multiple_original_sum_distinct_equal']+=len(orig)>1 and h['qty'] not in orig and sum(orig,D(0))==h['qty']
-                      continue
-                  z['history_not_identified']+=1;z['erp_missing']+=p not in he
-                  z['erp_present_no_cnpj']+=p in he and not any(h_by_cnpj[(p,o['cnpj'])] for o in oo if o['cnpj'])
-                  z['order_no_client_code']+=not any(o['code'] for o in oo);z['order_no_ean']+=not any(o['ean'] for o in oo)
-                  z['order_no_product_identifier']+=not any(ids(o) for o in oo)
-                  z['all_cancelled']+=all('CANCELAD' in o['status'] for o in oo)
-                  z['erp_missing_before_history']+=p not in he and all(o['date'] and o['date']<min(x for x in hd if x) for o in oo)
-                  for k,cs in candidates[g].items():
-                      z[k+'_any']+=bool(cs)
-                      exclusive=[i for i in cs if owners[(k,i)]=={g} and not (own[i]-{g})]
-                      if len(cs)==1 and len(exclusive)==1:
-                          z[k+'_exclusive']+=1
-                          z[k+'_original_equal']+=hist[exclusive[0]]['qty'] in orig
-              if h is None:
-                  if live:
-                      missing_by_net.update({o['net'] for o in oo if o['net']})
-                      missing_by_date.update({o['date'] for o in oo if o['date']})
-                      missing_by_mode.update({o['mode'] for o in oo if o['mode']})
-                  hist_items_per_key[len(h_by_erp[p])]+=1
-          print('QA_CURRENT_ONLY',json.dumps({'summary':{k:dict(v) for k,v in summary.items()},'active_unmatched_network_top':missing_by_net.most_common(12),'active_unmatched_capture_dates_top':missing_by_date.most_common(12),'active_unmatched_mode_nonexclusive':dict(missing_by_mode)},ensure_ascii=False))
+              for lab in ['all']+(['active'] if live else [])+(['active_pending'] if livep>0 else []):
+                  z=res[lab];z['order_groups']+=1;z['order_rows']+=len(oo);z['multirow_groups']+=len(oo)>1
+                  z['identity_exists']+=bool(sel);z['exclusive_entry_exists']+=bool(exclusive);z['exclusive_multirow_groups']+=bool(exclusive) and len(oo)>1;z['multiple_independent_entry_keys']+=len(exclusive)>1
+                  z['history_entry_keys']+=len(exclusive);z['strict_creation_entry_keys']+=len(exclusive&strict);z['capture_fallback_entry_keys']+=len(exclusive-strict)
+                  z['history_rows_represented']+=sum(entries[k]['rows'] for k in exclusive)
+                  z['history_repeated_entry_keys']+=sum(entries[k]['rows']>1 for k in exclusive)
+                  z['history_repeated_entry_keys_consistent']+=sum(entries[k]['rows']>1 and len(entries[k]['qty'])==1 for k in exclusive)
+                  qtykeys=[k for k in exclusive if len(entries[k]['qty'])==1 and None not in entries[k]['qty']]
+                  z['entry_qty_unique']+=len(qtykeys);z['entry_qty_conflicting']+=len(exclusive)-len(qtykeys)
+                  z['group_has_entry_qty']+=bool(qtykeys)
+                  eqkeys=[]
+                  for k in qtykeys:
+                      hq=next(iter(entries[k]['qty']))
+                      # All journey originals may differ, but any single matching original proves presence.
+                      if hq in orig:eqkeys.append(k)
+                      z['entry_qty_equals_some_order_original']+=hq in orig
+                      z['entry_qty_equals_original_matching_date_row']+=any(o['original']==hq for o in matches[k])
+                      z['entry_qty_equals_order_unique_original']+=orig=={hq}
+                      z['entry_qty_no_order_original_equal']+=hq not in orig
+                      if {o['unit'] for o in oo}=={'CX'}:histvol[lab]['entry_CX_once']+=hq
+                  z['group_has_equal_entry']+=bool(eqkeys)
+                  z['group_all_entry_keys_equal']+=bool(qtykeys) and len(qtykeys)==len(exclusive)==len(eqkeys)
+                  if not exclusive:
+                      b='erp_missing' if p not in he else 'candidate_shared_between_groups' if sel else 'date_conflict_same_product_cnpj' if relaxed else 'cnpj_conflict_same_product' if raw else 'product_no_identifier_match'
+                      block[lab][b]+=1
+                      z['diagnostic_relaxed_unique']+=unique_relax is not None
+                      z['diagnostic_relaxed_unique_equal']+=unique_relax is not None and len(entries[unique_relax]['qty'])==1 and next(iter(entries[unique_relax]['qty'])) in orig
+                      z['diagnostic_sku_code_candidate']+=bool(eg_sap)
+                  if len(oo)>1 and exclusive:
+                      z['matched_one_or_some_not_all_rows']+=any(not any(o in matches[k] for k in exclusive) for o in oo)
+          print('QA_ENTRY_GRAIN',json.dumps({'source':{'order_rows':src['order_rows'],'order_excluded':src['order_excluded'],'history_rows':hr,'history_entry_keys_in_common_erps':len(entries),'history_duplicate_rows_removed_at_entry_grain':sum(e['rows']-1 for e in entries.values()),'history_keys_multiple_quantity':sum(len(e['qty'])>1 for e in entries.values()),'history_keys_missing_product':missing_id},'counts':{k:dict(v) for k,v in res.items()},'unmatched':{k:dict(v) for k,v in block.items()},'volumes':{k:{a:str(b) for a,b in v.items()} for k,v in histvol.items()}},ensure_ascii=False))
           PY
