@@ -1,4 +1,4 @@
-name: QA 27-11 - cruzamento inverso e troca de SKU
+name: QA 27-11 - validar substituicao por CAD e cancelamento
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -345,7 +345,7 @@ jobs:
               if len(examples[tier])<8:examples[tier].append(detail(k,g,f))
           # Separate scenario: source entry already matched to an old cancelled Order SKU;
           # a new unmatched SKU was created later in the same ERP/client.
-          journey=collections.Counter(); journey_ex=collections.defaultdict(list); journey_pairs=collections.defaultdict(set)
+          journey=collections.Counter(); journey_ex=collections.defaultdict(list); journey_pairs=collections.defaultdict(set); strongpairs=collections.defaultdict(set); strongdetails={}; alloldclaims=collections.defaultdict(set)
           for old,kk in reverse.items():
               oldrows=groups[old];cancelrows=[o for o in oldrows if cancelled(o)]
               if not cancelrows:continue
@@ -368,10 +368,31 @@ jobs:
                       if not (sameunit or samepack or sim>=.90):continue
                       if not (after or (not cancel_dates and any(o['created']>=k[3] for o in newrows if o['created']))):continue
                       tier='cancelamento_datado_ate_7d' if close else 'cancelamento_datado_mais_7d' if after else 'cancelado_sem_data'
+                      if all(cancelled(o) for o in oldrows) and after and f['validity_gap']==0 and (sameunit or samepack):
+                          # Different package quantities are allowed only as candidates; compare same pack or same CAD product description and packaging.
+                          packdesc_old=cdvals(old[2],'embalagem_sku');packdesc_new=cdvals(new[2],'embalagem_sku')
+                          samepackdesc=bool(packdesc_old&packdesc_new)
+                          if samepack or (sameunit and samepackdesc and sim>=.95):
+                              strongpairs[new].add((k,old));alloldclaims[k].add(new)
+                              strongdetails[(k,new)]={'old_eg':old[2],'old_desc':product_desc(old[2]),'old_ean':sorted({o['ean'] for o in oldrows if o['ean']}),'old_cancel_date':sorted(cancel_dates),'same_pack':samepack,'same_unit':sameunit,'same_pack_desc':samepackdesc,'old_new_desc_similarity':round(sim,3),**detail(k,new,f)}
                       journey_pairs[new].add((k,old,tier))
                       journey[tier+'_pairs']+=1
                       if len(journey_ex[tier])<8:
                           journey_ex[tier].append({'old_eg':old[2],'old_desc':product_desc(old[2]),'old_ean':sorted({o['ean'] for o in oldrows if o['ean']}),'old_status':sorted({o['status'] for o in oldrows}),'old_cancel_date':sorted(cancel_dates),'old_cancel_reason':sorted({o['cancelreason'] for o in cancelrows if o['cancelreason']}),'same_unit':sameunit,'same_pack':samepack,'old_new_desc_similarity':round(sim,3),**detail(k,new,f)})
           journey['new_groups_unique_candidate']=sum(len(v)==1 for v in journey_pairs.values());journey['new_groups_multiple_candidates']=sum(len(v)>1 for v in journey_pairs.values());journey['active_new_groups_unique_candidate']=sum(len(v)==1 and g in active for g,v in journey_pairs.items())
           print('QA_INVERSE_SWAP',json.dumps({'counts':dict(count),'unlinked_order_groups_in_same_scope':len(open_scope),'active_unlinked_order_groups_in_scope':len(open_scope&active),'candidate_tiers':dict(tiers),'examples':dict(examples),'cancel_journey_counts':dict(journey),'cancel_examples':dict(journey_ex)},ensure_ascii=False))
+          # No double attribution: both original entry and new group must be mutually unique.
+          strongstats=collections.Counter(); examplesstrong=[]; paircounts=collections.Counter()
+          for new,kk in strongpairs.items():
+              strongstats['new_candidate_groups']+=1
+              if len(kk)!=1:strongstats['new_multiple_old']+=1;continue
+              k,old=next(iter(kk))
+              if len(alloldclaims[k])!=1:strongstats['old_multiple_new']+=1;continue
+              f=strongdetails[(k,new)];strongstats['exclusive_old_new']+=1
+              strongstats['exclusive_active']+=new in active
+              strongstats['exclusive_qty_equal']+=f['qty_equal']
+              strongstats['exclusive_active_qty_equal']+=new in active and f['qty_equal']
+              paircounts[(old[2],new[2],product_desc(old[2]),product_desc(new[2]))]+=1
+              if len(examplesstrong)<12:examplesstrong.append(f)
+          print('QA_STRONG_SWAP',json.dumps({'counts':dict(strongstats),'sku_pairs':[{'old':a,'new':b,'old_desc':c,'new_desc':d,'count':v} for (a,b,c,d),v in paircounts.most_common(30)],'examples':examplesstrong},ensure_ascii=False))
           PY
