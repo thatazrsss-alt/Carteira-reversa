@@ -1,4 +1,4 @@
-name: QA 27-11 - campos exatos dos 15 de-para
+name: QA 27-11 - CAD dos EANs divergentes
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -11,6 +11,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - run: python -m pip install openpyxl
       - name: Reconciliar todos os SKUs
         run: |
           python - <<'PY'
@@ -219,33 +220,51 @@ jobs:
                       for scope in [('network',net),('cnpj',k[1])]:
                           mapping[(scope,v)].add(g[2]);support[(scope,v,g[2])].add(k[0])
           target=[k for k in entries if k not in matched and erp_clients[(k[0],k[1])] and not all_ro[k]]
+          import openpyxl
+          wb=openpyxl.load_workbook('BASE_ESTOQUE 16.11.xlsx',read_only=True,data_only=True)
+          ws=next(w for w in wb if hdr(w.title)=='cad')
+          it=iter(ws.values); headers=[str(x or '') for x in next(it)]; names=[hdr(x) for x in headers]
+          print('QA_CAD_SCHEMA',json.dumps(headers,ensure_ascii=False))
+          si=names.index('codprod')
+          ecols=[i for i,x in enumerate(names) if 'ean' in x or 'gtin' in x or 'erec' in x]
+          descs=[i for i,x in enumerate(names) if 'desc' in x or 'produto' in x or 'embalagem' in x or 'marca' in x]
+          info=collections.defaultdict(list); idmap=collections.defaultdict(list)
+          for row in it:
+              sku=n(row[si])
+              if not sku:continue
+              item={'sku':sku,'fields':{headers[i]:str(row[i] or '') for i in sorted(set(ecols+descs)) if i<len(row) and row[i] is not None}}
+              info[sku].append(item)
+              for i in ecols:
+                  if i<len(row):
+                      v=n(row[i])
+                      if v:idmap[v].append({'sku':sku,'field':headers[i]})
+          wb.close()
+          pairs=[('7891991306232','7891991306171','323493'),('7891991295086','7891991295093','206037'),('7898925943020','17898925943027','145508'),('7892840812874','7892840812881','130658'),('17892840823600','7892840823603','331678'),('7892840812850','7892840812867','130617'),('7891991000826','7891991002189','90845'),('7892840819330','7892840819323','42937'),('17896326100223','7896326100226','321737'),('7891991000840','7891991002240','90910'),('9990021736709','7892840812867','130617'),('7891149108695','7891149108701','187724')]
+          out=[]
+          for h,o,sku in pairs:
+              hs={v['sku'] for v in idmap[h]};os={v['sku'] for v in idmap[o]}
+              descriptions=sorted({r['sapdesc'] for g,oo in groups.items() if g[2]==sku for r in oo if r['sapdesc']})
+              out.append({'history_ean':h,'order_ean':o,'order_eg':sku,'description_order':descriptions,'history_cad':idmap[h],'order_cad':idmap[o],'target_cad':info[sku],'history_matches_target':sku in hs,'order_matches_target':sku in os,'same_cad_sku':sorted(hs&os)})
+          print('QA_CAD_PAIRS',json.dumps(out,ensure_ascii=False))
+          # Scan all 266 remaining entries for CAD-confirmed mappings, not just the 15 candidates.
           existing=collections.defaultdict(set)
           for k,g in matched.items():existing[g].add(k)
-          fieldstats=collections.Counter(); details=[]; date_stats=collections.Counter(); other=collections.Counter(); pairclaims=collections.defaultdict(set)
+          stats=collections.Counter();claims=collections.defaultdict(set);new={}
           for k in target:
               e=entries[k];gg=erp_clients[(k[0],k[1])]
-              hc={x[2] for x in e['detail'] if x[2]};heans={x[3] for x in e['detail'] if x[3]}
-              fieldstats['history_code_present']+=bool(hc);fieldstats['history_ean_present']+=bool(heans);fieldstats['both_history_fields_present']+=bool(hc and heans);fieldstats['both_history_fields_same']+=bool(hc and heans and hc==heans)
-              alloc=[o for g in gg for o in groups[g]]
-              fieldstats['order_client_code_any']+=any(o['code'] for o in alloc);fieldstats['order_ean_any']+=any(o['ean'] for o in alloc)
-              for hf,hv in [('History_codigo',hc),('History_EAN',heans)]:
-                  for of in ('code','ean','sku','sap'):
-                      fieldstats[hf+'_x_'+of]+=bool(hv&{o[of] for o in alloc if o[of]})
-              cands=set();evidence=collections.defaultdict(set)
-              for g in gg:
-                  for o in groups[g]:
-                      for scope in [('network',o['net']),('cnpj',k[1])]:
-                          for v in e['ids']:
-                              if mapping[(scope,v)]=={g[2]} and len(support[(scope,v,g[2])])>=2:
-                                  cands.add(g);evidence[g].add((scope[0],v,len(support[(scope,v,g[2])])))
-              if len(cands)!=1:continue
-              g=next(iter(cands))
-              if existing[g]:continue
-              pairclaims[g].add(k)
-              oo=groups[g];sc=score(k,oo)
-              dc=min(distance(k[3],o['created']) for o in oo);dp=min(distance(k[3],o['date']) for o in oo);dv=min(distance(k[4],o['original_valid']) for o in oo)
-              category='validade original diferente' if dv else 'criacao/captacao mais de 3 dias' if sc[1]>3 else 'validade igual e criacao/captacao ate 3 dias'
-              date_stats[category]+=1
-              details.append({'history_codigo':sorted(hc),'history_ean':sorted(heans),'order_codigo_cliente':sorted({o['code'] for o in oo if o['code']}),'order_ean':sorted({o['ean'] for o in oo if o['ean']}),'order_sku_eg':g[2],'order_sku_sap':sorted({o['sap'] for o in oo if o['sap']}),'history_criacao':k[3],'history_validade':k[4],'order_criacao':sorted({o['created'] for o in oo}),'order_captacao':sorted({o['date'] for o in oo}),'order_validade_original':sorted({o['original_valid'] for o in oo}),'gap_criacao':dc,'gap_captacao':dp,'gap_validade':dv,'category':category,'history_qty':sorted(str(v) for v in e['qty']),'order_qty':sorted(str(v) for v in {o['original'] for o in oo}),'mapping_evidence':sorted(evidence[g])})
-          print('QA_CODES_DATES',json.dumps({'target':len(target),'fields':dict(fieldstats),'date_categories':dict(date_stats),'candidate_conflicts':sum(len(v)>1 for v in pairclaims.values()),'details':details},ensure_ascii=False))
+              mapped={v['sku'] for x in e['ids'] for v in idmap[x]}
+              cand={g for g in gg if g[2] in mapped}
+              stats['history_code_present_cad']+=bool(mapped);stats['cad_candidate_same_erp_cnpj']+=bool(cand)
+              if len(cand)==1:
+                  g=next(iter(cand));stats['unique_cad_candidate']+=1
+                  stats['unique_cad_already_linked']+=bool(existing[g])
+                  if not existing[g]:
+                      new[k]=g;claims[g].add(k)
+                      stats['unique_cad_unlinked']+=1
+                      stats['unique_cad_unlinked_qty_equal']+=e['qty']<={o['original'] for o in groups[g]}
+          for k,g in new.items():
+              if len(claims[g])==1:
+                  stats['unique_cad_no_competing_claim']+=1
+                  stats['unique_cad_no_competing_claim_active']+=any(validline(o) for o in groups[g])
+          print('QA_CAD_TARGET',json.dumps(dict(stats),ensure_ascii=False))
           PY
