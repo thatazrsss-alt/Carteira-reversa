@@ -1,4 +1,4 @@
-name: QA 27-11 - bloco 266 produtos History sem vinculo
+name: QA 27-11 - campos exatos dos 15 de-para
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -219,51 +219,33 @@ jobs:
                       for scope in [('network',net),('cnpj',k[1])]:
                           mapping[(scope,v)].add(g[2]);support[(scope,v,g[2])].add(k[0])
           target=[k for k in entries if k not in matched and erp_clients[(k[0],k[1])] and not all_ro[k]]
-          hits=collections.defaultdict(collections.Counter); types=collections.Counter(); aggregate=collections.Counter(); network=collections.Counter(); candidates={}; proposed=collections.defaultdict(set); qtyonly=collections.Counter(); cases=collections.Counter()
           existing=collections.defaultdict(set)
           for k,g in matched.items():existing[g].add(k)
+          fieldstats=collections.Counter(); details=[]; date_stats=collections.Counter(); other=collections.Counter(); pairclaims=collections.defaultdict(set)
           for k in target:
-              e=entries[k];gg=erp_clients[(k[0],k[1])]; cs=collections.defaultdict(set); histdesc={normdesc(d) for d in e['descs'] if d}; normids={normcode(v) for v in e['ids'] if v}; origq=e['qty']
-              types['history_code_present']+=bool(k[2]);types['history_has_description']+=bool(histdesc);types['history_code_numeric']+=k[2].isdigit();types['history_identifier_length_'+str(len(k[2]))]+=1
-              nets_here={o['net'] for g in gg for o in groups[g] if o['net']}
-              network.update(nets_here)
-              aggregate['order_group_count_'+('1' if len(gg)==1 else '2-5' if len(gg)<=5 else '>5')]+=1
+              e=entries[k];gg=erp_clients[(k[0],k[1])]
+              hc={x[2] for x in e['detail'] if x[2]};heans={x[3] for x in e['detail'] if x[3]}
+              fieldstats['history_code_present']+=bool(hc);fieldstats['history_ean_present']+=bool(heans);fieldstats['both_history_fields_present']+=bool(hc and heans);fieldstats['both_history_fields_same']+=bool(hc and heans and hc==heans)
+              alloc=[o for g in gg for o in groups[g]]
+              fieldstats['order_client_code_any']+=any(o['code'] for o in alloc);fieldstats['order_ean_any']+=any(o['ean'] for o in alloc)
+              for hf,hv in [('History_codigo',hc),('History_EAN',heans)]:
+                  for of in ('code','ean','sku','sap'):
+                      fieldstats[hf+'_x_'+of]+=bool(hv&{o[of] for o in alloc if o[of]})
+              cands=set();evidence=collections.defaultdict(set)
               for g in gg:
-                  oo=groups[g]; os={o['original'] for o in oo if o['original'] is not None}; sc=score(k,oo); dated=sc[0]==0 and sc[1]<=3
-                  ods={normdesc(d) for o in oo for d in (o['desc'],o['sapdesc']) if d}; oi={normcode(v) for o in oo for v in (o['sku'],o['sap'],o['ean'],o['code']) if v}
-                  if normids&oi:cs['codigo_normalizado'].add(g)
-                  if histdesc&ods:cs['descricao_exata'].add(g)
-                  if histdesc and ods:
-                      sim=max(difflib.SequenceMatcher(None,a,b,autojunk=False).ratio() for a in histdesc for b in ods)
-                      if sim>=.92:cs['descricao_similar_92'].add(g)
-                  if any(mapping[(scope,v)]=={g[2]} and len(support[(scope,v,g[2])])>=2 for o in oo for scope in [('network',o['net']),('cnpj',k[1])] for v in e['ids']):cs['depara_comprovado'].add(g)
-                  if any(o['item'] and o['item'] in e['items'] and o['original_valid']==k[4] and min(distance(k[3],o['date']),distance(k[3],o['created']))<=3 for o in oo):cs['item_e_datas'].add(g)
-                  if any(o['bees'] and o['bees'] in e['bees'] and o['original_valid']==k[4] for o in oo):cs['bees_e_validade'].add(g)
-                  if dated:cs['datas_proximas'].add(g)
-                  if origq<=os:cs['quantidade_apenas_diagnostico'].add(g)
-              # Independently supported identity, with original validity equal and date within 3 days.
-              confident=(cs['codigo_normalizado']|cs['descricao_exata']|cs['depara_comprovado']) & cs['datas_proximas']
-              weak=(cs['descricao_similar_92'] & cs['item_e_datas']) & cs['datas_proximas']
-              if len(confident)==1:
-                  g=next(iter(confident));candidates[k]=(g,'identidade_forte');proposed[g].add(k)
-              elif not confident and len(weak)==1:
-                  g=next(iter(weak));candidates[k]=(g,'descricao_similar_item');proposed[g].add(k)
-              for m,gs in cs.items():
-                  if not gs:continue
-                  z=hits[m];z['has_candidate']+=1;z['unique_candidate']+=len(gs)==1
-                  if len(gs)==1:
-                      g=next(iter(gs));z['unique_not_yet_linked']+=not existing[g];z['unique_qty_present']+=origq<={o['original'] for o in groups[g]};z['unique_same_valid_close_date']+=g in cs['datas_proximas']
-              if len(cs['quantidade_apenas_diagnostico'])==1:qtyonly['unique_qty_candidate']+=1
-              if len(cs['datas_proximas'])==1:qtyonly['unique_date_candidate']+=1
-              if not any(cs[m] for m in ('codigo_normalizado','descricao_exata','descricao_similar_92','depara_comprovado')):cases['nenhum_indicio_produto']+=1
-              elif not confident and not weak:cases['indicio_produto_sem_contexto_suficiente']+=1
-          decision=collections.Counter(); status=collections.Counter()
-          for k,(g,tier) in candidates.items():
-              decision[tier+'_candidates']+=1
-              if len(proposed[g])>1:decision['new_claim_conflict']+=1;continue
-              if existing[g]:decision['already_linked_group']+=1;continue
-              decision[tier+'_exclusive_unlinked']+=1
-              decision[tier+'_exclusive_unlinked_qty_equal']+=entries[k]['qty']<={o['original'] for o in groups[g]}
-              status[tier+'_active']+=any(validline(o) for o in groups[g])
-          print('QA_PRODUCT_266',json.dumps({'target_keys':len(target),'hits':{k:dict(v) for k,v in hits.items()},'candidate_decision':dict(decision),'active':dict(status),'history_fields':dict(types),'order_candidates_per_key':dict(aggregate),'remaining_patterns':dict(cases),'network_top':network.most_common(12),'date_quantity_diagnostics':dict(qtyonly)},ensure_ascii=False))
+                  for o in groups[g]:
+                      for scope in [('network',o['net']),('cnpj',k[1])]:
+                          for v in e['ids']:
+                              if mapping[(scope,v)]=={g[2]} and len(support[(scope,v,g[2])])>=2:
+                                  cands.add(g);evidence[g].add((scope[0],v,len(support[(scope,v,g[2])])))
+              if len(cands)!=1:continue
+              g=next(iter(cands))
+              if existing[g]:continue
+              pairclaims[g].add(k)
+              oo=groups[g];sc=score(k,oo)
+              dc=min(distance(k[3],o['created']) for o in oo);dp=min(distance(k[3],o['date']) for o in oo);dv=min(distance(k[4],o['original_valid']) for o in oo)
+              category='validade original diferente' if dv else 'criacao/captacao mais de 3 dias' if sc[1]>3 else 'validade igual e criacao/captacao ate 3 dias'
+              date_stats[category]+=1
+              details.append({'history_codigo':sorted(hc),'history_ean':sorted(heans),'order_codigo_cliente':sorted({o['code'] for o in oo if o['code']}),'order_ean':sorted({o['ean'] for o in oo if o['ean']}),'order_sku_eg':g[2],'order_sku_sap':sorted({o['sap'] for o in oo if o['sap']}),'history_criacao':k[3],'history_validade':k[4],'order_criacao':sorted({o['created'] for o in oo}),'order_captacao':sorted({o['date'] for o in oo}),'order_validade_original':sorted({o['original_valid'] for o in oo}),'gap_criacao':dc,'gap_captacao':dp,'gap_validade':dv,'category':category,'history_qty':sorted(str(v) for v in e['qty']),'order_qty':sorted(str(v) for v in {o['original'] for o in oo}),'mapping_evidence':sorted(evidence[g])})
+          print('QA_CODES_DATES',json.dumps({'target':len(target),'fields':dict(fieldstats),'date_categories':dict(date_stats),'candidate_conflicts':sum(len(v)>1 for v in pairclaims.values()),'details':details},ensure_ascii=False))
           PY
