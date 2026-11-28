@@ -1,4 +1,4 @@
-name: QA 27-11 - validar substituicao por CAD e cancelamento
+name: QA 27-11 - homologar trocas e investigar ambiguidades
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -382,12 +382,13 @@ jobs:
           journey['new_groups_unique_candidate']=sum(len(v)==1 for v in journey_pairs.values());journey['new_groups_multiple_candidates']=sum(len(v)>1 for v in journey_pairs.values());journey['active_new_groups_unique_candidate']=sum(len(v)==1 and g in active for g,v in journey_pairs.items())
           print('QA_INVERSE_SWAP',json.dumps({'counts':dict(count),'unlinked_order_groups_in_same_scope':len(open_scope),'active_unlinked_order_groups_in_scope':len(open_scope&active),'candidate_tiers':dict(tiers),'examples':dict(examples),'cancel_journey_counts':dict(journey),'cancel_examples':dict(journey_ex)},ensure_ascii=False))
           # No double attribution: both original entry and new group must be mutually unique.
-          strongstats=collections.Counter(); examplesstrong=[]; paircounts=collections.Counter()
+          strongstats=collections.Counter(); examplesstrong=[]; paircounts=collections.Counter(); swaps={}
           for new,kk in strongpairs.items():
               strongstats['new_candidate_groups']+=1
               if len(kk)!=1:strongstats['new_multiple_old']+=1;continue
               k,old=next(iter(kk))
               if len(alloldclaims[k])!=1:strongstats['old_multiple_new']+=1;continue
+              swaps[new]=(k,old)
               f=strongdetails[(k,new)];strongstats['exclusive_old_new']+=1
               strongstats['exclusive_active']+=new in active
               strongstats['exclusive_qty_equal']+=f['qty_equal']
@@ -395,4 +396,69 @@ jobs:
               paircounts[(old[2],new[2],product_desc(old[2]),product_desc(new[2]))]+=1
               if len(examplesstrong)<12:examplesstrong.append(f)
           print('QA_STRONG_SWAP',json.dumps({'counts':dict(strongstats),'sku_pairs':[{'old':a,'new':b,'old_desc':c,'new_desc':d,'count':v} for (a,b,c,d),v in paircounts.most_common(30)],'examples':examplesstrong},ensure_ascii=False))
+          # Approved replacements extend a journey, not History cardinality.
+          linked_after=set(matched.values())|set(swaps)
+          active_after=active&linked_after
+          active_history={k for k,g in matched.items() if g in active}|{k for g,(k,old) in swaps.items() if g in active}
+          # Distinguish unresolved Order groups from History entries; both directions have different denominators.
+          order_rem=collections.Counter(); hist_rem=collections.Counter(); candidates_cnpj=collections.defaultdict(set); candidates_multi=collections.defaultdict(set); multi_diag=collections.Counter(); cnpj_diag=collections.Counter(); ex_cnpj=[]; ex_multi=[]
+          for g in active-linked_after:
+              p,c,sku=g
+              if p not in he:reason='ERP ausente History'
+              elif bygroup[g][0]|bygroup[g][1]|sku_cands[g]:reason='multiplos candidatos'
+              elif all_rel[g]:reason='datas divergentes ou entrada ja atribuida'
+              elif all_raw[g]:reason='CNPJ divergente'
+              else:reason='produto nao identificado'
+              order_rem[reason]+=1
+          for k in entries:
+              if k in matched:continue
+              gg=erp_clients[(k[0],k[1])]
+              if gg and not all_ro[k]:hist_rem['produto sem jornada']+=1;continue
+              e=entries[k]
+              mapped={v['sku'] for x in e['ids'] for v in idmap[x]}
+              if not gg:
+                  hist_rem['CNPJ divergente']+=1
+                  pool=set()
+                  for g in erp_groups[k[0]]:
+                      oo=groups[g]
+                      direct=bool(e['ids']&{o[f] for o in oo for f in ('ean','code','sku','sap') if o[f]})
+                      if not (direct or g[2] in mapped):continue
+                      pool.add(g)
+                  cnpj_diag['produto identificado mesmo ERP']+=bool(pool)
+                  cnpj_diag['sem produto mesmo ERP']+=not pool
+                  available=pool-linked_after
+                  cnpj_diag['produto apenas em jornada ja vinculada']+=bool(pool) and not available
+                  cnpj_diag['candidato livre']+=bool(available)
+                  exact={g for g in available if score(k,groups[g])==(0,0)}
+                  cnpj_diag['data exata e candidato livre']+=bool(exact)
+                  if len(exact)==1:candidates_cnpj[k]=exact
+                  elif len(available)==1:candidates_cnpj[k]=available
+                  if len(available)>1:cnpj_diag['multiplos livres']+=1
+              else:
+                  hist_rem['multiplos candidatos']+=1
+                  pool=set(all_ro[k])
+                  available=pool-linked_after
+                  live=pool&active
+                  multi_diag['unico ativo entre candidatos']+=len(live)==1
+                  multi_diag['unico livre']+=len(available)==1
+                  multi_diag['nenhum livre']+=not available
+                  multi_diag['todos cancelados ou vencidos']+=not live
+                  exact={g for g in available if score(k,groups[g])==(0,0)}
+                  if len(exact)==1:candidates_multi[k]=exact
+                  elif len(available&active)==1:candidates_multi[k]=available&active
+                  elif len(available)==1:candidates_multi[k]=available
+          # Require exclusive candidate on both sides across the two diagnostic sets.
+          claims3=collections.defaultdict(set)
+          for k,gg in list(candidates_cnpj.items())+list(candidates_multi.items()):
+              for g in gg:claims3[g].add(k)
+          for label,cs,diag,ex in [('cnpj',candidates_cnpj,cnpj_diag,ex_cnpj),('multi',candidates_multi,multi_diag,ex_multi)]:
+              for k,gg in cs.items():
+                  g=next(iter(gg))
+                  if len(claims3[g])!=1:diag['candidato disputado por outra entrada']+=1;continue
+                  diag['exclusivo livre']+=1;diag['exclusivo vigente']+=g in active
+                  diag['exclusivo quantidade igual']+=entries[k]['qty']<={o['original'] for o in groups[g]}
+                  diag['exclusivo datas exatas']+=score(k,groups[g])==(0,0)
+                  if len(ex)<5:
+                      oo=groups[g];ex.append({'erp':k[0],'history_cnpj_suffix':k[1][-4:],'order_cnpj_suffixes':sorted({o['cnpj'][-4:] for o in oo}),'history_ids':sorted(entries[k]['ids']),'order_eg':g[2],'order_desc':oo[0]['sapdesc_raw'],'history_created':k[3],'history_valid':k[4],'order_created':sorted({o['created'] for o in oo}),'order_original_valid':sorted({o['original_valid'] for o in oo}),'history_qty':sorted(str(x) for x in entries[k]['qty']),'order_qty':sorted(str(x) for x in {o['original'] for o in oo}),'active':g in active})
+          print('QA_NEXT',json.dumps({'approved_swaps':len(swaps),'approved_swaps_active':len(set(swaps)&active),'history_keys_linked':len(matched),'active_history_keys':len(active_history),'order_active_linked':len(active_after),'order_active_total':len(active),'order_active_residual':dict(order_rem),'history_residual':dict(hist_rem),'cnpj':dict(cnpj_diag),'multi':dict(multi_diag),'cnpj_examples':ex_cnpj,'multi_examples':ex_multi},ensure_ascii=False))
           PY
