@@ -81,7 +81,7 @@ jobs:
               k=(p,h['cnpj'],prod,h['date'],h['valid'])
               if p not in erps:
                   outside.add(k);outside_rows+=1;outside_erps.add(p);continue
-              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item']);z['detail'].add((h['item'],h['qty'],h['code'],h['ean']));z['descs'].add(h['desc']);z['rawdescs'].add(h['descraw']);z['bees'].add(h['bees']);z['suppliers'].add(h['supplier'])
+              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item']);z['detail'].add((h['item'],h['qty'],h['code'],h['ean']));z['descs'].add(h['desc']);z['rawdescs'].add(str(find(r,'Descrição Produto Cliente') or '').strip());z['bees'].add(h['bees']);z['suppliers'].add(h['supplier'])
           index=collections.defaultdict(set); rawindex=collections.defaultdict(set)
           for k,e in entries.items():
               for v in e['ids']:
