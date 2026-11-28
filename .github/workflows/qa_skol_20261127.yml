@@ -1,4 +1,4 @@
-name: QA 27-11 - 93 entradas com produto CAD identificado
+name: QA 27-11 - cruzamento inverso e troca de SKU
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -55,7 +55,7 @@ jobs:
           def find(r,*aliases):
               return next((r[k] for k in aliases if k in r),'')
           def orderrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'realoc_qty':q(find(r,'Qtd. Realocada')),'order_id':n(find(r,'Nº Pedido Ambev')),'sap':n(find(r,'SKU SAP')),'sapdesc':n(find(r,'Descrição SKU SAP')),'supplier':n(find(r,'CNPJ Fornecedor')),'desc':n(find(r,'Descrição Produto Cliente')),'bees':n(find(r,'Nº Pedido Bees AS')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'realoc_qty':q(find(r,'Qtd. Realocada')),'order_id':n(find(r,'Nº Pedido Ambev')),'sap':n(find(r,'SKU SAP')),'sapdesc':n(find(r,'Descrição SKU SAP')),'sapdesc_raw':str(find(r,'Descrição SKU SAP') or '').strip(),'supplier':n(find(r,'CNPJ Fornecedor')),'desc':n(find(r,'Descrição Produto Cliente')),'descraw':str(find(r,'Descrição Produto Cliente') or '').strip(),'bees':n(find(r,'Nº Pedido Bees AS')),'cancelday':day(find(r,'Data de Cancelamento')),'cancelreason':str(find(r,'Motivo Cancelamento') or '').strip(),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
           def histrow(r):
               return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'bees':n(find(r,'Nº Pedido Bees AS')),'supplier':n(find(r,'CNPJ Fornecedor')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
           op='2026.11.27_10.22 ExportReportOrderItem ultimo.zip'
@@ -70,7 +70,7 @@ jobs:
               groups[g].append(o);erps.add(g[0]);units[o['unit']]+=1;nets.add(o['net']);skus.add(g[2])
           # History grain: original ERP, client CNPJ, client product (or EAN), creation and original validity.
           # The item number is not part of the entry key; equal repeated quantities are counted once.
-          entries=collections.defaultdict(lambda:{'qty':set(),'ids':set(),'rows':0,'items':set(),'detail':set(),'descs':set(),'bees':set(),'suppliers':set()})
+          entries=collections.defaultdict(lambda:{'qty':set(),'ids':set(),'rows':0,'items':set(),'detail':set(),'descs':set(),'rawdescs':set(),'bees':set(),'suppliers':set()})
           he=set(); hd=collections.Counter(); hr=0; missing_id=0; outside=set(); invalid_history=0; outside_rows=0; outside_erps=set(); all_cnpj=set()
           for r in rows(hp):
               hr+=1;h=histrow(r);p=h['p']
@@ -81,7 +81,7 @@ jobs:
               k=(p,h['cnpj'],prod,h['date'],h['valid'])
               if p not in erps:
                   outside.add(k);outside_rows+=1;outside_erps.add(p);continue
-              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item']);z['detail'].add((h['item'],h['qty'],h['code'],h['ean']));z['descs'].add(h['desc']);z['bees'].add(h['bees']);z['suppliers'].add(h['supplier'])
+              z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item']);z['detail'].add((h['item'],h['qty'],h['code'],h['ean']));z['descs'].add(h['desc']);z['rawdescs'].add(h['descraw']);z['bees'].add(h['bees']);z['suppliers'].add(h['supplier'])
           index=collections.defaultdict(set); rawindex=collections.defaultdict(set)
           for k,e in entries.items():
               for v in e['ids']:
@@ -283,33 +283,95 @@ jobs:
               else:reason='produto nao identificado'
               res_order[reason]+=1
           print('QA_APPROVED',json.dumps({'cad':len(cad),'approved_pairs':len(manual),'overlap':len(cad.keys()&manual.keys()),'conflicting_group':conflicts,'competing_claims':len(union)-len(accepted),'new_accepted':len(accepted),'new_active':sum(g in active for g in accepted.values()),'matched_history':len(matched),'matched_order_active':len(linked&active),'remaining_history_common_erp':dict(remaining),'remaining_order_active':dict(res_order),'product_breakdown':dict(prod)},ensure_ascii=False))
-          # Product identity is confirmed by CAD; look for corresponding journey without rechecking EAN.
-          target93=[k for k in target if k not in matched and any(idmap[x] for x in entries[k]['ids'])]
-          known=collections.Counter(); proposed93={}; claim93=collections.defaultdict(set); linked=set(matched.values()); status93=collections.Counter()
-          for k in target93:
-              mapped={v['sku'] for x in entries[k]['ids'] for v in idmap[x]}
-              sap={v for sku in mapped for v in cad_sap[sku]}
-              gg=erp_clients[(k[0],k[1])]; allg=erp_groups[k[0]]
-              same_eg={g for g in allg if g[2] in mapped}
-              same_sap={g for g in gg if any(o['sap'] in sap for o in groups[g] if o['sap'])}
-              all_sap={g for g in allg if any(o['sap'] in sap for o in groups[g] if o['sap'])}
-              pool=same_eg|same_sap
-              known['cad_eg_present_same_erp_other_cnpj']+=bool(same_eg)
-              known['cad_sap_present_same_erp_cnpj']+=bool(same_sap)
-              known['cad_sap_present_same_erp_any_cnpj']+=bool(all_sap)
-              known['no_eg_or_sap_same_erp']+=not (same_eg|all_sap)
-              known['candidate_already_linked']+=bool(pool) and all(g in linked for g in pool)
-              if len(pool)==1:
-                  g=next(iter(pool))
-                  known['unique_candidate']+=1
-                  if g not in linked:
-                      proposed93[k]=g;claim93[g].add(k)
-              if len(pool)>1:known['multiple_candidates']+=1
-          for k,g in proposed93.items():
-              if len(claim93[g])==1:
-                  known['exclusive_unlinked_candidate']+=1
-                  status93['active']+=any(validline(o) for o in groups[g])
-                  status93['qty_equal']+=entries[k]['qty']<={o['original'] for o in groups[g]}
-                  status93['same_original_validity']+=any(o['original_valid']==k[4] for o in groups[g])
-          print('QA_CAD_93',json.dumps({'target':len(target93),'results':dict(known),'exclusive_details':dict(status93)},ensure_ascii=False))
+          # Work from both unmatched sides in the same ERP/CNPJ.
+          # Product family equivalence is evidence; quantity or date alone never proves identity.
+          linked=set(matched.values()); active={g for g,oo in groups.items() if any(validline(o) for o in oo)}
+          missing_order=set(groups)-linked
+          reverse=collections.defaultdict(set)
+          for k,g in matched.items():reverse[g].add(k)
+          def cancelled(o):return 'CANCELAD' in o['status'] or 'CANCELAMENTO' in o['status']
+          def cdvals(sku,field):
+              return {n(x['fields'].get(field,'')) for x in info[sku] if x['fields'].get(field,'')}
+          def product_desc(sku):
+              return next((x['fields'].get('dsc_produto_sku','') for x in info[sku] if x['fields'].get('dsc_produto_sku','')),'')
+          @functools.lru_cache(maxsize=100000)
+          def compare_desc(a,b):
+              return difflib.SequenceMatcher(None,normdesc(a),normdesc(b),autojunk=False).ratio() if a and b else 0
+          def possible(k,g):
+              e=entries[k];oo=groups[g]
+              mapped={v['sku'] for x in e['ids'] for v in idmap[x]}
+              od={o['original'] for o in oo if o['original'] is not None}
+              histds={d for d in e['rawdescs'] if d}|{product_desc(v) for v in mapped if product_desc(v)}
+              newds={o['sapdesc_raw'] for o in oo if o['sapdesc_raw']}|{product_desc(g[2])}
+              sim=max((compare_desc(a,b) for a in histds for b in newds),default=0)
+              unit_old={v for sku in mapped for v in cdvals(sku,'EAN13_Unitario')};unit_new=cdvals(g[2],'EAN13_Unitario')
+              pack_old={v for sku in mapped for v in cdvals(sku,'EAN13_SKU')};pack_new=cdvals(g[2],'EAN13_SKU')
+              learned=any(mapping[(scope,x)]=={g[2]} and len(support[(scope,x,g[2])])>=2 for o in oo for scope in [('network',o['net']),('cnpj',k[1])] for x in e['ids'])
+              scoredate=score(k,oo)
+              return {'cad_skus':sorted(mapped),'same_unit':bool(unit_old&unit_new),'same_pack':bool(pack_old&pack_new),'same_eg':g[2] in mapped,'learned':learned,'description_similarity':round(sim,3),'qty_equal':bool(e['qty']<=od),'item_equal':any(o['item'] and o['item'] in e['items'] for o in oo),'validity_gap':scoredate[0],'creation_gap':scoredate[1],'after_entry':any(o['created'] and o['created']>=k[3] for o in oo),'all_cancelled':all(cancelled(o) for o in oo),'active':g in active}
+          def detail(k,g,f):
+              e=entries[k];oo=groups[g]
+              return {'network':next(iter(sorted({o['net'] for o in oo if o['net']})),''),
+                      'erp':k[0],'history_ean':sorted({x[3] for x in e['detail'] if x[3]}),'history_code':sorted({x[2] for x in e['detail'] if x[2]}),'history_desc':sorted(e['rawdescs']-{''}),'old_cad_products':[{'eg':sku,'description':product_desc(sku)} for sku in f['cad_skus']],
+                      'history_qty':sorted(str(v) for v in e['qty']),'history_created':k[3],'history_valid':k[4],
+                      'order_eg':g[2],'order_sap':sorted({o['sap'] for o in oo if o['sap']}),'order_ean':sorted({o['ean'] for o in oo if o['ean']}),'order_client_code':sorted({o['code'] for o in oo if o['code']}),'order_desc':sorted({o['sapdesc_raw'] for o in oo if o['sapdesc_raw']}),'order_created':sorted({o['created'] for o in oo}),'order_capture':sorted({o['date'] for o in oo}),'order_valid_original':sorted({o['original_valid'] for o in oo}),'order_qty':sorted(str(o['original']) for o in oo if o['original'] is not None),'order_status':sorted({o['status'] for o in oo}),'order_cancel_date':sorted({o['cancelday'] for o in oo if o['cancelday']}),'order_cancel_reason':sorted({o['cancelreason'] for o in oo if o['cancelreason']}),**f}
+          residual=[k for k in entries if k not in matched and erp_clients[(k[0],k[1])] and not all_ro[k]]
+          # Include unmatched candidates even if original date differs; leave previously linked groups untouched.
+          count=collections.Counter(); tiers=collections.Counter(); examples=collections.defaultdict(list); proposals={}; claims2=collections.defaultdict(set); open_scope=set()
+          for k in residual:
+              gg=erp_clients[(k[0],k[1])]&missing_order
+              count['history_residual']+=1;count['has_unlinked_order_same_erp_client']+=bool(gg);open_scope.update(gg)
+              if not gg:count['no_unlinked_order_same_erp_client']+=1;continue
+              candidates=[]
+              for g in sorted(gg):
+                  f=possible(k,g)
+                  # Rank only for investigation. Close description and quantity are not enough for acceptance.
+                  strong=f['same_eg'] or f['same_pack'] or f['learned']
+                  family=f['same_unit'] or f['description_similarity']>=.90
+                  if strong:tier='identidade_cadastral_ou_depara'
+                  elif family and f['qty_equal'] and f['after_entry']:tier='familia_ou_descricao_quantidade'
+                  elif f['item_equal'] and f['qty_equal'] and f['after_entry']:tier='item_quantidade_data'
+                  elif f['qty_equal'] and f['after_entry']:tier='quantidade_data_apenas'
+                  else:continue
+                  rank={'identidade_cadastral_ou_depara':0,'familia_ou_descricao_quantidade':1,'item_quantidade_data':2,'quantidade_data_apenas':3}[tier]
+                  candidates.append((rank,g,tier,f))
+              if not candidates:count['no_candidate_evidence']+=1;continue
+              best=min(x[0] for x in candidates); top=[x for x in candidates if x[0]==best]
+              if len(top)!=1:count['multiple_best_candidates']+=1;continue
+              _,g,tier,f=top[0];proposals[k]=(g,tier,f);claims2[g].add(k)
+          for k,(g,tier,f) in proposals.items():
+              if len(claims2[g])!=1:count['shared_new_order_group']+=1;continue
+              tiers[tier]+=1;count['exclusive_candidates']+=1;count['exclusive_candidates_active']+=g in active
+              if len(examples[tier])<8:examples[tier].append(detail(k,g,f))
+          # Separate scenario: source entry already matched to an old cancelled Order SKU;
+          # a new unmatched SKU was created later in the same ERP/client.
+          journey=collections.Counter(); journey_ex=collections.defaultdict(list); journey_pairs=collections.defaultdict(set)
+          for old,kk in reverse.items():
+              oldrows=groups[old];cancelrows=[o for o in oldrows if cancelled(o)]
+              if not cancelrows:continue
+              for k in kk:
+                  ng=erp_clients[(k[0],k[1])]&missing_order
+                  if not ng:continue
+                  journey['old_linked_cancelled_with_unlinked_group']+=1
+                  for new in sorted(ng):
+                      newrows=groups[new]
+                      if new[2]==old[2] or all(cancelled(o) for o in newrows):continue
+                      cancel_dates={o['cancelday'] for o in cancelrows if o['cancelday']}
+                      new_dates={o['created'] for o in newrows if o['created']}
+                      after=bool(cancel_dates and new_dates and any(b>=a for a in cancel_dates for b in new_dates))
+                      close=bool(cancel_dates and new_dates and any(b>=a and distance(a,b)<=7 for a in cancel_dates for b in new_dates))
+                      f=possible(k,new)
+                      old_unit=cdvals(old[2],'EAN13_Unitario');new_unit=cdvals(new[2],'EAN13_Unitario')
+                      old_pack=cdvals(old[2],'EAN13_SKU');new_pack=cdvals(new[2],'EAN13_SKU')
+                      sameunit=bool(old_unit&new_unit);samepack=bool(old_pack&new_pack)
+                      sim=compare_desc(product_desc(old[2]),product_desc(new[2]))
+                      if not (sameunit or samepack or sim>=.90):continue
+                      if not (after or (not cancel_dates and any(o['created']>=k[3] for o in newrows if o['created']))):continue
+                      tier='cancelamento_datado_ate_7d' if close else 'cancelamento_datado_mais_7d' if after else 'cancelado_sem_data'
+                      journey_pairs[new].add((k,old,tier))
+                      journey[tier+'_pairs']+=1
+                      if len(journey_ex[tier])<8:
+                          journey_ex[tier].append({'old_eg':old[2],'old_desc':product_desc(old[2]),'old_ean':sorted({o['ean'] for o in oldrows if o['ean']}),'old_status':sorted({o['status'] for o in oldrows}),'old_cancel_date':sorted(cancel_dates),'old_cancel_reason':sorted({o['cancelreason'] for o in cancelrows if o['cancelreason']}),'same_unit':sameunit,'same_pack':samepack,'old_new_desc_similarity':round(sim,3),**detail(k,new,f)})
+          journey['new_groups_unique_candidate']=sum(len(v)==1 for v in journey_pairs.values());journey['new_groups_multiple_candidates']=sum(len(v)>1 for v in journey_pairs.values());journey['active_new_groups_unique_candidate']=sum(len(v)==1 and g in active for g,v in journey_pairs.items())
+          print('QA_INVERSE_SWAP',json.dumps({'counts':dict(count),'unlinked_order_groups_in_same_scope':len(open_scope),'active_unlinked_order_groups_in_scope':len(open_scope&active),'candidate_tiers':dict(tiers),'examples':dict(examples),'cancel_journey_counts':dict(journey),'cancel_examples':dict(journey_ex)},ensure_ascii=False))
           PY
