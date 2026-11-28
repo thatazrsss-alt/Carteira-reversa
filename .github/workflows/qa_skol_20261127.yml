@@ -1,4 +1,4 @@
-name: QA 27-11 - consolidar equivalencias aprovadas
+name: QA 27-11 - 93 entradas com produto CAD identificado
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -229,9 +229,12 @@ jobs:
           ecols=[i for i,x in enumerate(names) if 'ean' in x or 'gtin' in x or 'erec' in x]
           descs=[i for i,x in enumerate(names) if 'desc' in x or 'produto' in x or 'embalagem' in x or 'marca' in x]
           info=collections.defaultdict(list); idmap=collections.defaultdict(list)
+          cad_sap=collections.defaultdict(set)
           for row in it:
               sku=n(row[si])
               if not sku:continue
+              for i,hn in enumerate(names):
+                  if hn in ('codsap','cods4') and i<len(row) and n(row[i]):cad_sap[sku].add(n(row[i]))
               item={'sku':sku,'fields':{headers[i]:str(row[i] or '') for i in sorted(set(ecols+descs)) if i<len(row) and row[i] is not None}}
               info[sku].append(item)
               for i in ecols:
@@ -280,4 +283,33 @@ jobs:
               else:reason='produto nao identificado'
               res_order[reason]+=1
           print('QA_APPROVED',json.dumps({'cad':len(cad),'approved_pairs':len(manual),'overlap':len(cad.keys()&manual.keys()),'conflicting_group':conflicts,'competing_claims':len(union)-len(accepted),'new_accepted':len(accepted),'new_active':sum(g in active for g in accepted.values()),'matched_history':len(matched),'matched_order_active':len(linked&active),'remaining_history_common_erp':dict(remaining),'remaining_order_active':dict(res_order),'product_breakdown':dict(prod)},ensure_ascii=False))
+          # Product identity is confirmed by CAD; look for corresponding journey without rechecking EAN.
+          target93=[k for k in target if k not in matched and any(idmap[x] for x in entries[k]['ids'])]
+          known=collections.Counter(); proposed93={}; claim93=collections.defaultdict(set); linked=set(matched.values()); status93=collections.Counter()
+          for k in target93:
+              mapped={v['sku'] for x in entries[k]['ids'] for v in idmap[x]}
+              sap={v for sku in mapped for v in cad_sap[sku]}
+              gg=erp_clients[(k[0],k[1])]; allg=erp_groups[k[0]]
+              same_eg={g for g in allg if g[2] in mapped}
+              same_sap={g for g in gg if any(o['sap'] in sap for o in groups[g] if o['sap'])}
+              all_sap={g for g in allg if any(o['sap'] in sap for o in groups[g] if o['sap'])}
+              pool=same_eg|same_sap
+              known['cad_eg_present_same_erp_other_cnpj']+=bool(same_eg)
+              known['cad_sap_present_same_erp_cnpj']+=bool(same_sap)
+              known['cad_sap_present_same_erp_any_cnpj']+=bool(all_sap)
+              known['no_eg_or_sap_same_erp']+=not (same_eg|all_sap)
+              known['candidate_already_linked']+=bool(pool) and all(g in linked for g in pool)
+              if len(pool)==1:
+                  g=next(iter(pool))
+                  known['unique_candidate']+=1
+                  if g not in linked:
+                      proposed93[k]=g;claim93[g].add(k)
+              if len(pool)>1:known['multiple_candidates']+=1
+          for k,g in proposed93.items():
+              if len(claim93[g])==1:
+                  known['exclusive_unlinked_candidate']+=1
+                  status93['active']+=any(validline(o) for o in groups[g])
+                  status93['qty_equal']+=entries[k]['qty']<={o['original'] for o in groups[g]}
+                  status93['same_original_validity']+=any(o['original_valid']==k[4] for o in groups[g])
+          print('QA_CAD_93',json.dumps({'target':len(target93),'results':dict(known),'exclusive_details':dict(status93)},ensure_ascii=False))
           PY
