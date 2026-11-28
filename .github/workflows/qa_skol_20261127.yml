@@ -1,4 +1,4 @@
-name: QA 27-11 - aderencia estrita History Order
+name: QA 27-11 - historico complementar e identidade
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -53,9 +53,9 @@ jobs:
           def find(r,*aliases):
               return next((r[k] for k in aliases if k in r),'')
           def orderrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'realoc_qty':q(find(r,'Qtd. Realocada')),'order_id':n(find(r,'Nº Pedido Ambev')),'sap':n(find(r,'SKU SAP')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'client':n(find(r,'Cliente EG')),'sku':n(find(r,'SKU EG')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data Captação ECC','Data Captação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'created':day(find(r,'Data de Criação')),'original_valid':day(find(r,'Data de Vencimento Original')),'item':n(find(r,'Número do Item')),'net':n(find(r,'Nome Rede')),'origin':n(find(r,'Origem')),'realoc':n(find(r,'Tipo de realocação')),'realoc_qty':q(find(r,'Qtd. Realocada')),'order_id':n(find(r,'Nº Pedido Ambev')),'sap':n(find(r,'SKU SAP')),'desc':n(find(r,'Descrição Produto Cliente')),'bees':n(find(r,'Nº Pedido Bees AS')),'status':n(find(r,'Status')),'unit':n(find(r,'Unidade')),'original':q(find(r,'Qtd. Original')) if str(find(r,'Qtd. Original') or '').strip() else None,'mode':n(find(r,'Modo')),'channel':n(find(r,'Tipo Pedido')),'qty':[q(find(r,k)) for k in ('Qtd. Atualizada','Qtd. Carro com remessa','Qtd. Carro sem remessa','Qtd. Faturada')]}
           def histrow(r):
-              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
+              return {'p':n(find(r,'Nº Pedido ERP','Número Pedido ERP')),'code':n(find(r,'Código Produto Cliente')),'ean':n(find(r,'EAN')),'date':day(find(r,'Data de Criação','Data Criação')),'valid':day(find(r,'Data de Vencimento','Data Vencimento')),'cnpj':n(find(r,'CNPJ Cliente','CNPJ','CNPJ do Cliente')),'desc':n(find(r,'Descrição Produto Cliente')),'bees':n(find(r,'Nº Pedido Bees AS')),'item':n(find(r,'Número do Item','Nº Item','Item')),'qty':q(find(r,'Qtd. Pedida'))}
           import openpyxl
           op='2026.11.27_10.22 ExportReportOrderItem ultimo.zip'
           hp='2026.11.27_10.24 ExportReportOrderHistory ultimo.zip'
@@ -128,72 +128,77 @@ jobs:
               for i in direct|alt|cross|cadset:own[i].add(g)
               candidate_info[g]=(tier,len(cand),bool(raw))
           print('QA_MATCH_STAGE',len(chosen))
-          # Build relaxed date candidate sets independent of quantity and ownership.
-          relaxed={}; relaxed_owners=collections.defaultdict(set)
+          # Separate prior snapshot: do not blend quantities or count the same History key twice.
+          prev=[]; pi=collections.defaultdict(set); pe=set(); pd=collections.Counter(); prev_seen=set(); curr_sig=set(); curr_id=collections.defaultdict(set)
+          def signature(h):return (h['p'],h['cnpj'],h['code'],h['ean'],h['date'],h['valid'],h['item'])
+          for i,h in enumerate(hist):
+              curr_sig.add(signature(h));curr_id[signature(h)].add(h['qty'])
+          for row in rows('History.zip'):
+              h=histrow(row);p=h['p'];pe.add(p);pd[h['date']]+=1
+              if p not in erps:continue
+              key=signature(h)+(h['qty'],)
+              if key in prev_seen:continue
+              prev_seen.add(key);i=len(prev);prev.append(h)
+              for k in ('code','ean'):
+                  if h[k]:pi[(p,k,h[k])].add(i)
+          print('QA_PREV_INVENTORY',json.dumps({'rows':sum(pd.values()),'date_min':min(x for x in pd if x),'date_max':max(pd),'erp_overlap':len(erps&pe),'relevant_unique_rows':len(prev),'same_signature_as_current':sum(signature(h) in curr_sig for h in prev),'same_signature_conflicting_quantity':sum(signature(h) in curr_sig and h['qty'] not in curr_id[signature(h)] for h in prev)}))
+          # Learn client-specific codes only from strong current matches; never from quantity.
+          code_map=collections.defaultdict(set); code_support=collections.Counter(); desc_map=collections.defaultdict(set)
+          current_good={}
+          for g,pick in chosen.items():
+              i,tier=pick
+              if own[i]!={g} or hist[i]['qty'] is None or hist[i]['qty']<=0:continue
+              current_good[g]=i
+              h=hist[i];oo=groups[g];netset={o['net'] for o in oo if o['net']}
+              if len(netset)!=1:continue
+              net=next(iter(netset));sku=g[2]
+              for v in {h['code'],h['ean']}-{''}:
+                  code_map[(net,v)].add(sku);code_support[(net,v,sku)]+=1
+              if h['desc']:desc_map[(net,h['desc'])].add(sku)
+          h_by_erp=collections.defaultdict(list)
+          for i,h in enumerate(hist):h_by_erp[h['p']].append(i)
+          # Prior candidates generated for all groups to test exclusive ownership across the entire Order.
+          prior_candidates={};prior_owners=collections.defaultdict(set); new_candidates={};new_owners=collections.defaultdict(set)
           for g,oo in groups.items():
-              p,c,sku=g; cand=set()
+              p,c,sku=g;pc=set();nc=set()
               for o in oo:
                   ids={o['code'],o['ean']}-{''}
-                  for v in ids|{v for v in ca[sku] if reverse[v]=={sku}}:
+                  ids|={v for v in ca[sku] if reverse[v]=={sku}}
+                  for v in ids:
                       for k in ('ean','code'):
-                          cand.update(i for i in hi.get((p,k,v),()) if o['cnpj'] and hist[i]['cnpj']==o['cnpj'])
-              relaxed[g]=cand
-              for i in cand:relaxed_owners[i].add(g)
-          hmin=min(x for x in hd if x);hmax=max(hd)
-          results=collections.defaultdict(collections.Counter); missing=collections.defaultdict(collections.Counter); unit_results=collections.defaultdict(collections.Counter); five=[]; patterns=collections.Counter(); multi_patterns=collections.Counter(); missing_dates=collections.Counter()
+                          pc.update(i for i in pi.get((p,k,v),()) if context(o,prev[i],True))
+                  for i in h_by_erp[p]:
+                      h=hist[i]
+                      if not context(o,h,True):continue
+                      if not o['cnpj'] or h['cnpj']!=o['cnpj']:continue
+                      if any(code_map[(o['net'],v)]=={sku} and code_support[(o['net'],v,sku)]>=2 for v in {h['code'],h['ean']}-{''}):
+                          nc.add(i)
+              prior_candidates[g]=pc;new_candidates[g]=nc
+              for i in pc:prior_owners[i].add(g)
+              for i in nc:new_owners[i].add(g)
+          result=collections.defaultdict(collections.Counter); detail=collections.defaultdict(collections.Counter);vol=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0)))
           for g,oo in groups.items():
-              p,c,sku=g;pick=chosen.get(g);tier,number,raw=candidate_info[g]
-              h=hist[pick[0]] if pick and own[pick[0]]=={g} and hist[pick[0]]['qty'] is not None and hist[pick[0]]['qty']>0 else None
-              active=any(o['valid']>=ref and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status'] for o in oo)
+              if g in current_good:continue
+              p,c,sku=g;active=any(o['valid']>=ref and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status'] for o in oo)
               orig={o['original'] for o in oo if o['original'] is not None}
-              cx={o['unit'] for o in oo}=={'CX'}
-              unit=next(iter({o['unit'] for o in oo}),'')
-              unique=len(orig)==1
-              rawc=relaxed[g]; relaxed_exclusive=[i for i in rawc if relaxed_owners[i]=={g}]
-              rq={hist[i]['qty'] for i in relaxed_exclusive if hist[i]['qty'] is not None}
-              # Equal-quantity duplicate History rows can identify a volume, but not necessarily a unique physical item.
-              relaxed_strict=len(rawc)==1 and len(relaxed_exclusive)==1
-              alt_h=hist[relaxed_exclusive[0]] if relaxed_strict else None
-              liveorig={o['original'] for o in oo if o['original'] is not None and 'CANCELAD' not in o['status'] and 'AGUARDANDOCANCELAMENTO' not in o['status']}
-              firstdate=min((o['created'] for o in oo if o['created']),default='')
-              firstorig={o['original'] for o in oo if o['created']==firstdate}
-              lastdate=max((o['created'] for o in oo if o['created']),default='')
-              lastorig={o['original'] for o in oo if o['created']==lastdate}
-              peritem=collections.defaultdict(set)
-              for o in oo:
-                  peritem[(o['order_id'],o['item'])].add(o['original'])
-              sumitem=sum((next(iter(v)) for v in peritem.values()),D(0)) if all(len(v)==1 and None not in v for v in peritem.values()) else None
-              labs=['all']+(['active'] if active else [])
-              for lab in labs:
-                  z=results[lab];z['keys']+=1;z['history_unique']+=bool(h)
-                  if not h:
-                      a=missing[lab];a['keys']+=1;a['erp_missing']+=p not in he;a['erp_present']+=p in he
-                      a['any_relaxed_identity']+=bool(rawc);a['relaxed_unique_exclusive']+=relaxed_strict;a['relaxed_unique_equal_order']+=bool(alt_h and unique and alt_h['qty'] in orig and cx);a['relaxed_unique_multiple_contains']+=bool(alt_h and not unique and alt_h['qty'] in orig and cx)
-                      a['relaxed_multiple_same_qty']+=len(relaxed_exclusive)>1 and len(rq)==1
-                      a['erp_missing_before_range']+=p not in he and all(o['date'] and o['date']<hmin for o in oo)
-                      a['erp_missing_in_range']+=p not in he and any(hmin<=o['date']<=hmax for o in oo)
-                      a['erp_present_no_relaxed_id']+=p in he and not rawc
-                      continue
-                  qty=h['qty']; u=unit_results[unit]; 
-                  if lab=='all':
-                      u['matched']+=1;u['one_original']+=unique;u['exact_unique']+=unique and qty in orig;u['any_original_equal']+=qty in orig
-                      if unique and len(factors[sku])==1:
-                          fac=next(iter(factors[sku]));v=next(iter(orig))
-                          u['factor_mul_equal']+=v*fac==qty;u['factor_div_equal']+=v/fac==qty
-                      if unique:
-                          v=next(iter(orig));u['dz12_mul_equal']+=v*12==qty;u['dz12_div_equal']+=v/12==qty
-                  if not cx:continue
-                  z['history_cx']+=1;z['unique_original']+=unique;z['unique_equal']+=unique and qty in orig;z['unique_diff']+=unique and qty not in orig
-                  z['multi_original']+=not unique;z['multi_any_equal']+=not unique and qty in orig;z['multi_no_equal']+=not unique and qty not in orig
-                  if not unique:
-                      z['multi_first_created_unique_equal']+=firstorig=={qty};z['multi_last_created_unique_equal']+=lastorig=={qty}
-                      z['multi_live_unique_equal']+=liveorig=={qty};z['multi_max_equal']+=max(orig)==qty;z['multi_sum_distinct_equal']+=sum(orig,D(0))==qty;z['multi_sum_item_equal']+=sumitem==qty
-                      z['multi_any_test_equal']+=qty in orig or sum(orig,D(0))==qty or sumitem==qty
-              if h and cx and unique and h['qty'] not in orig:
-                  five.append({'history':str(h['qty']),'original':str(next(iter(orig))),'rows':len(oo),'active':active,'status':sorted({o['status'] for o in oo}),'realoc_type_present':any(o['realoc'] for o in oo),'realoc_qty_positive':any(o['realoc_qty'] and o['realoc_qty']>0 for o in oo),'order_created_equals_history':any(o['created']==h['date'] for o in oo),'alternative_history_quantities':sorted(str(x) for x in rq),'alt_qty_contains_original':bool(orig&rq)})
-              if h and cx and not unique:
-                  qty=h['qty'];multi_patterns['no_exact_original_but_sum_distinct']+=qty not in orig and sum(orig,D(0))==qty
-                  multi_patterns['no_exact_original_but_item_sum']+=qty not in orig and sumitem==qty
-                  multi_patterns['no_exact_original_and_no_test']+=qty not in orig and sum(orig,D(0))!=qty and sumitem!=qty
-          print('QA_ADHERENCE',json.dumps({'counts':{k:dict(v) for k,v in results.items()},'missing':{k:dict(v) for k,v in missing.items()},'unit_checks':{k:dict(v) for k,v in unit_results.items()},'single_discrepancy_examples':five,'multi_patterns':dict(multi_patterns)},ensure_ascii=False))
+              pc=prior_candidates[g];nc=new_candidates[g]
+              pp=[i for i in pc if prior_owners[i]=={g} and prev[i]['qty'] is not None and prev[i]['qty']>0]
+              nn=[i for i in nc if new_owners[i]=={g} and not (own[i]-{g}) and hist[i]['qty'] is not None and hist[i]['qty']>0]
+              # A candidate already claimed by another group in current History cannot be recycled via a prior snapshot.
+              # Check candidate signature against current owners directly.
+              pp=[i for i in pp if not any(own[j]-{g} for k in ('code','ean') if prev[i][k] for j in hi.get((p,k,prev[i][k]),()) if signature(hist[j])==signature(prev[i]))]
+              pv=prev[pp[0]] if len(pc)==1 and len(pp)==1 else None
+              nv=hist[nn[0]] if len(nc)==1 and len(nn)==1 else None
+              for lab in ['all']+(['active'] if active else []):
+                  z=result[lab];z['unmatched']+=1;z['erp_in_prior']+=p in pe;z['prior_candidate']+=bool(pc);z['prior_unique_exclusive']+=bool(pv);z['prior_unique_exact_original']+=bool(pv and len(orig)==1 and pv['qty'] in orig);z['prior_unique_any_original']+=bool(pv and pv['qty'] in orig)
+                  z['current_learned_code_candidate']+=bool(nc);z['current_learned_code_unique_exclusive']+=bool(nv);z['current_learned_code_exact_original']+=bool(nv and len(orig)==1 and nv['qty'] in orig);z['current_learned_code_any_original']+=bool(nv and nv['qty'] in orig)
+                  z['either_unique']+=bool(pv or nv);z['both_same_qty']+=bool(pv and nv and pv['qty']==nv['qty']);z['both_conflict']+=bool(pv and nv and pv['qty']!=nv['qty'])
+                  z['erp_in_neither']+=p not in he and p not in pe
+                  # Quantities are checks only, never used as matching keys.
+                  if pv and len(orig)==1 and pv['qty'] not in orig:z['prior_qty_mismatch']+=1
+                  if nv and len(orig)==1 and nv['qty'] not in orig:z['learned_qty_mismatch']+=1
+                  if pv and not nv and signature(pv) not in curr_sig:z['prior_unique_new_history_record']+=1
+                  if not pv and not nv:
+                      detail[lab]['erp_absent_both' if p not in he and p not in pe else 'erp_present_but_no_exclusive_identity']+=1
+          print('QA_SUPPLEMENT',json.dumps({'counts':{k:dict(v) for k,v in result.items()},'remaining':{k:dict(v) for k,v in detail.items()},'learned_unique_code_count':sum(len(x)==1 for x in code_map.values())},ensure_ascii=False))
           PY
