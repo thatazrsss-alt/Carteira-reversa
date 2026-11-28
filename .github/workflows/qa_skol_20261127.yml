@@ -1,4 +1,4 @@
-name: QA 27-11 - proximidade de datas e entradas multiplas
+name: QA 27-11 - History como fato da entrada
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -70,15 +70,16 @@ jobs:
           # History grain: original ERP, client CNPJ, client product (or EAN), creation and original validity.
           # The item number is not part of the entry key; equal repeated quantities are counted once.
           entries=collections.defaultdict(lambda:{'qty':set(),'ids':set(),'rows':0,'items':set(),'detail':set(),'descs':set(),'bees':set()})
-          he=set(); hd=collections.Counter(); hr=0; missing_id=0
+          he=set(); hd=collections.Counter(); hr=0; missing_id=0; outside=set(); invalid_history=0; outside_rows=0; outside_erps=set(); all_cnpj=set()
           for r in rows(hp):
               hr+=1;h=histrow(r);p=h['p']
-              if not p:continue
+              if not p:invalid_history+=1;continue
               he.add(p);hd[h['date']]+=1
-              if p not in erps:continue
               prod=h['code'] or h['ean']
               if not prod:missing_id+=1;continue
               k=(p,h['cnpj'],prod,h['date'],h['valid'])
+              if p not in erps:
+                  outside.add(k);outside_rows+=1;outside_erps.add(p);continue
               z=entries[k];z['qty'].add(h['qty']);z['ids'].update({h['code'],h['ean']}-{''});z['rows']+=1;z['items'].add(h['item']);z['detail'].add((h['item'],h['qty'],h['code'],h['ean']));z['descs'].add(h['desc']);z['bees'].add(h['bees'])
           index=collections.defaultdict(set); rawindex=collections.defaultdict(set)
           for k,e in entries.items():
@@ -152,73 +153,92 @@ jobs:
           # Compare distance on a single journey line, rather than combining unrelated lines.
           def score(k,oo):
               return min((distance(k[4],o['original_valid']),min(distance(k[3],o['date']),distance(k[3],o['created']))) for o in oo)
-          near=collections.defaultdict(collections.Counter); bins=collections.defaultdict(collections.Counter); multi=collections.defaultdict(collections.Counter); examples=collections.Counter(); recover={}; nearclaims=collections.defaultdict(set)
+          # Reverse reconciliation: evaluate each History key once, not every Order movement.
+          # Quantity is never used to identify the corresponding group.
+          erp_clients=collections.defaultdict(set); erp_groups=collections.defaultdict(set)
           for g,oo in groups.items():
-              if g in assigned:continue
-              rel=all_rel[g];avail={k for k in rel if not used[k] and all_ro[k]=={g}}
-              # First priority: independently unique ERP+product+CNPJ, without requiring dates.
-              if len(rel)==1 and len(avail)==1:recover[g]=(next(iter(avail)),'unique_identity')
-              elif avail:
-                  ranked=sorted((score(k,oo),k) for k in avail)
-                  if (len(ranked)==1 or ranked[0][0]<ranked[1][0]) and ranked[0][0][0]==0 and ranked[0][0][1]<=3:
-                      recover[g]=(ranked[0][1],'nearest_same_original_valid')
-              if g in recover:nearclaims[recover[g][0]].add(g)
-          for g,oo in groups.items():
-              live=any(validline(o) for o in oo);orig={o['original'] for o in oo if o['original'] is not None};labs=['all']+(['active'] if live else [])
-              if g in assigned:
-                  k=assigned[g];e=entries[k]
-                  if len(e['qty'])<=1:continue
-                  iq=collections.defaultdict(set)
-                  for item,qv,code,ean in e['detail']:iq[item].add(qv)
-                  distinct_item=bool('' not in iq and all(len(v)==1 for v in iq.values()))
-                  itemsum=sum((next(iter(v)) for v in iq.values()),D(0)) if distinct_item else None
-                  orderitems=collections.defaultdict(set)
-                  for o in oo:orderitems[o['item']].add(o['original'])
-                  same_item_qty=all(i in orderitems and v<=orderitems[i] for i,v in iq.items()) if distinct_item else False
-                  for lab in labs:
-                      z=multi[lab];z['keys']+=1;z['distinct_history_items_consistent']+=distinct_item;z['same_history_item_multiple_quantities']+=any(len(v)>1 for v in iq.values());z['history_qty_set_equals_order']+=e['qty']==orig;z['history_qty_all_present_order']+=e['qty']<=orig;z['history_item_qty_match_order']+=same_item_qty;z['distinct_history_item_sum']+=itemsum is not None
-                  if live:examples[json.dumps({'history_qty':sorted(str(x) for x in e['qty']),'history_item_qty_pairs':sorted([str(x) for x in v] for v in iq.values()),'distinct_items':len(iq),'history_rows':e['rows'],'order_qty':sorted(str(x) for x in orig),'order_items':len(orderitems),'same_item_qty':same_item_qty,'sum_distinct_items':str(itemsum) if itemsum is not None else None},sort_keys=True)]+=1
-                  continue
-              if g not in recover:continue
-              k,tier=recover[g]
-              if nearclaims[k]!={g}:continue
-              d,v=diffs(k,oo);sv,sd=score(k,oo)
-              for lab in labs:
-                  z=near[lab];z['candidate_unique']+=1;z[tier]+=1;z['qty_equal_any_original']+=len(entries[k]['qty'])==1 and bool(entries[k]['qty']&orig);z['qty_diff']+=len(entries[k]['qty'])==1 and not bool(entries[k]['qty']&orig);z['history_qty_multiple']+=len(entries[k]['qty'])>1
-                  z['original_valid_equal']+=v==0;z['same_valid_creation_or_capture_1day']+=sv==0 and sd<=1;z['same_valid_creation_or_capture_3days']+=sv==0 and sd<=3;z['same_valid_creation_or_capture_7days']+=sv==0 and sd<=7
-                  label='0 dias' if d==0 else '1 dia' if d==1 else '2-3 dias' if d<=3 else '4-7 dias' if d<=7 else '8-30 dias' if d<=30 else '>30 dias' if d<9999 else 'sem data'
-                  bins[lab][label]+=1
-          # Remaining product identity tests: same ERP/CNPJ and description or item, BEES and normalized CNPJ.
-          ecnpj=collections.defaultdict(set);beesindex=collections.defaultdict(set)
-          def cnpj(v):return re.sub(r'[^0-9]','',v).lstrip('0')
-          for k,e in entries.items():
-              ecnpj[(k[0],cnpj(k[1]))].add(k)
-              for b in e['bees']-{''}:beesindex[b].add(k)
-          other=collections.defaultdict(dict); otherowners=collections.defaultdict(set)
-          for g,oo in groups.items():
-              p,c,sku=g;cs=collections.defaultdict(set)
+              erp_groups[g[0]].add(g)
               for o in oo:
-                  for k in ecnpj[(p,cnpj(o['cnpj']))]:
-                      if not cnpj(o['cnpj']):continue
-                      e=entries[k];sameid=bool(e['ids']&({o['ean'],o['code'],o['sku'],o['sap']}-{''}))
-                      dt=min(distance(k[3],o['created']),distance(k[3],o['date']));va=distance(k[4],o['original_valid'])
-                      if sameid and dt<=3 and va==0:cs['cnpj_normalizado'].add(k)
-                      if dt<=3 and va==0 and o['desc'] and o['desc'] in e['descs']:cs['descricao_mesmo_cliente'].add(k)
-                      if dt<=3 and va==0 and o['item'] and o['item'] in e['items']:cs['numero_item_mesmo_cliente'].add(k)
-                  if o['bees']:
-                      for k in beesindex[o['bees']]:
-                          e=entries[k]
-                          if cnpj(o['cnpj']) and cnpj(o['cnpj'])==cnpj(k[1]) and bool(e['ids']&({o['ean'],o['code'],o['sku'],o['sap']}-{''})):cs['bees_cliente_produto'].add(k)
-              other[g]=cs
-              for method,kk in cs.items():
-                  for k in kk:otherowners[(method,k)].add(g)
-          additional=collections.defaultdict(collections.Counter)
+                  if o['cnpj']:erp_clients[(g[0],o['cnpj'])].add(g)
+          matched=dict((k,next(iter(v))) for k,v in used.items() if len(v)==1)
+          original_assigned=set(matched)
+          method={k:'vinculo_original' for k in matched}
+          # In the reverse direction a History key may be unique even if an Order group
+          # has more than one source entry. Keep each independently keyed entry.
+          for k in entries:
+              if k in matched:continue
+              cand=owners[k]|skuowners[k]
+              if len(cand)==1:
+                  g=next(iter(cand))
+                  if all_ro[k]=={g}:
+                      matched[k]=g;method[k]='entrada_exclusiva_datas'
+          for k in entries:
+              if k in matched:continue
+              cand=all_ro[k]
+              if len(cand)==1:
+                  g=next(iter(cand))
+                  # Without date equality require that both sides have a unique identity,
+                  # unless original validity and creation/capture are close.
+                  sc=score(k,groups[g]); rel=all_rel[g]
+                  if len(rel)==1 or (sc[0]==0 and sc[1]<=3):
+                      matched[k]=g;method[k]='identidade_exclusiva_datas_flex'
+          # Determine whether additional entries attached to an already-linked group
+          # may represent duplicated identifiers of one original event.
+          reverse_groups=collections.defaultdict(list)
+          for k,g in matched.items():reverse_groups[g].append(k)
+          overlap=collections.Counter(); ambiguous=set()
+          for g,kk in reverse_groups.items():
+              if len(kk)<=1:continue
+              overlap['multi_history_keys_same_order_group']+=1
+              bydate=collections.defaultdict(list)
+              for k in kk:bydate[k[3:5]].append(k)
+              for vv in bydate.values():
+                  if len(vv)<=1:continue
+                  overlap['same_dates_multiple_product_keys']+=1
+                  # Distinct codes could be aliases; same date/qty cannot establish independent entries.
+                  for k in vv:
+                      if k not in original_assigned:ambiguous.add(k)
+          for k in ambiguous:
+              matched.pop(k,None);method.pop(k,None)
+          cnt=collections.Counter(); why=collections.Counter(); methods=collections.Counter(); byqty=collections.Counter(); volume=collections.defaultdict(lambda:D(0)); active_groups=set(); linked_groups=set(); detailed=collections.Counter(); histqtyissues=collections.Counter()
           for g,oo in groups.items():
-              if g in assigned or g in recover:continue
-              live=any(validline(o) for o in oo);orig={o['original'] for o in oo if o['original'] is not None}
-              for method,kk in other[g].items():
-                  avail={k for k in kk if otherowners[(method,k)]=={g} and not used[k] and not nearclaims[k]}
-                  for lab in ['all']+(['active'] if live else []):
-                      z=additional[lab];z[method+'_any']+=bool(kk);z[method+'_exclusive']+=len(kk)==len(avail)==1;z[method+'_exclusive_qty_equal']+=len(kk)==len(avail)==1 and bool(entries[next(iter(avail))]['qty']&orig)
-          print('QA_NEAR',json.dumps({'near':{k:dict(v) for k,v in near.items()},'date_gap':{k:dict(v) for k,v in bins.items()},'multi_history':{k:dict(v) for k,v in multi.items()},'multi_examples':[{'count':v,**json.loads(k)} for k,v in examples.items()],'other_candidates':{k:dict(v) for k,v in additional.items()}},ensure_ascii=False))
+              if any(validline(o) for o in oo):active_groups.add(g)
+          for k,e in entries.items():
+              cnt['history_common_erp_keys']+=1
+              cscope=bool(erp_clients.get((k[0],k[1])))
+              cnt['history_common_erp_cnpj_keys']+=cscope
+              # Original History items: equal repeated snapshot of same item counts once;
+              # distinct items with their own quantities count independently.
+              iq=collections.defaultdict(set)
+              for i,qv,code,ean in e['detail']:iq[i].add(qv)
+              item_conflict=any(len(v)>1 or None in v for v in iq.values())
+              hq=None if item_conflict else sum((next(iter(v)) for v in iq.values()),D(0))
+              cnt['history_original_items_common_erp']+=len(iq)
+              if k not in matched:
+                  b='ERP e CNPJ nao coincidem' if not cscope else 'alias ou varias entradas na mesma data' if k in ambiguous else 'candidatos disputados' if len(all_ro[k])>1 else 'identidade existe, data divergente' if all_ro[k] else 'produto nao identificado na Order'
+                  why[b]+=1
+                  if hq is not None:volume['unlinked_history_native_qty']+=hq
+                  continue
+              g=matched[k];oo=groups[g];linked_groups.add(g);methods[method[k]]+=1
+              cnt['history_linked_keys']+=1;cnt['history_linked_items']+=len(iq);cnt['history_linked_active_order_keys']+=g in active_groups
+              cnt['history_linked_common_cnpj_keys']+=cscope
+              if item_conflict:
+                  histqtyissues['same_item_conflicting_qty']+=1
+                  histqtyissues['active_same_item_conflicting_qty']+=g in active_groups
+              else:
+                  orig={o['original'] for o in oo if o['original'] is not None}
+                  exact=all(next(iter(v)) in orig for v in iq.values())
+                  byqty['each_history_item_qty_present_order']+=exact;byqty['history_qty_diagnostic_difference']+=not exact
+                  byqty['distinct_history_items_multi']+=len(iq)>1
+                  if g in active_groups:byqty['active_qty_diagnostic_difference']+=not exact
+                  if all(o['unit']=='CX' for o in oo):
+                      volume['linked_history_entry_CX']+=hq
+                      if g in active_groups:volume['linked_history_active_entry_CX']+=hq
+          cnt['history_keys_outside_order_erp']=len(outside)
+          cnt['history_keys_total']=len(outside)+len(entries)
+          cnt['history_rows_outside_order_erp']=outside_rows;cnt['history_distinct_erps_outside_order']=len(outside_erps)
+          cnt['history_rows_invalid_erp']=invalid_history;cnt['history_rows_missing_product']=missing_id
+          cnt['order_groups']=len(groups);cnt['order_groups_linked']=len(linked_groups);cnt['order_active_groups']=len(active_groups);cnt['order_active_groups_linked']=len(active_groups&linked_groups)
+          cnt['order_groups_without_history']=len(groups)-len(linked_groups);cnt['order_active_groups_without_history']=len(active_groups-linked_groups)
+          print('QA_REVERSE',json.dumps({'counts':dict(cnt),'unlinked_common_erp':dict(why),'methods':dict(methods),'quantity_checks':dict(byqty),'history_item_conflicts':dict(histqtyissues),'multiple_entry_diagnostics':dict(overlap),'additional_aliases_deferred':len(ambiguous),'volumes':{k:str(v) for k,v in volume.items()}},ensure_ascii=False))
           PY
