@@ -1,4 +1,4 @@
-name: QA 27-11 - chave unica de entrada e jornada
+name: QA 27-11 - identificar entrada por SKU EG SAP
 on:
   push:
     branches: ['qa/skol-20261127']
@@ -108,6 +108,36 @@ jobs:
               bygroup[g]=(strict,cap,relaxed,raw,eg_sap,matches)
               for k in selected:owners[k].add(g)
               for k in relaxed:relaxedown[k].add(g)
+          # Test EG/SAP identities separately, and prevent reuse of existing History entries.
+          skuowners=collections.defaultdict(set); sku_cands={}; sku_methods=collections.defaultdict(set)
+          for g,oo in groups.items():
+              p,c,sku=g;cs=set();methods=collections.defaultdict(set)
+              for o in oo:
+                  if not o['cnpj']:continue
+                  for f in ('sku','sap'):
+                      v=o[f]
+                      if not v:continue
+                      for k in index[(p,o['cnpj'],v)]:
+                          if k[3] and k[4] and k[3] in {o['created'],o['date']} and k[4]==o['original_valid']:
+                              cs.add(k);methods[k].add(f)
+              sku_cands[g]=cs
+              for k in cs:
+                  skuowners[k].add(g)
+                  sku_methods[(g,k)].update(methods[k])
+          recovery=collections.defaultdict(collections.Counter); recvol=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); bymethod=collections.defaultdict(collections.Counter)
+          for g,oo in groups.items():
+              strict,cap,relaxed,raw,eg_sap,matches=bygroup[g]; base={k for k in strict|cap if owners[k]=={g}}
+              if base:continue
+              cs=sku_cands[g];orig={o['original'] for o in oo if o['original'] is not None};live=any(validline(o) for o in oo)
+              avail={k for k in cs if skuowners[k]=={g} and not (owners[k]-{g})}
+              match=next(iter(avail)) if len(cs)==1 and len(avail)==1 else None
+              hq=next(iter(entries[match]['qty'])) if match and len(entries[match]['qty'])==1 and None not in entries[match]['qty'] else None
+              for lab in ['all']+(['active'] if live else []):
+                  z=recovery[lab];z['unmatched']+=1;z['sku_candidate']+=bool(cs);z['sku_exclusive_unique']+=match is not None;z['sku_unique_qty']+=hq is not None;z['sku_qty_equal_order']+=hq is not None and hq in orig;z['sku_qty_equal_unique_order']+=hq is not None and orig=={hq};z['sku_qty_different']+=hq is not None and hq not in orig;z['sku_multiple_or_competing']+=bool(cs) and match is None;z['sku_history_quantity_conflict']+=match is not None and hq is None
+                  if match:
+                      kind='+'.join(sorted(sku_methods[(g,match)]));bymethod[lab][kind]+=1
+                      if hq is not None and {o['unit'] for o in oo}=={'CX'}:recvol[lab]['history_entry_CX_once']+=hq
+          print('QA_SKU_RECOVERY',json.dumps({'counts':{k:dict(v) for k,v in recovery.items()},'methods':{k:dict(v) for k,v in bymethod.items()},'volumes':{k:{a:str(b) for a,b in v.items()} for k,v in recvol.items()}},ensure_ascii=False))
           res=collections.defaultdict(collections.Counter); histvol=collections.defaultdict(lambda:collections.defaultdict(lambda:D(0))); block=collections.defaultdict(collections.Counter); sample=collections.Counter()
           for g,oo in groups.items():
               p,c,sku=g;strict,cap,relaxed,raw,eg_sap,matches=bygroup[g]
